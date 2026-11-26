@@ -95,7 +95,6 @@
   "eventNotFound": "Nie znaleziono wydarzenia",
   "eventNotFoundDescription": "Może być poza oknem agendy albo zostało usunięte u źródła.",
   "joinMeeting": "Dołącz do spotkania",
-  "join": "Dołącz",
   "attendeesCount": "Uczestnicy ({count})",
   "details": "Szczegóły",
   "allDay": "Cały dzień",

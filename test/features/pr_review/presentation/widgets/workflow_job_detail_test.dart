@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/workflow_job_detail.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -45,10 +46,9 @@ void main() {
     expect(find.text('installing...'), findsOneWidget);
 
     final lineText = tester.widget<Text>(find.text('line one'));
-    // The provider override is the display name 'Fira Code', which is not the
-    // bundled asset family (`packages/cc_ui/Fira Code`), so codeStyleDynamic
-    // routes through CcFontRegistry and names the cut `{family} {weight}`.
-    expect(lineText.style?.fontFamily, startsWith('Fira Code'));
+    // The provider override is the display name 'Fira Code', which resolves
+    // directly to the bundled asset family (`packages/cc_ui/Fira Code`).
+    expect(lineText.style?.fontFamily, AppFonts.codeFamily);
   });
 
   testWidgets('tapping a group header folds it; gutter numbers keep the '

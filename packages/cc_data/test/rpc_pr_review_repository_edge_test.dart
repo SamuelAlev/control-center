@@ -368,6 +368,11 @@ void main() {
       expect(args['title'], 'T');
       expect(args['body'], 'B');
 
+      await r.postIssueComment(prNumber: 42, body: 'hello');
+      final postedArgs = host.lastCall('pr_review.postIssueComment')!.args;
+      expect(postedArgs['pr_number'], 42);
+      expect(postedArgs['body'], 'hello');
+
       await r.updateIssueComment(
         prNumber: 42,
         commentId: 9,

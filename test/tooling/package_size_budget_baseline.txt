@@ -223,7 +223,7 @@ packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1585
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2836
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2808
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  2879
 packages/cc_server_core/lib/src/cc_server_runtime.dart  8238
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865

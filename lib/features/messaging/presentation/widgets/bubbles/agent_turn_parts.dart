@@ -21,15 +21,11 @@ class AgentTurnHeader extends ConsumerWidget {
   const AgentTurnHeader({
     super.key,
     required this.message,
-    required this.codeFont,
     required this.collapseHeader,
   });
 
   /// The agent turn.
   final Message message;
-
-  /// Font family for the mono name.
-  final String codeFont;
 
   /// Whether a consecutive same-sender turn hides the name.
   final bool collapseHeader;
@@ -60,12 +56,9 @@ class AgentTurnHeader extends ConsumerWidget {
       children: [
         Text(
           agentTurnName(ref, message),
-          style: AppFonts.codeDynamic(
-            codeFont,
-            textStyle: CcTypography.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              color: agentNameColor(message.senderId, tokens),
-            ),
+          style: CcTypography.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            color: agentNameColor(message.senderId, tokens),
           ),
         ),
         ?caption,
@@ -84,7 +77,6 @@ class AgentTurnFooter extends StatelessWidget {
     super.key,
     required this.listed,
     required this.shown,
-    required this.codeFont,
     required this.canRetry,
   });
 
@@ -93,9 +85,6 @@ class AgentTurnFooter extends StatelessWidget {
 
   /// The row as rendered: the detail read when one replaced the list row.
   final Message shown;
-
-  /// Font family for the mono trailer.
-  final String codeFont;
 
   /// Whether a failed turn offers Retry.
   final bool canRetry;
@@ -112,7 +101,7 @@ class AgentTurnFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _AgentTrailer(message: shown, codeFont: codeFont, tokens: tokens),
+        _AgentTrailer(message: shown, tokens: tokens),
         if (!failure.failed && !limited && shown.turnOutcome != null)
           AgentFeedbackBar(message: shown),
         if (limited) ...[

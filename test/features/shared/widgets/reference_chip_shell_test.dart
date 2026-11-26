@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/reference_chip_shell.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -96,6 +97,22 @@ void main() {
       expect(find.text('abc123'), findsOneWidget);
       expect(find.byIcon(Icons.code), findsOneWidget);
     });
+
+    testWidgets('opens from the keyboard with Enter', (tester) async {
+      var tapped = 0;
+      await tester.pumpWidget(
+        testWrap(
+          ReferenceChipShell(child: const Text('#42'), onTap: () => tapped++),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(tapped, 1);
+    });
   });
 
   group('ReferenceFallbackLink', () {
@@ -119,6 +136,18 @@ void main() {
 
       await tester.tap(find.text('tap link'));
       expect(tapped, isTrue);
+    });
+
+    testWidgets('reads as a link, not a button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        testWrap(ReferenceFallbackLink(label: 'org/repo#42', onTap: () {})),
+      );
+
+      final node = tester.getSemantics(find.text('org/repo#42'));
+      expect(node.flagsCollection.isLink, isTrue);
+      expect(node.flagsCollection.isButton, isFalse);
+      handle.dispose();
     });
   });
 }

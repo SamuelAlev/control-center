@@ -7,6 +7,7 @@ import 'package:control_center/features/pipelines/presentation/screens/pipeline_
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -280,6 +281,39 @@ void main() {
       expect(find.text('Beta'), findsNWidgets(2));
       // Alpha remains only in sidebar.
       expect(find.text('Alpha'), findsOneWidget);
+    });
+
+    testWidgets('a pipeline tile reports selection and switches on Enter', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          pipelines: AsyncValue.data([
+            _pipeline(templateId: 'tmpl-a', name: 'Alpha'),
+            _pipeline(templateId: 'tmpl-b', name: 'Beta'),
+          ]),
+          workspaceId: 'ws-1',
+        ),
+      );
+      // The sidebar tile, not the form header that repeats the name.
+      final tiles = find.byWidgetPredicate(
+        (w) => w is CcTappable && w.semanticSelected != null,
+      );
+      CcTappable tile(String name) => tester.widget<CcTappable>(
+        find.ancestor(of: find.text(name), matching: tiles),
+      );
+      expect(tile('Alpha').semanticSelected, isTrue);
+      expect(tile('Beta').semanticSelected, isFalse);
+
+      Focus.of(
+        tester.element(find.descendant(of: tiles, matching: find.text('Beta'))),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(find.text('Beta'), findsNWidgets(2));
+      expect(tile('Beta').semanticSelected, isTrue);
     });
 
     // ── Form: inputs count badge ─────────────────────────────────────────

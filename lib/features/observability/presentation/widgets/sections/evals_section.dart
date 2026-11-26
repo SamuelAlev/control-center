@@ -144,7 +144,11 @@ class _RunRow extends StatelessWidget {
               ),
               Text(
                 fmtMicros(run.costMicros),
-                style: CcTypography.monoNum.copyWith(color: t.textSecondary),
+                style: CcFonts.numeric(
+                  textStyle: CcTypography.numeric.copyWith(
+                    color: t.textSecondary,
+                  ),
+                ),
               ),
               Text(
                 l10n.evalsTriggeredBy(run.triggeredBy),

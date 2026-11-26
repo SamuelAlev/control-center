@@ -43,13 +43,12 @@ Repo _repo({ForgeHost forge = ForgeHost.github}) => Repo(
 List<Override> _editableOverrides(
   PrSidebar sidebar, {
   required ForgeHost forge,
+  PrReviewRepository repo = const EmptyPrReviewRepository(),
 }) {
   return [
     ..._overrides(sidebar, const []),
     prRepoRowProvider(_prRef).overrideWith((ref) => _repo(forge: forge)),
-    prRepositoryProvider(
-      _prRef,
-    ).overrideWith((ref) => const EmptyPrReviewRepository()),
+    prRepositoryProvider(_prRef).overrideWith((ref) => repo),
     forgeCapabilitiesProvider.overrideWith((ref) async => kForgeCapabilities),
   ];
 }
@@ -57,12 +56,39 @@ List<Override> _editableOverrides(
 PrUserReviewer _reviewer(
   PrUser user, {
   PrReviewSubmissionState state = PrReviewSubmissionState.pending,
+  bool isCodeOwner = false,
 }) {
-  return PrUserReviewer(user: user, isCodeOwner: false, state: state);
+  return PrUserReviewer(user: user, isCodeOwner: isCodeOwner, state: state);
+}
+
+class _RecordingReviewRepo extends EmptyPrReviewRepository {
+  final List<({int prNumber, List<String> users, List<String> teams})>
+  requested = [];
+
+  final List<({int prNumber, List<String> names})> removedLabels = [];
+
+  @override
+  Future<void> requestReviewers({
+    required int prNumber,
+    List<String> userLogins = const [],
+    List<String> teamSlugs = const [],
+  }) async {
+    requested.add((prNumber: prNumber, users: userLogins, teams: teamSlugs));
+  }
+
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {
+    removedLabels.add((prNumber: prNumber, names: names));
+  }
 }
 
 PullRequest _pr({
   int number = 1,
+  PrState state = PrState.open,
+  PrUser author = const PrUser(login: '', avatarUrl: ''),
   List<PrUser> requestedReviewers = const <PrUser>[],
   List<PrUser> assignees = const <PrUser>[],
   List<PrLabel> labels = const <PrLabel>[],
@@ -72,9 +98,9 @@ PullRequest _pr({
     number: number,
     title: 'Test PR',
     body: '',
-    state: PrState.open,
+    state: state,
     isDraft: false,
-    author: const PrUser(login: '', avatarUrl: ''),
+    author: author,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     repoFullName: 'o/r',
@@ -140,12 +166,12 @@ void main() {
     final pr = _pr();
     await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef)));
     await tester.pump();
-    // Section eyebrows are upper-cased (space-style collapsible sections).
-    expect(find.text('REVIEWERS'), findsOneWidget);
-    expect(find.text('ASSIGNEES'), findsOneWidget);
+    // Section eyebrows (space-style collapsible sections).
+    expect(find.text('Reviewers'), findsOneWidget);
+    expect(find.text('Assignees'), findsOneWidget);
     expect(find.text('No reviewers assigned'), findsOneWidget);
     expect(find.text('No assignees'), findsOneWidget);
-    expect(find.text('LABELS'), findsOneWidget);
+    expect(find.text('Labels'), findsOneWidget);
     expect(find.text('No labels yet'), findsOneWidget);
   });
 
@@ -158,7 +184,7 @@ void main() {
     );
     await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef)));
     await tester.pump();
-    expect(find.text('LABELS'), findsOneWidget);
+    expect(find.text('Labels'), findsOneWidget);
     expect(find.text('bug'), findsOneWidget);
     expect(find.text('dependencies'), findsOneWidget);
     expect(find.text('No labels yet'), findsNothing);
@@ -167,12 +193,18 @@ void main() {
   testWidgets('offers label editing when the forge supports labels', (
     tester,
   ) async {
+    final repo = _RecordingReviewRepo();
     final pr = _pr(
+      number: 42,
       labels: const [PrLabel(name: 'bug', color: 'd73a4a')],
     );
     final sidebar = PrSidebar(pr: pr, prRef: _prRef, canEdit: true);
     final container = ProviderContainer(
-      overrides: _editableOverrides(sidebar, forge: ForgeHost.github),
+      overrides: _editableOverrides(
+        sidebar,
+        forge: ForgeHost.github,
+        repo: repo,
+      ),
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(_wrap(sidebar, container: container));
@@ -183,12 +215,13 @@ void main() {
         .map((button) => button.semanticLabel);
     expect(addLabels, contains('Add labels'));
 
-    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-    await gesture.addPointer();
-    await gesture.moveTo(tester.getCenter(find.text('bug')));
-    await tester.pump();
+    // The remove X is visible immediately without hovering.
     expect(find.byIcon(AppIcons.x), findsOneWidget);
-    await gesture.removePointer();
+    await tester.tap(find.byIcon(AppIcons.x));
+    await tester.pump();
+    expect(repo.removedLabels, hasLength(1));
+    expect(repo.removedLabels.single.prNumber, 42);
+    expect(repo.removedLabels.single.names, ['bug']);
   });
 
   testWidgets('hides label editing when the forge has no labels', (
@@ -210,7 +243,42 @@ void main() {
         .map((button) => button.semanticLabel);
     expect(addLabels, isNot(contains('Add labels')));
     expect(find.text('bug'), findsOneWidget);
+    expect(find.byIcon(AppIcons.x), findsNothing);
   });
+
+  testWidgets(
+    'hides X and extra trailing space when user has no permission to remove',
+    (tester) async {
+      final pr = _pr(
+        labels: const [PrLabel(name: 'brand checker', color: '8e4452')],
+      );
+
+      final editableSidebar = PrSidebar(pr: pr, prRef: _prRef, canEdit: true);
+      final editableContainer = ProviderContainer(
+        overrides: _editableOverrides(editableSidebar, forge: ForgeHost.github),
+      );
+      addTearDown(editableContainer.dispose);
+      await tester.pumpWidget(
+        _wrap(editableSidebar, container: editableContainer),
+      );
+      await tester.pump();
+      expect(find.byIcon(AppIcons.x), findsOneWidget);
+      final editableWidth = tester.getSize(find.byType(CcColorTag)).width;
+
+      final readOnlySidebar = PrSidebar(pr: pr, prRef: _prRef, canEdit: false);
+      final readOnlyContainer = ProviderContainer(
+        overrides: _editableOverrides(readOnlySidebar, forge: ForgeHost.github),
+      );
+      addTearDown(readOnlyContainer.dispose);
+      await tester.pumpWidget(
+        _wrap(readOnlySidebar, container: readOnlyContainer),
+      );
+      await tester.pump();
+      expect(find.byIcon(AppIcons.x), findsNothing);
+      final readOnlyWidth = tester.getSize(find.byType(CcColorTag)).width;
+      expect(readOnlyWidth, lessThan(editableWidth));
+    },
+  );
 
   testWidgets('shows requested reviewers with pending state', (tester) async {
     final reviewer = _user('reviewer1');
@@ -246,9 +314,9 @@ void main() {
       final avatarBottom = tester
           .getBottomLeft(find.byType(GitHubUserAvatar))
           .dy;
-      final assigneesTop = tester.getTopLeft(find.text('ASSIGNEES')).dy;
+      final assigneesTop = tester.getTopLeft(find.text('Assignees')).dy;
       final emptyBottom = tester.getBottomLeft(find.text('No assignees')).dy;
-      final labelsTop = tester.getTopLeft(find.text('LABELS')).dy;
+      final labelsTop = tester.getTopLeft(find.text('Labels')).dy;
       expect(
         assigneesTop - avatarBottom,
         closeTo(labelsTop - emptyBottom, 0.5),
@@ -464,7 +532,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: const [])),
       );
-      expect(find.text('CHECKS'), findsOneWidget);
+      expect(find.text('Checks'), findsOneWidget);
       expect(find.text('No checks have run yet'), findsOneWidget);
     });
 
@@ -614,11 +682,11 @@ void main() {
       await tester.pumpWidget(
         _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
       );
-      expect(find.text('CHECKS'), findsOneWidget);
+      expect(find.text('Checks'), findsOneWidget);
       expect(find.text('Neutral'), findsOneWidget);
       expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
 
-      await tester.tap(find.text('CHECKS'));
+      await tester.tap(find.text('Checks'));
       await tester.pumpAndSettle();
       expect(find.text('Neutral'), findsOneWidget);
     });
@@ -713,20 +781,20 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('STATUS'), findsOneWidget);
-      expect(find.text('CHECKS'), findsOneWidget);
-      expect(find.text('REVIEWERS'), findsOneWidget);
-      expect(find.text('ASSIGNEES'), findsOneWidget);
+      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('Checks'), findsOneWidget);
+      expect(find.text('Reviewers'), findsOneWidget);
+      expect(find.text('Assignees'), findsOneWidget);
       expect(find.text('1 failing'), findsOneWidget);
       expect(find.text('reviewer1'), findsOneWidget);
       expect(find.text('assignee1'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('STATUS')).dy,
-        lessThan(tester.getTopLeft(find.text('CHECKS')).dy),
+        tester.getTopLeft(find.text('Status')).dy,
+        lessThan(tester.getTopLeft(find.text('Checks')).dy),
       );
       expect(
-        tester.getTopLeft(find.text('CHECKS')).dy,
-        lessThan(tester.getTopLeft(find.text('REVIEWERS')).dy),
+        tester.getTopLeft(find.text('Checks')).dy,
+        lessThan(tester.getTopLeft(find.text('Reviewers')).dy),
       );
     });
   });
@@ -802,7 +870,7 @@ void main() {
       // longer clipped by the section's AnimatedSize (clipping blocks taps).
       await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      expect(find.text('FILES CHANGED'), findsOneWidget);
+      expect(find.text('Files changed'), findsOneWidget);
       expect(find.text('a.dart'), findsOneWidget);
       expect(find.text('b.dart'), findsOneWidget);
 
@@ -939,7 +1007,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('REVIEWERS'));
+      await tester.tap(find.text('Reviewers'));
       await tester.pumpAndSettle(const Duration(seconds: 1));
       expect(
         tester.getSemantics(header),
@@ -980,6 +1048,302 @@ void main() {
         findsOneWidget,
       );
       handle.dispose();
+    });
+  });
+
+  group('PrSidebar re-request review', () {
+    List<Override> reRequestOverrides(
+      PrSidebar sidebar,
+      List<PrReviewer> reviewers, {
+      ForgeHost forge = ForgeHost.github,
+      PrReviewRepository repo = const EmptyPrReviewRepository(),
+    }) => [
+      ..._overrides(sidebar, reviewers),
+      prRepoRowProvider(_prRef).overrideWith((ref) => _repo(forge: forge)),
+      prRepositoryProvider(_prRef).overrideWith((ref) => repo),
+      forgeCapabilitiesProvider.overrideWith((ref) async => kForgeCapabilities),
+    ];
+
+    for (final state in [
+      PrReviewSubmissionState.approved,
+      PrReviewSubmissionState.changesRequested,
+      PrReviewSubmissionState.commented,
+    ]) {
+      testWidgets(
+        'hover reveals re-request button with tooltip for ${state.name} '
+        'reviewer and tapping requests review',
+        (tester) async {
+          final repo = _RecordingReviewRepo();
+          final alice = _user('alice');
+          final sidebar = PrSidebar(
+            pr: _pr(number: 42, requestedReviewers: [alice]),
+            prRef: _prRef,
+            canEdit: true,
+          );
+          final container = ProviderContainer(
+            overrides: reRequestOverrides(
+              sidebar,
+              [_reviewer(alice, state: state)],
+              repo: repo,
+            ),
+          );
+          addTearDown(container.dispose);
+          await tester.pumpWidget(_wrap(sidebar, container: container));
+          await tester.pumpAndSettle(const Duration(seconds: 1));
+
+          final gesture = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+          );
+          await gesture.addPointer();
+          await gesture.moveTo(tester.getCenter(find.text('alice')));
+          await tester.pump();
+
+          final repeatIcon = find.byIcon(AppIcons.repeat);
+          expect(repeatIcon, findsOneWidget);
+          final tooltip = tester.widget<CcTooltip>(
+            find.ancestor(of: repeatIcon, matching: find.byType(CcTooltip)),
+          );
+          expect(tooltip.message, 'Re-request review');
+
+          await tester.tap(repeatIcon);
+          await tester.pump();
+          expect(repo.requested, hasLength(1));
+          expect(repo.requested.single.prNumber, 42);
+          expect(repo.requested.single.users, ['alice']);
+          expect(repo.requested.single.teams, isEmpty);
+          await gesture.removePointer();
+        },
+      );
+    }
+
+    testWidgets('re-requesting a reviewed team sends its slug', (tester) async {
+      final repo = _RecordingReviewRepo();
+      const team = PrTeamReviewer(
+        name: 'Frontend',
+        slug: 'fe',
+        isCodeOwner: false,
+        state: PrReviewSubmissionState.approved,
+        reviewedBy: PrUser(login: 'dave', avatarUrl: ''),
+      );
+      final sidebar = PrSidebar(
+        pr: _pr(number: 42),
+        prRef: _prRef,
+        canEdit: true,
+      );
+      final container = ProviderContainer(
+        overrides: reRequestOverrides(sidebar, [team], repo: repo),
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(_wrap(sidebar, container: container));
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      await tester.tap(find.byIcon(AppIcons.repeat));
+      await tester.pump();
+      expect(repo.requested, hasLength(1));
+      expect(repo.requested.single.prNumber, 42);
+      expect(repo.requested.single.users, isEmpty);
+      expect(repo.requested.single.teams, ['fe']);
+    });
+
+    testWidgets(
+      'code-owner reviewer shows re-request without remove after review',
+      (tester) async {
+        final alice = _user('alice');
+        final sidebar = PrSidebar(
+          pr: _pr(number: 42, requestedReviewers: [alice]),
+          prRef: _prRef,
+          canEdit: true,
+        );
+        final container = ProviderContainer(
+          overrides: reRequestOverrides(sidebar, [
+            _reviewer(
+              alice,
+              state: PrReviewSubmissionState.changesRequested,
+              isCodeOwner: true,
+            ),
+          ]),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(_wrap(sidebar, container: container));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.byIcon(AppIcons.repeat), findsOneWidget);
+        expect(find.byIcon(AppIcons.x), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'hides re-request for pending reviewer, PR author, read-only, '
+      'closed/merged PRs, and unsupported forges',
+      (tester) async {
+        final alice = _user('alice');
+        final author = _user('author');
+        final cases =
+            <({PullRequest pr, List<PrReviewer> reviewers, bool canEdit, ForgeHost forge})>[
+              (
+                pr: _pr(number: 42),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.pending),
+                ],
+                canEdit: true,
+                forge: ForgeHost.github,
+              ),
+              (
+                pr: _pr(number: 42, author: author),
+                reviewers: [
+                  _reviewer(author, state: PrReviewSubmissionState.commented),
+                ],
+                canEdit: true,
+                forge: ForgeHost.github,
+              ),
+              (
+                pr: _pr(number: 42),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.approved),
+                ],
+                canEdit: false,
+                forge: ForgeHost.github,
+              ),
+              (
+                pr: _pr(number: 42, state: PrState.closed),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.approved),
+                ],
+                canEdit: true,
+                forge: ForgeHost.github,
+              ),
+              (
+                pr: _pr(number: 42, state: PrState.merged),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.approved),
+                ],
+                canEdit: true,
+                forge: ForgeHost.github,
+              ),
+              (
+                pr: _pr(number: 42),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.approved),
+                ],
+                canEdit: true,
+                forge: ForgeHost.gitlab,
+              ),
+              (
+                pr: _pr(number: 42),
+                reviewers: [
+                  _reviewer(alice, state: PrReviewSubmissionState.approved),
+                ],
+                canEdit: true,
+                forge: ForgeHost.bitbucket,
+              ),
+            ];
+
+        for (final c in cases) {
+          final sidebar = PrSidebar(
+            pr: c.pr,
+            prRef: _prRef,
+            canEdit: c.canEdit,
+          );
+          final container = ProviderContainer(
+            overrides: reRequestOverrides(
+              sidebar,
+              c.reviewers,
+              forge: c.forge,
+            ),
+          );
+          await tester.pumpWidget(_wrap(sidebar, container: container));
+          await tester.pumpAndSettle(const Duration(seconds: 1));
+          expect(
+            find.byIcon(AppIcons.repeat),
+            findsNothing,
+            reason:
+                'state=${c.pr.state} canEdit=${c.canEdit} forge=${c.forge}',
+          );
+          container.dispose();
+        }
+      },
+    );
+
+    testWidgets(
+      're-request is reachable in semantics without hovering and reveals on '
+      'keyboard focus',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final alice = _user('alice');
+        final sidebar = PrSidebar(
+          pr: _pr(number: 42, requestedReviewers: [alice]),
+          prRef: _prRef,
+          canEdit: true,
+        );
+        final container = ProviderContainer(
+          overrides: reRequestOverrides(sidebar, [
+            _reviewer(alice, state: PrReviewSubmissionState.approved),
+          ]),
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(_wrap(sidebar, container: container));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        final button = find.bySemanticsLabel('Re-request review from alice');
+        expect(button, findsOneWidget);
+        expect(
+          tester.getSemantics(button),
+          isSemantics(
+            label: 'Re-request review from alice',
+            isButton: true,
+            isFocusable: true,
+            hasTapAction: true,
+          ),
+        );
+
+        final repeatIcon = find.byIcon(AppIcons.repeat);
+        double opacity() => tester
+            .widget<Opacity>(
+              find.ancestor(of: repeatIcon, matching: find.byType(Opacity)).first,
+            )
+            .opacity;
+        expect(opacity(), 0);
+
+        Focus.of(tester.element(repeatIcon)).requestFocus();
+        await tester.pump();
+        await tester.pump();
+        expect(opacity(), 1);
+        handle.dispose();
+      },
+    );
+
+    testWidgets('renders and reveals re-request in RTL', (tester) async {
+      final alice = _user('alice');
+      final sidebar = PrSidebar(
+        pr: _pr(number: 42, requestedReviewers: [alice]),
+        prRef: _prRef,
+        canEdit: true,
+      );
+      final container = ProviderContainer(
+        overrides: reRequestOverrides(sidebar, [
+          _reviewer(alice, state: PrReviewSubmissionState.approved),
+        ]),
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: _app(sidebar),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      await gesture.moveTo(tester.getCenter(find.text('alice')));
+      await tester.pump();
+
+      expect(find.byIcon(AppIcons.repeat), findsOneWidget);
+      expect(find.byIcon(AppIcons.x), findsOneWidget);
+      await gesture.removePointer();
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/components/cc_roving_focus.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -6,7 +7,6 @@ import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// A single entry in a [CcTabs] strip.
@@ -34,11 +34,11 @@ class CcTab {
 /// A horizontal tab strip with WAI-ARIA-style roving-tabindex keyboard nav.
 ///
 /// Renders the navigation bar only — the caller renders the body for
-/// [selectedIndex]. The strip owns a focus scope: Tab enters the strip and
-/// lands on the *selected* tab (the only tab stop — roving tabindex), then
-/// `←`/`→` (and `↑`/`↓`, `Home`/`End`) move between tabs, selecting each as it
-/// is focused (automatic activation). The selected tab reads as
-/// [DesignSystemTokens.fg] text under a 2px [DesignSystemTokens.accent]
+/// [selectedIndex]. The strip is one Tab stop: Tab lands on the *selected*
+/// tab and the next Tab leaves the strip. `←`/`→` (mirrored under RTL) and
+/// `Home`/`End` move between tabs, selecting each as it is focused (automatic
+/// activation); `↑`/`↓` are left to directional focus. The selected tab reads
+/// as [DesignSystemTokens.fg] text under a 2px [DesignSystemTokens.accent]
 /// underline; unselected tabs are [DesignSystemTokens.textTertiary] with a
 /// [DesignSystemTokens.hover] wash on hover. Status is carried by the underline
 /// bar, color and the selected semantic — never color alone.
@@ -77,115 +77,81 @@ class CcTabs extends StatefulWidget {
 }
 
 class _CcTabsState extends State<CcTabs> {
-  final FocusScopeNode _scopeNode = FocusScopeNode(
-    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  late final CcRovingFocusNodes _tabNodes = CcRovingFocusNodes(
+    'CcTab',
+    widget.tabs.length,
   );
-  List<FocusNode> _tabNodes = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabNodes = [for (var i = 0; i < widget.tabs.length; i++) FocusNode()];
-  }
 
   @override
   void didUpdateWidget(covariant CcTabs oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.tabs.length != widget.tabs.length) {
-      for (final n in _tabNodes) {
-        n.dispose();
-      }
-      _tabNodes = [for (var i = 0; i < widget.tabs.length; i++) FocusNode()];
-    }
+    _tabNodes.sync(widget.tabs.length);
   }
 
   @override
   void dispose() {
-    for (final n in _tabNodes) {
-      n.dispose();
-    }
-    _scopeNode.dispose();
+    _tabNodes.dispose();
     super.dispose();
   }
 
-  void _select(int index) {
-    widget.onChanged(index);
-    // Move focus to the newly-selected tab after the rebuild (roving tabindex).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && index < _tabNodes.length) {
-        _tabNodes[index].requestFocus();
-      }
-    });
-  }
-
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) {
-      return KeyEventResult.ignored;
-    }
     final count = widget.tabs.length;
-    if (count == 0) {
+    final target = ccRovingTarget(
+      event: event,
+      current: _tabNodes.focusedIndex ?? widget.selectedIndex,
+      count: count,
+      rtl: Directionality.of(context) == TextDirection.rtl,
+    );
+    if (target == null) {
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowRight ||
-        key == LogicalKeyboardKey.arrowDown) {
-      _select((widget.selectedIndex + 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowUp) {
-      _select((widget.selectedIndex - 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.home) {
-      _select(0);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.end) {
-      _select(count - 1);
-      return KeyEventResult.handled;
+    _tabNodes[target].requestFocus();
+    if (target != widget.selectedIndex) {
+      widget.onChanged(target);
     }
-    return KeyEventResult.ignored;
+    return KeyEventResult.handled;
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
+    final count = widget.tabs.length;
+    final selected = widget.selectedIndex;
+    _tabNodes.setStop(selected >= 0 && selected < count ? selected : 0);
     return Semantics(
       container: true,
-      child: FocusScope(
-        node: _scopeNode,
-        child: Focus(
-          canRequestFocus: false,
-          onKeyEvent: _onKey,
-          child: Container(
-            height: widget.height,
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: t.borderPrimary)),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: CcFluidHover(
-                axis: CcFluidHoverAxis.x,
-                itemCount: widget.tabs.length,
-                itemBuilder: (context, i) => _CcTab(
-                  tab: widget.tabs[i],
-                  selected: i == widget.selectedIndex,
-                  // Roving tabindex: only the selected tab is a Tab stop.
-                  focusable: i == widget.selectedIndex,
-                  focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
-                  tokens: t,
-                  fillHeight: widget.height != null,
-                  onPressed: () => _select(i),
-                ),
-                layoutBuilder: (context, items) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  // A fixed-height strip hands the tabs a tight height to fill,
-                  // so their underline lands on the strip's rule. Without one
-                  // the cross-axis constraint is unbounded and stretch is
-                  // illegal.
-                  crossAxisAlignment: widget.height == null
-                      ? CrossAxisAlignment.center
-                      : CrossAxisAlignment.stretch,
-                  children: items,
-                ),
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: _onKey,
+        child: Container(
+          height: widget.height,
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.borderPrimary)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: CcFluidHover(
+              axis: CcFluidHoverAxis.x,
+              itemCount: count,
+              itemBuilder: (context, i) => _CcTab(
+                tab: widget.tabs[i],
+                selected: i == selected,
+                focusNode: _tabNodes[i],
+                tokens: t,
+                fillHeight: widget.height != null,
+                onPressed: () => widget.onChanged(i),
+              ),
+              layoutBuilder: (context, items) => Row(
+                mainAxisSize: MainAxisSize.min,
+                // A fixed-height strip hands the tabs a tight height to fill,
+                // so their underline lands on the strip's rule. Without one
+                // the cross-axis constraint is unbounded and stretch is
+                // illegal.
+                crossAxisAlignment: widget.height == null
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.stretch,
+                children: items,
               ),
             ),
           ),
@@ -199,7 +165,6 @@ class _CcTab extends StatelessWidget {
   const _CcTab({
     required this.tab,
     required this.selected,
-    required this.focusable,
     required this.focusNode,
     required this.tokens,
     required this.fillHeight,
@@ -208,8 +173,7 @@ class _CcTab extends StatelessWidget {
 
   final CcTab tab;
   final bool selected;
-  final bool focusable;
-  final FocusNode? focusNode;
+  final FocusNode focusNode;
   final DesignSystemTokens tokens;
 
   /// True on a fixed-height strip: the cell fills the height it was handed and
@@ -222,89 +186,86 @@ class _CcTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = tokens;
     final duration = CcMotion.resolveFade(context, CcMotion.moderate);
-    return Semantics(
-      selected: selected,
-      child: CcTappable(
-        onPressed: onPressed,
-        focusNode: focusNode,
-        canRequestFocus: focusable,
-        borderRadius: AppRadii.brSm,
-        semanticLabel: tab.label,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          final pressed = states.contains(WidgetState.pressed);
-          final fluidActive = CcFluidHover.isItemActive(context);
-          final Color background;
-          if (pressed) {
-            background = t.hoverStrong;
-          } else if (hovered && !selected && !fluidActive) {
-            background = t.hover;
-          } else {
-            background = t.hover.withValues(alpha: 0);
-          }
-          final foreground = selected
-              ? t.fg
-              : (hovered ? t.fgSecondary : t.textTertiary);
-          final label = Row(
-            mainAxisSize: MainAxisSize.min,
+    return CcTappable(
+      onPressed: onPressed,
+      focusNode: focusNode,
+      borderRadius: AppRadii.brSm,
+      // The visible label names the tab; passing it here too reads it twice.
+      semanticSelected: selected,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
+        final Color background;
+        if (pressed) {
+          background = t.hoverStrong;
+        } else if (hovered && !selected && !fluidActive) {
+          background = t.hover;
+        } else {
+          background = t.hover.withValues(alpha: 0);
+        }
+        final foreground = selected
+            ? t.fg
+            : (hovered ? t.fgSecondary : t.textTertiary);
+        final label = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (tab.icon != null) ...[
+              Icon(tab.icon, size: 15, color: foreground),
+              AppSpacing.hGapSm,
+            ],
+            Text(
+              tab.label,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                fontWeight: CcTypography.regularWeight,
+                color: foreground,
+              ),
+            ),
+          ],
+        );
+        return AnimatedContainer(
+          duration: duration,
+          curve: CcMotion.standard,
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: AppRadii.brSm,
+          ),
+          child: Stack(
             children: [
-              if (tab.icon != null) ...[
-                Icon(tab.icon, size: 15, color: foreground),
-                AppSpacing.hGapSm,
-              ],
-              Text(
-                tab.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.45,
-                  fontWeight: CcTypography.regularWeight,
-                  color: foreground,
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  // On a fixed-height strip the height comes from the strip,
+                  // so the label centers in it rather than padding its way to
+                  // a size of its own.
+                  vertical: fillHeight ? 0 : AppSpacing.sm,
+                ),
+                // widthFactor: 1 shrink-wraps the width (the cell still hugs
+                // its label); heightFactor stays null so it fills the strip.
+                child: fillHeight
+                    ? Center(widthFactor: 1, child: label)
+                    : label,
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 2,
+                child: AnimatedOpacity(
+                  duration: duration,
+                  curve: CcMotion.standard,
+                  opacity: selected ? 1 : 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: t.accent),
+                  ),
                 ),
               ),
             ],
-          );
-          return AnimatedContainer(
-            duration: duration,
-            curve: CcMotion.standard,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: AppRadii.brSm,
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    // On a fixed-height strip the height comes from the strip,
-                    // so the label centers in it rather than padding its way to
-                    // a size of its own.
-                    vertical: fillHeight ? 0 : AppSpacing.sm,
-                  ),
-                  // widthFactor: 1 shrink-wraps the width (the cell still hugs
-                  // its label); heightFactor stays null so it fills the strip.
-                  child: fillHeight
-                      ? Center(widthFactor: 1, child: label)
-                      : label,
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 2,
-                  child: AnimatedOpacity(
-                    duration: duration,
-                    curve: CcMotion.standard,
-                    opacity: selected ? 1 : 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(color: t.accent),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_inline
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -168,6 +169,34 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('1 comment'), findsOneWidget);
+    });
+
+    testWidgets('Enter on a thread row closes the inbox and jumps to it', (
+      tester,
+    ) async {
+      final thread = _thread();
+      final jumped = <String>[];
+      var closed = false;
+      await tester.pumpWidget(
+        _wrap(
+          SingleChildScrollView(
+            child: PrCommentsInbox(
+              threads: [thread],
+              onToggleResolved: (_) {},
+              onClose: () => closed = true,
+              onJumpTo: (t) => jumped.add(t.id),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      Focus.of(tester.element(find.text('Hello'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(closed, isTrue);
+      expect(jumped, ['t1']);
     });
   });
 }

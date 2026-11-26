@@ -207,6 +207,7 @@ class WebPushService {
         item.params['merged_by_login'],
         item.params['approver_login'],
         item.params['author_login'],
+        item.params['resolved_by_login'],
       ].whereType<String>().where((value) => value.isNotEmpty).firstOrNull;
       if (actor != null) {
         String login;

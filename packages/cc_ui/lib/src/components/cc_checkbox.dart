@@ -71,6 +71,11 @@ class CcCheckbox extends StatelessWidget {
       focusNode: focusNode,
       autofocus: autofocus,
       semanticLabel: semanticLabel,
+      // A checkbox, not a button, as Flutter's own checkbox reports it. An
+      // indeterminate box is mixed and not checked.
+      semanticButton: false,
+      semanticChecked: value && !indeterminate,
+      semanticMixed: indeterminate,
       borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
@@ -127,7 +132,7 @@ class CcCheckbox extends StatelessWidget {
 
         // Enlarge the tap target to ≥32px (the visible box stays 18px) and fold
         // an optional label into the same hit region.
-        final Widget content = ConstrainedBox(
+        return ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: _target,
             minHeight: _target,
@@ -150,9 +155,6 @@ class CcCheckbox extends StatelessWidget {
                   ],
                 ),
         );
-
-        // Expose the checked state to assistive tech.
-        return Semantics(checked: value, child: content);
       },
     );
   }

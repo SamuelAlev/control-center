@@ -87,7 +87,6 @@ class WorkspaceConnectFacts extends StatelessWidget {
         SettingsFact(
           label: l10n.connectFactMode,
           value: workspaceConnectModeLabel(l10n, status.mode),
-          mono: false,
         ),
         SettingsFact(
           label: l10n.connectFactHealth,
@@ -101,7 +100,6 @@ class WorkspaceConnectFacts extends StatelessWidget {
             WorkspaceConnectHealth.ok => CcStatusTone.positive,
             WorkspaceConnectHealth.down => CcStatusTone.negative,
           },
-          mono: false,
         ),
         if (epoch != null && status.effectiveMode.usesConnect)
           SettingsFact(label: l10n.connectFactEpoch, value: '$epoch'),

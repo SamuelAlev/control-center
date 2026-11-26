@@ -212,58 +212,51 @@ class _RelationGroup extends ConsumerWidget {
   }
 }
 
-class _RelationRow extends StatefulWidget {
+class _RelationRow extends StatelessWidget {
   const _RelationRow({required this.other, required this.onRemove});
 
   final Ticket other;
   final VoidCallback onRemove;
 
   @override
-  State<_RelationRow> createState() => _RelationRowState();
-}
-
-class _RelationRowState extends State<_RelationRow> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => context.go(
-          ticketDetailRoute(context.currentWorkspaceId!, widget.other.id),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            children: [
-              TicketStatusDot(status: widget.other.status),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.other.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: t.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+    return CcTappable(
+      onPressed: () =>
+          context.go(ticketDetailRoute(context.currentWorkspaceId!, other.id)),
+      builder: (context, states) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            TicketStatusDot(status: other.status),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                other.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: t.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              if (_hovered)
-                CcTappable(
-                  onPressed: widget.onRemove,
-                  builder: (context, states) => Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 6),
-                    child: Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-                  ),
+            ),
+            // Focus on the row includes focus on this button, so tabbing
+            // onto it keeps it shown.
+            if (states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.focused))
+              CcTappable(
+                onPressed: onRemove,
+                semanticLabel: AppLocalizations.of(
+                  context,
+                ).removeLabel(other.title),
+                builder: (context, states) => Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 6),
+                  child: Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

@@ -474,9 +474,9 @@
   "calendarDisconnect": "Отключить",
   "calendarReconnect": "Подключить снова",
   "calendarEmptyNoEvents": "В этом диапазоне нет событий",
-  "calendarStartRecording": "Начать запись",
-  "calendarStartRecordingAndLink": "Начать запись и привязать",
   "calendarJoinMeet": "Присоединиться к встрече",
+  "calendarJoinAndRecord": "Присоединиться и записать",
+  "calendarRecordFailed": "Не удалось начать запись",
   "calendarFromCalendar": "Из календаря",
   "calendarLinkedMeeting": "Привязанная встреча",
   "calendarToday": "Сегодня",
@@ -899,7 +899,6 @@
   "actions": "Действия",
   "activate": "Активировать",
   "activity": "Активность",
-  "activityLabel": "АКТИВНОСТЬ",
   "activitySearchHint": "Поиск по активности",
   "activityNoMatches": "Нет активности по заданным фильтрам",
   "activityPageRange": "{start}–{end} из {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Блокирует",
   "bookmarkLabel": "Закладка",
   "briefDescription": "Краткое описание",
-  "bugLabel": "БАГ",
+  "bugLabel": "Баг",
   "bundledDefaultsNeverUpdated": "Встроенные значения по умолчанию — не обновляются",
   "cancel": "Отмена",
   "cancelEdit": "Отменить правку",
@@ -2617,7 +2616,7 @@
   "react": "React",
   "readerPreferences": "Настройки чтения",
   "reasoningEffort": "Усилие рассуждения",
-  "recommendLabel": "РЕКОМЕНДУЕМ",
+  "recommendLabel": "Рекомендуем",
   "recordingFromDevice": "Запись с {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Успех",
   "successLabel": "Успех",
   "suggestion": "Предложение",
-  "suggestLabel": "ПРЕДЛОЖИТЬ",
+  "suggestLabel": "Предложить",
   "superseded": "Заменено",
   "synced": "Синхронизировано",
   "systemDefault": "Системное по умолчанию",
@@ -3025,7 +3024,7 @@
   "themeLight": "Светлая",
   "themeSystem": "Системная",
   "thisCannotBeUndone": "Это действие нельзя отменить.",
-  "ticketLabel": "ТИКЕТ",
+  "ticketLabel": "Тикет",
   "titleLabel": "Название",
   "todayLabel": "Сегодня",
   "toggleTheme": "Переключить тему",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Шаблон",
   "prTemplateDefault": "По умолчанию",
   "addReviewers": "Добавить рецензентов",
-  "addAssignees": "Добавить исполнителей",
+
+  "reRequestReview": "Повторно запросить проверку",
+  "reRequestReviewFor": "Повторно запросить проверку у {label}",  "addAssignees": "Добавить исполнителей",
   "addLabels": "Добавить метки",
   "searchLabels": "Искать метки…",
   "noMatchingLabels": "Нет подходящих меток",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Набросайте заметки — агент разовьёт их после встречи.",
   "meetingSpeakerMe": "Вы",
   "meetingStatusRecording": "Запись",
+  "meetingStatusPaused": "На паузе",
   "meetingStatusProcessing": "Обработка",
   "meetingStatusDone": "Готово",
   "meetingStatusFailed": "Ошибка",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Нет встреч} one{{count} встреча} few{{count} встречи} many{{count} встреч} other{{count} встреч}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Открытые задачи",
-  "meetingsLedgerDecisions": "Решения",
   "meetingsLiveOpen": "Открыть запись",
   "meetingTemplateShort": "Шаблон",
-  "meetingsStatThisWeek": "На этой неделе",
-  "meetingsStatRecorded": "Записано",
   "meetingsFilterAll": "Все",
   "meetingsFilterDone": "Готово",
   "meetingsFilterProcessing": "Обработка",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "улучшено",
   "meetingsTranscribing": "транскрипция и саммари…",
   "meetingsOpenAction": "Открыть",
   "meetingsStopProcessing": "Остановить",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Похоже, идёт встреча. Записать?",
-  "meetingDetectedRecord": "Записать",
   "meetingDetectedDismiss": "Отклонить",
   "meetingAutoStopTitle": "Похоже, встреча закончилась. Остановить запись?",
   "meetingAutoStopStop": "Остановить",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Никогда не подключалось",
+  "deviceAwaitingApproval": "Ждёт одобрения",
   "profileSectionLabel": "Профиль",
   "profileSectionDescription": "Как вас видит команда и авторство git-коммитов в этом пространстве. Пустые поля наследуют имя и почту аккаунта.",
   "displayNameLabel": "Отображаемое имя",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Выполняется",
   "evalsStatusPassed": "Пройдено",
   "evalsStatusFailed": "Ошибка",
-  "bannerMeetingJoin": "Присоединиться",
-  "bannerMeetingRecordAndLink": "Записать и привязать",
   "bannerCalendarReconnect": "Подключить снова",
   "bannerView": "Открыть",
   "soundscapeTitle": "Звуковые пейзажи",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Не удалось отправить комментарий: {error}",
   "commentOnLine": "Строка {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Всегда разрешать копирование из сред",
   "rigClipboardAlwaysCopyDescription": "Помещать содержимое буфера обмена из любой среды на это устройство без запроса.",
   "imageDiffBefore": "До",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "После",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Рядом",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Свайп",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Разница",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "изменено {percent} %",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Изображения",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Исходник",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Удалено",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} отмечен как непросмотренный",
   "prLineChangesSemantics": "Добавлено строк: {additions}, удалено строк: {deletions}",
   "closeTabNamed": "Закрыть {tab}",
-  "threadCommentCount": "{count, plural, one{{count} комментарий} few{{count} комментария} many{{count} комментариев} other{{count} комментария}}",
   "notificationAgentAwaitingInput": "Агенту требуется внимание",
   "notifyAgentAwaitingInput": "Когда агенту нужны одобрение, ответ или действующие учётные данные либо правило блокирует действие",
   "notificationAgentNeedsApproval": "{agent} ждёт вашего одобрения",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Решает администратор",
   "improvementNotFound": "Этого предложения нет или оно находится в пространстве, которое вы не можете открыть.",
   "dispatchSettingsTitle": "Расписания",
-  "dispatchSettingsSubtitle": "Лимиты для расписаний и наблюдений, а также что происходит с запросами, на которые никто не ответил.",
   "dispatchLimitsLabel": "Лимиты расписаний",
   "dispatchLimitsSubtitle": "Сколько расписаний и наблюдений могут держать агенты и какие значения по умолчанию.",
   "dispatchLimitRange": "От 1 до {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "В {zone}, в часовом поясе выше.",
   "dispatchDigestHourRange": "От 0 до 23",
   "goalRecordCrumb": "Цель",
-  "scheduleRecordCrumb": "Расписание",
   "improvementRecordCrumb": "Предложение",
   "goalNodeNeedsAgent": "Выберите агента, который ведёт цель.",
   "goalNodeNeedsObjective": "Опишите задачу.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Это не тот код, который показал браузер. {count, plural, one{Осталась {count} попытка.} few{Осталось {count} попытки.} many{Осталось {count} попыток.} other{Осталось {count} попытки.}}",
   "mcpServerSignInEnded": "Время истекло, вход был отклонён или введено слишком много неверных кодов. Начните заново, чтобы получить новую страницу входа.",
   "mcpServerSignInStartAgain": "Начать заново",
-  "mcpServerSignedIn": "Выполнен вход в {name}."
+  "mcpServerSignedIn": "Выполнен вход в {name}.",
+  "ccLoading": "Загрузка",
+  "ccProgress": "Ход выполнения",
+  "ccBreadcrumb": "Путь навигации",
+  "ccDialog": "Диалоговое окно",
+  "ccResize": "Изменить размер",
+  "ccUnverifiedLabel": "{label} (не проверено)",
+  "prRowSelect": "Выбрать {title}",
+  "prTableSelectAll": "Выбрать все pull requests",
+  "planVersionRewind": "Откатить к версии {version}"
 }

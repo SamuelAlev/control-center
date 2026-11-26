@@ -3,12 +3,23 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/improvement_proposal.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/improvement_inbox_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/improvement_proposal_view.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/improvement_values.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/di/conversation_work_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/improvements/improvement_page.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_fact_row.dart';
 import 'package:control_center/features/memory/providers/memory_providers.dart';
+import 'package:control_center/features/messaging/providers/conversation_work_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
@@ -56,6 +67,11 @@ class _PolicyRepo implements MemoryPolicyRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _InboxRepo implements ImprovementInboxRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 MemoryFact _fact(String id, {String? supersededBy, String? content}) =>
     MemoryFact(
       id: id,
@@ -80,6 +96,32 @@ MemoryPolicy _policy({List<String> sources = const [], AgentRole? role}) =>
       updatedAt: DateTime(2026),
     );
 
+ImprovementProposalView _improvement({
+  String id = 'imp-1',
+  ImprovementKind kind = ImprovementKind.memoryFact,
+  ImprovementStatus status = ImprovementStatus.proposed,
+  String? appliedRef,
+  String change = 'Remember Thursday releases',
+}) => ImprovementProposalView(
+  proposal: ImprovementProposal(
+    id: id,
+    workspaceId: _ws,
+    agentId: 'agent-1',
+    kind: kind,
+    scope: ImprovementScope.workspace,
+    operation: ImprovementOperation.add,
+    change: change,
+    expected: 'Fewer broken deploys',
+    status: status,
+    appliedRef: appliedRef,
+    decidedAt: status == ImprovementStatus.proposed ? null : DateTime(2026, 2),
+    createdAt: DateTime(2026),
+    expiresAt: DateTime(2027),
+  ),
+  needsAdmin: false,
+  evaluation: null,
+);
+
 /// The page the app was on before Memory.
 const _before = '/before';
 
@@ -90,6 +132,7 @@ Future<({_FactRepo factRepo, _PolicyRepo policyRepo, GoRouter router})> _pump(
   WidgetTester tester, {
   List<MemoryFact> seed = const [],
   List<MemoryPolicy> policies = const [],
+  List<ImprovementProposalView> improvements = const [],
   Stream<List<MemoryFact>>? facts,
   String? location,
 }) async {
@@ -112,12 +155,20 @@ Future<({_FactRepo factRepo, _PolicyRepo policyRepo, GoRouter router})> _pump(
         activeWorkspaceIdProvider.overrideWith(_Workspace.new),
         memoryFactRepositoryProvider.overrideWithValue(factRepo),
         memoryPolicyRepositoryProvider.overrideWithValue(policyRepo),
+        improvementInboxRepositoryProvider.overrideWithValue(_InboxRepo()),
         memoryFactsProvider(
           _ws,
         ).overrideWith((ref) => facts ?? Stream.value(seed)),
         memoryPoliciesProvider(
           _ws,
         ).overrideWith((ref) => Stream.value(policies)),
+        workspaceImprovementsProvider(
+          _ws,
+        ).overrideWith((ref) => Stream.value(improvements)),
+        workAgentNameProvider.overrideWith((ref, key) => 'Ada'),
+        workMemberNameProvider.overrideWith((ref, key) => 'Sam'),
+        myWorkspaceRoleProvider.overrideWith((ref, ws) => WorkspaceRole.admin),
+        codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
       ],
       child: testRouterWrap(router),
     ),
@@ -223,12 +274,12 @@ void main() {
     await _tapText(tester, 'Policies');
     await _tapText(tester, 'Always write the spec first.');
 
-    expect(find.text('SOURCE FACTS'), findsOneWidget);
+    expect(find.text('Source facts'), findsOneWidget);
     await _tapText(tester, 'topic a');
-    expect(find.text('SOURCE FACTS'), findsNothing);
+    expect(find.text('Source facts'), findsNothing);
 
     await _tapText(tester, 'Back');
-    expect(find.text('SOURCE FACTS'), findsOneWidget);
+    expect(find.text('Source facts'), findsOneWidget);
 
     await _tapText(tester, 'Back');
     expect(find.text('Memory'), findsOneWidget);
@@ -435,5 +486,94 @@ void main() {
 
     await _tapText(tester, 'Open');
     expect(find.text('topic new'), findsOneWidget);
+  });
+
+  testWidgets('Improvements tab opens an improvement and Back returns to it', (
+    tester,
+  ) async {
+    final (:router, factRepo: _, policyRepo: _) = await _pump(
+      tester,
+      improvements: [_improvement()],
+    );
+
+    await _tapText(tester, 'Improvements');
+    await _tapText(tester, 'Remember Thursday releases');
+
+    expect(_at(router), memoryImprovementRoute(_ws, 'imp-1'));
+    expect(find.byType(ImprovementPage), findsOneWidget);
+
+    await _tapText(tester, 'All improvements');
+    expect(_at(router), memoryRoute(_ws));
+    expect(find.text('Remember Thursday releases'), findsOneWidget);
+  });
+
+  testWidgets('deep-linking to memoryImprovementsRoute selects Improvements tab', (
+    tester,
+  ) async {
+    final (:router, factRepo: _, policyRepo: _) = await _pump(
+      tester,
+      improvements: [_improvement()],
+      location: memoryImprovementsRoute(_ws),
+    );
+
+    expect(_at(router), memoryImprovementsRoute(_ws));
+    expect(find.text('Remember Thursday releases'), findsOneWidget);
+  });
+
+  testWidgets('deep-linking to memoryImprovementRoute opens page and Back lands on Improvements tab', (
+    tester,
+  ) async {
+    final (:router, factRepo: _, policyRepo: _) = await _pump(
+      tester,
+      improvements: [_improvement()],
+      location: memoryImprovementRoute(_ws, 'imp-1'),
+    );
+
+    expect(find.byType(ImprovementPage), findsOneWidget);
+
+    await _tapText(tester, 'All improvements');
+    expect(_at(router), memoryImprovementsRoute(_ws));
+    expect(find.text('Remember Thursday releases'), findsOneWidget);
+  });
+
+  testWidgets('accepted improvements link from their target fact and policy', (
+    tester,
+  ) async {
+    final (:router, factRepo: _, policyRepo: _) = await _pump(
+      tester,
+      seed: [_fact('a')],
+      policies: [_policy()],
+      improvements: [
+        _improvement(
+          id: 'imp-fact',
+          kind: ImprovementKind.memoryFact,
+          status: ImprovementStatus.accepted,
+          appliedRef: 'a',
+          change: 'Fact source improvement',
+        ),
+        _improvement(
+          id: 'imp-policy',
+          kind: ImprovementKind.policy,
+          status: ImprovementStatus.accepted,
+          appliedRef: 'p1',
+          change: 'Policy source improvement',
+        ),
+      ],
+    );
+
+    await _tapText(tester, 'topic a');
+    expect(find.text('Fact source improvement'), findsOneWidget);
+    await _tapText(tester, 'Fact source improvement');
+    expect(_at(router), memoryImprovementRoute(_ws, 'imp-fact'));
+
+    await _tapText(tester, 'All improvements');
+    expect(_at(router), memoryFactRoute(_ws, 'a'));
+    await _tapText(tester, 'Back');
+    expect(_at(router), memoryRoute(_ws));
+    await _tapText(tester, 'Policies');
+    await _tapText(tester, 'Always write the spec first.');
+    expect(find.text('Policy source improvement'), findsOneWidget);
+    await _tapText(tester, 'Policy source improvement');
+    expect(_at(router), memoryImprovementRoute(_ws, 'imp-policy'));
   });
 }

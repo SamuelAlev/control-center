@@ -889,4 +889,124 @@ void main() {
       );
     });
   });
+
+  group('mention neutralizer & review comments wire', () {
+    test('neutralizes @mentions and entities outside code and URLs', () {
+      expect(
+        neutralizeConnectMentions('cc @alice, @org/security and &#64;bob'),
+        'cc @$connectMentionBreak'
+        'alice, @$connectMentionBreak'
+        'org/security and @$connectMentionBreak'
+        'bob',
+      );
+      const code =
+          'Look at `@alice` and https://example.com/@bob\n'
+          '```dart\n// @carol\n```';
+      expect(neutralizeConnectMentions(code), code);
+      final once = neutralizeConnectMentions('hi @alice');
+      expect(neutralizeConnectMentions(once), once);
+      expect(
+        attributeConnectBotComment('octo', 'Fix @alice'),
+        '**Control Center** (for @octo): Fix @$connectMentionBreak'
+        'alice',
+      );
+    });
+
+    test('GitHubReviewCommentsRequest round-trips and validates strictly', () {
+      const req = GitHubReviewCommentsRequest(
+        seal: 'seal-1',
+        workspaceId: 'ws1',
+        repoId: 9001,
+        repoOwner: 'acme',
+        repoName: 'api',
+        prNumber: 42,
+        commitSha: 'deadbeef1234',
+        comments: [
+          GitHubReviewCommentInput(
+            path: 'lib/a.dart',
+            line: 15,
+            startLine: 12,
+            startSide: 'RIGHT',
+            body: 'Guard null value.',
+          ),
+        ],
+      );
+      final parsed = GitHubReviewCommentsRequest.fromJson(req.toJson());
+      expect(parsed.prNumber, 42);
+      expect(parsed.comments.single.startLine, 12);
+
+      final base = req.toJson();
+      expect(
+        () => GitHubReviewCommentsRequest.fromJson({...base, 'comments': []}),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubReviewCommentsRequest.fromJson({
+          ...base,
+          'comments': List.filled(
+            connectMaxReviewCommentsPerRequest + 1,
+            req.comments.single.toJson(),
+          ),
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubReviewCommentsRequest.fromJson({
+          ...base,
+          'commit_sha': 'not-a-sha',
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubReviewCommentInput.fromJson({
+          'path': '../secrets.txt',
+          'line': 10,
+          'side': 'RIGHT',
+          'body': 'x',
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubReviewCommentInput.fromJson({
+          'path': 'lib/a.dart',
+          'line': 10,
+          'start_line': 10,
+          'side': 'RIGHT',
+          'body': 'x',
+        }),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubReviewCommentInput.fromJson({
+          'path': 'lib/a.dart',
+          'line': 10,
+          'side': 'UP',
+          'body': 'x',
+        }),
+        throwsFormatException,
+      );
+    });
+
+    test('GitHubReviewCommentsResponse round-trips', () {
+      const resp = GitHubReviewCommentsResponse(
+        results: [
+          GitHubReviewCommentOutcome(
+            index: 0,
+            status: GitHubReviewCommentStatus.posted,
+            commentId: 123,
+          ),
+          GitHubReviewCommentOutcome(
+            index: 1,
+            status: GitHubReviewCommentStatus.outOfDiff,
+          ),
+        ],
+        updatedSeal: 'seal-2',
+      );
+      final parsed = GitHubReviewCommentsResponse.fromJson(resp.toJson());
+      expect(parsed.updatedSeal, 'seal-2');
+      expect(parsed.results, hasLength(2));
+      expect(parsed.results[0].commentId, 123);
+      expect(parsed.results[1].status, GitHubReviewCommentStatus.outOfDiff);
+    });
+  });
 }

@@ -82,6 +82,9 @@ class _PillViewState extends ConsumerState<_PillView> {
   DateTime? _pausedAt;
   bool _hovering = false;
 
+  /// Keyboard focus on an action keeps the actions shown, as hover does.
+  bool _focusInActions = false;
+
   @override
   void initState() {
     super.initState();
@@ -193,38 +196,44 @@ class _PillViewState extends ConsumerState<_PillView> {
                           ),
                         ),
                         IgnorePointer(
-                          ignoring: !_hovering,
+                          ignoring: !_hovering && !_focusInActions,
                           child: AnimatedOpacity(
-                            opacity: _hovering ? 1.0 : 0.0,
+                            opacity: _hovering || _focusInActions ? 1.0 : 0.0,
                             duration: const Duration(milliseconds: 150),
                             curve: Curves.easeOut,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(width: 8),
-                                _ActionButton(
-                                  label: _paused ? 'Resume' : 'Pause',
-                                  icon: _paused
-                                      ? AppIcons.play
-                                      : AppIcons.pause,
-                                  onTap: _togglePause,
-                                ),
-                                const SizedBox(width: 6),
-                                _ActionButton(
-                                  label: 'Complete',
-                                  icon: AppIcons.circleCheckBig,
-                                  primary: true,
-                                  onTap: _complete,
-                                ),
-                                const SizedBox(width: 6),
-                                IgnorePointer(
-                                  child: Icon(
-                                    AppIcons.gripVertical,
-                                    size: 14,
-                                    color: _t.idle,
+                            child: Focus(
+                              canRequestFocus: false,
+                              skipTraversal: true,
+                              onFocusChange: (focused) =>
+                                  setState(() => _focusInActions = focused),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(width: 8),
+                                  _ActionButton(
+                                    label: _paused ? 'Resume' : 'Pause',
+                                    icon: _paused
+                                        ? AppIcons.play
+                                        : AppIcons.pause,
+                                    onTap: _togglePause,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  _ActionButton(
+                                    label: 'Complete',
+                                    icon: AppIcons.circleCheckBig,
+                                    primary: true,
+                                    onTap: _complete,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IgnorePointer(
+                                    child: Icon(
+                                      AppIcons.gripVertical,
+                                      size: 14,
+                                      color: _t.idle,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -356,7 +365,7 @@ class _PresenceDotState extends State<_PresenceDot>
 /// A quiet utility button (`button-line` vocabulary): hairline border + muted
 /// content at rest, warming on hover — the primary action (`Complete`) warms to
 /// accent, secondary actions to ink. 2px corners, no shadow.
-class _ActionButton extends StatefulWidget {
+class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
     required this.icon,
@@ -370,57 +379,43 @@ class _ActionButton extends StatefulWidget {
   final bool primary;
 
   @override
-  State<_ActionButton> createState() => _ActionButtonState();
-}
-
-class _ActionButtonState extends State<_ActionButton> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
-    final accent = widget.primary ? _t.accent : _t.fg;
-    final content = _hover ? accent : _t.muted;
-    final border = _hover ? accent : _t.lineStrong;
-    final fill = _hover ? _t.hoverStrong : _t.hover;
-
-    return Semantics(
-      button: true,
-      label: widget.label,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            height: 26,
-            padding: const EdgeInsets.symmetric(horizontal: 9),
-            decoration: BoxDecoration(
-              color: fill,
-              borderRadius: AppRadii.brSm,
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(widget.icon, size: 12, color: content),
-                const SizedBox(width: 5),
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: content,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+    final accent = primary ? _t.accent : _t.fg;
+    return CcTappable(
+      onPressed: onTap,
+      borderRadius: AppRadii.brSm,
+      // The pill window has no theme to read the ring colour from.
+      focusRingColor: _t.focusRing,
+      builder: (context, states) {
+        final hover = states.contains(WidgetState.hovered);
+        final content = hover ? accent : _t.muted;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          height: 26,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: BoxDecoration(
+            color: hover ? _t.hoverStrong : _t.hover,
+            borderRadius: AppRadii.brSm,
+            border: Border.all(color: hover ? accent : _t.lineStrong),
           ),
-        ),
-      ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: content),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: content,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -201,8 +201,8 @@ class AppTheme {
   /// roles all render in the proportional UI family, and the ambient
   /// `DefaultTextStyle` MaterialApp derives from `bodyMedium` would push
   /// whatever they carry into every raw `TextStyle` in the app. Tabular
-  /// figures ([CcTypography.numeralFeatures]) ride the monospace family
-  /// instead — `CcFonts.code` applies them.
+  /// figures ([CcTypography.numeralFeatures]) are opted into per call site
+  /// instead — `CcFonts.numeric` (UI font) and `CcFonts.code` apply them.
   /// The prior approximate token-to-Material-theme conversion flattened
   /// every entry to `height: 1`, which strips leading from
   /// `Theme.of(context).textTheme.*` and hurts legibility for any multi-line

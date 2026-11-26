@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_copy_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -39,21 +40,25 @@ class McpServerSignInCodeField extends StatelessWidget {
     // RTL carve-out: the code is a machine string read left to right.
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: CcTextField(
-        controller: controller,
-        autofocus: true,
-        // An example code, not copy: codes are the same in every locale.
-        hintText: 'K7Q2-9WXM',
-        maxLength: 9,
-        inputFormatters: [_codeChars, _UpperCase()],
-        textInputAction: TextInputAction.done,
-        enabled: enabled,
-        errorText: errorText,
-        onSubmitted: (_) => onSubmit(),
-        textStyle: CcFonts.code(
-          textStyle: CcTypography.title.copyWith(
-            letterSpacing: 3,
-            color: t.textPrimary,
+      // Asked for outright: after "Start again" the pressed button stays in
+      // its slot (as Finish) and keeps focus, which an autofocus would yield to.
+      child: FocusOnMount(
+        builder: (context, focusNode) => CcTextField(
+          controller: controller,
+          focusNode: focusNode,
+          // An example code, not copy: codes are the same in every locale.
+          hintText: 'K7Q2-9WXM',
+          maxLength: 9,
+          inputFormatters: [_codeChars, _UpperCase()],
+          textInputAction: TextInputAction.done,
+          enabled: enabled,
+          errorText: errorText,
+          onSubmitted: (_) => onSubmit(),
+          textStyle: CcFonts.code(
+            textStyle: CcTypography.title.copyWith(
+              letterSpacing: 3,
+              color: t.textPrimary,
+            ),
           ),
         ),
       ),

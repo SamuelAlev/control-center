@@ -61,9 +61,11 @@ class _LogLevelOption extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: GestureDetector(
-        onTap: onSelect,
-        child: Container(
+      child: CcTappable(
+        onPressed: onSelect,
+        semanticChecked: selected,
+        semanticInMutuallyExclusiveGroup: true,
+        builder: (context, _) => Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: bg,

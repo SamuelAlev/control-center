@@ -301,9 +301,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get joinMeeting => '加入会议';
 
   @override
-  String get join => '加入';
-
-  @override
   String attendeesCount(int count) {
     return '参会者（$count）';
   }
@@ -5663,9 +5660,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get joinMeeting => '加入會議';
-
-  @override
-  String get join => '加入';
 
   @override
   String attendeesCount(int count) {

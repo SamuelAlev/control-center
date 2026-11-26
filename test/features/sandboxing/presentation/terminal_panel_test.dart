@@ -1214,6 +1214,77 @@ void main() {
         debugDefaultTargetPlatformOverride = null;
       }
     });
+
+    testWidgets('a click on a control outside the shell leaves the keyboard '
+        'in it', (tester) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      closePanelAfterTest(tester, client);
+      var pressed = 0;
+      await tester.pumpWidget(
+        _terminalWrap(
+          Column(
+            children: [
+              CcTappable(
+                onPressed: () => pressed++,
+                builder: (_, _) => const SizedBox(width: 40, height: 20),
+              ),
+              const Expanded(child: TerminalPanel(session: session)),
+            ],
+          ),
+          rpcClient: client,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final shell = tester
+          .widget<TerminalView>(find.byType(TerminalView))
+          .focusNode!;
+      shell.requestFocus();
+      await tester.pump();
+
+      await tester.tap(find.byType(CcTappable).first);
+      await tester.pump();
+      expect(pressed, 1);
+      expect(shell.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('a shell opened from a button that keeps focus takes the '
+        'keyboard', (tester) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      closePanelAfterTest(tester, client);
+      final open = ValueNotifier(false);
+      addTearDown(open.dispose);
+      await tester.pumpWidget(
+        _terminalWrap(
+          ValueListenableBuilder<bool>(
+            valueListenable: open,
+            builder: (context, shown, _) => Column(
+              children: [
+                CcTappable(
+                  onPressed: () => open.value = true,
+                  builder: (_, _) => const SizedBox(width: 40, height: 20),
+                ),
+                if (shown)
+                  const Expanded(child: TerminalPanel(session: session)),
+              ],
+            ),
+          ),
+          rpcClient: client,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CcTappable).first);
+      await tester.pumpAndSettle();
+
+      final shell = tester
+          .widget<TerminalView>(find.byType(TerminalView))
+          .focusNode!;
+      expect(shell.hasPrimaryFocus, isTrue);
+    });
   });
 
   group('CcTerminalStyle', () {

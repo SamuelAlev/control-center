@@ -165,9 +165,9 @@ void main() {
     ) async {
       await _pump(tester, width: 1600);
 
-      final speakers = tester.getTopLeft(find.text('SPEAKERS'));
-      final notes = tester.getTopLeft(find.text('NOTES'));
-      final transcript = tester.getTopLeft(find.text('TRANSCRIPT'));
+      final speakers = tester.getTopLeft(find.text('Speakers'));
+      final notes = tester.getTopLeft(find.text('Enhanced'));
+      final transcript = tester.getTopLeft(find.text('Transcript'));
       expect(speakers.dx, greaterThan(transcript.dx));
       expect(transcript.dx, greaterThan(notes.dx));
       // The renamed diarized speaker shows by name; the local mic as "You".
@@ -186,9 +186,9 @@ void main() {
     ) async {
       await _pump(tester, width: 1100);
 
-      final speakers = tester.getTopLeft(find.text('SPEAKERS'));
-      final decisions = tester.getTopLeft(find.text('DECISIONS'));
-      final notes = tester.getTopLeft(find.text('NOTES'));
+      final speakers = tester.getTopLeft(find.text('Speakers'));
+      final decisions = tester.getTopLeft(find.text('Decisions'));
+      final notes = tester.getTopLeft(find.text('Enhanced'));
       expect(speakers.dy, greaterThan(notes.dy));
       // Side by side: same row, decisions to the end.
       expect(decisions.dy, speakers.dy);
@@ -199,8 +199,8 @@ void main() {
     testWidgets('narrow windows stack every section', (tester) async {
       await _pump(tester, width: 600);
 
-      final speakers = tester.getTopLeft(find.text('SPEAKERS'));
-      final decisions = tester.getTopLeft(find.text('DECISIONS'));
+      final speakers = tester.getTopLeft(find.text('Speakers'));
+      final decisions = tester.getTopLeft(find.text('Decisions'));
       expect(decisions.dy, greaterThan(speakers.dy));
       expect(tester.takeException(), isNull);
     });
@@ -242,7 +242,7 @@ void main() {
 
         expect(find.text('Nothing was transcribed.'), findsOneWidget);
         expect(find.text('Generate notes'), findsNothing);
-        expect(find.text('TRANSCRIPT'), findsNothing);
+        expect(find.text('Transcript'), findsNothing);
         expect(find.text('View full transcript'), findsNothing);
         await tester.tap(find.text('Write your own'));
         expect(switchedTo, MeetingNotesMode.yours);
@@ -259,7 +259,7 @@ void main() {
         segments: const [],
       );
 
-      expect(find.text('TRANSCRIPT'), findsOneWidget);
+      expect(find.text('Transcript'), findsOneWidget);
       expect(find.text('No transcript yet.'), findsOneWidget);
       expect(find.text('View full transcript'), findsNothing);
     });

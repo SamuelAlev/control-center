@@ -22,6 +22,7 @@ import 'package:control_center/core/providers/desktop_shell_provider.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/calendar/presentation/providers/meeting_alert_actions.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -108,6 +109,16 @@ final desktopNotificationServiceProvider = Provider<NotificationPort>((ref) {
         final l10n = notificationLocalizations(ref);
         return (approve: l10n.approve, deny: l10n.deny);
       },
+      onMeetingAction: (meeting, action) =>
+          unawaited(actOnMeetingFromNotification(ref, meeting, action)),
+      meetingLabels: () {
+        final l10n = notificationLocalizations(ref);
+        return (
+          join: l10n.calendarJoinMeet,
+          joinAndRecord: l10n.calendarJoinAndRecord,
+          record: l10n.meetingsRecordMeeting,
+        );
+      },
     ),
     isRouteActive: (route) => isRouteActive(router, route),
     // Only a session with "Block notifications" on silences anything.
@@ -152,6 +163,40 @@ AppLocalizations notificationLocalizations(Ref ref) =>
         ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
       ),
     );
+
+/// Acts on [meeting] from an OS notification's Join, Join and record or Record
+/// button, the same actions the in-app banner offers.
+///
+/// Joining only opens the browser. A recording that starts shows its live
+/// page without pulling the window over the call; one that does not brings
+/// the window back on the event, where the reason shows and it can be retried.
+Future<void> actOnMeetingFromNotification(
+  Ref ref,
+  NotificationMeeting meeting,
+  MeetingNotificationAction action,
+) async {
+  final actions = ref.read(meetingAlertActionsProvider);
+  try {
+    if (action == MeetingNotificationAction.join) {
+      if (!actions.join(meeting)) {
+        AppLog.w('notifications', 'Could not open the meeting link');
+      }
+      return;
+    }
+    final result = await actions.joinAndRecord(meeting);
+    if (!result.started) {
+      AppLog.w(
+        'notifications',
+        'Recording from a meeting notification did not start: '
+            '${result.error ?? 'event unavailable'}',
+      );
+      ref.read(desktopShellProvider).revealMainWindow();
+    }
+    ref.read(routerProvider).go(result.route);
+  } on Object catch (e) {
+    AppLog.e('notifications', 'Meeting notification action failed: $e');
+  }
+}
 
 /// Answers approval [id] from an OS notification's Approve or Deny button.
 ///

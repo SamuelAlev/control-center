@@ -107,7 +107,7 @@ void main() {
     expect(selected, 2);
   });
 
-  testWidgets('arrow up/down mirror left/right', (tester) async {
+  testWidgets('arrow up/down are left to directional focus', (tester) async {
     int selected = 0;
     await tester.pumpWidget(
       ccTestApp(
@@ -125,38 +125,148 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
-    expect(selected, 1);
-
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(selected, 0);
   });
 
-  testWidgets('changing the tab count rebuilds the focus nodes', (
+  testWidgets('arrow keys follow the reading direction under RTL', (
     tester,
   ) async {
-    var tabCount = 2;
-    late void Function(void Function()) setStateOf;
+    int selected = 1;
     await tester.pumpWidget(
       ccTestApp(
         StatefulBuilder(
-          builder: (context, setState) {
-            setStateOf = setState;
-            final list = [
-              for (var i = 0; i < tabCount; i++)
-                CcTab(String.fromCharCode(65 + i)),
-            ];
-            return CcTabs(tabs: list, selectedIndex: 0, onChanged: (_) {});
-          },
+          builder: (context, setState) => CcTabs(
+            tabs: tabs,
+            selectedIndex: selected,
+            onChanged: (i) => setState(() => selected = i),
+          ),
+        ),
+        textDirection: TextDirection.rtl,
+      ),
+    );
+    await tester.tap(find.text('Activity'));
+    await tester.pumpAndSettle();
+
+    // In RTL the next tab sits to the left.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(selected, 2);
+    expect(_hasFocus(tester, 'Settings'), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(selected, 1);
+  });
+
+  testWidgets('the strip is one Tab stop and Tab leaves it', (tester) async {
+    final before = FocusNode(debugLabel: 'before');
+    final after = FocusNode(debugLabel: 'after');
+    addTearDown(before.dispose);
+    addTearDown(after.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Focus(
+              focusNode: before,
+              child: const SizedBox(width: 20, height: 20),
+            ),
+            CcTabs(tabs: tabs, selectedIndex: 1, onChanged: (_) {}),
+            Focus(
+              focusNode: after,
+              child: const SizedBox(width: 20, height: 20),
+            ),
+          ],
         ),
       ),
     );
-    expect(find.text('C'), findsNothing);
+    before.requestFocus();
+    await tester.pump();
 
-    // Grow from two to three tabs — didUpdateWidget rebuilds the focus nodes.
-    setStateOf(() => tabCount = 3);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_hasFocus(tester, 'Activity'), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(after.hasPrimaryFocus, isTrue);
+
+    await _shiftTab(tester);
+    expect(_hasFocus(tester, 'Activity'), isTrue);
+
+    await _shiftTab(tester);
+    expect(before.hasPrimaryFocus, isTrue);
+  });
+
+  testWidgets('the selected tab is announced as selected', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(CcTabs(tabs: tabs, selectedIndex: 1, onChanged: (_) {})),
+    );
+    expect(
+      tester.getSemantics(find.text('Activity')),
+      matchesSemantics(
+        label: 'Activity',
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.text('Overview')),
+      matchesSemantics(
+        label: 'Overview',
+        isButton: true,
+        hasSelectedState: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('focus stays on its tab when the tab count changes', (
+    tester,
+  ) async {
+    final count = ValueNotifier(3);
+    addTearDown(count.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<int>(
+          valueListenable: count,
+          builder: (context, n, _) => CcTabs(
+            tabs: [for (var i = 0; i < n; i++) CcTab('Tab $i')],
+            selectedIndex: 1,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Tab 1'));
+    await tester.pump();
+    expect(_hasFocus(tester, 'Tab 1'), isTrue);
+
+    count.value = 4;
     await tester.pumpAndSettle();
-    expect(find.text('C'), findsOneWidget);
+    expect(_hasFocus(tester, 'Tab 1'), isTrue);
+
+    // Removing the focused tab hands focus to the tab now at the end.
+    await tester.tap(find.text('Tab 3'));
+    await tester.pump();
+    count.value = 3;
+    await tester.pumpAndSettle();
+    expect(_hasFocus(tester, 'Tab 2'), isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -171,4 +281,15 @@ void main() {
     expect(a == otherLabel, isFalse);
     expect(a == otherIcon, isFalse);
   });
+}
+
+/// Whether the tab labelled [label] holds primary focus.
+bool _hasFocus(WidgetTester tester, String label) =>
+    Focus.of(tester.element(find.text(label))).hasPrimaryFocus;
+
+Future<void> _shiftTab(WidgetTester tester) async {
+  await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+  await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+  await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+  await tester.pump();
 }

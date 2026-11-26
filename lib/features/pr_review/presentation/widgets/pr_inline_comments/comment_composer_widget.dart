@@ -9,6 +9,7 @@ import 'package:control_center/features/pr_review/providers/pr_comment_draft_pro
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -288,37 +289,43 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
           }
           return KeyEventResult.ignored;
         },
-        child: SelectionContainer.disabled(
-          child: PrCommentField(
-            controller: _ctrl,
-            focusNode: _focus,
-            hintText:
-                widget.placeholder ??
-                commentComposerHint(AppLocalizations.of(context), mode),
-            owner: repo?.remoteOwner ?? '',
-            repo: repo?.remoteName ?? '',
-            autofocus: widget.autofocus,
-            minLines: 2,
-            maxLines: 8,
-            onSubmitted: (_) => _submitCurrent(),
-            toolbarLeading: [
-              if (widget.onSuggest != null)
-                CcButton(
-                  onPressed: _suggest,
-                  variant: CcButtonVariant.ghost,
-                  size: CcButtonSize.sm,
-                  child: Text(AppLocalizations.of(context).suggestion),
+        // The diff row or button that opened this keeps focus, so the field
+        // asks for focus itself, and closing hands it back.
+        child: FocusOnMount(
+          autofocus: widget.autofocus,
+          focusNode: _focus,
+          builder: (_, _) => SelectionContainer.disabled(
+            child: PrCommentField(
+              controller: _ctrl,
+              focusNode: _focus,
+              hintText:
+                  widget.placeholder ??
+                  commentComposerHint(AppLocalizations.of(context), mode),
+              owner: repo?.remoteOwner ?? '',
+              repo: repo?.remoteName ?? '',
+              autofocus: widget.autofocus,
+              minLines: 2,
+              maxLines: 8,
+              onSubmitted: (_) => _submitCurrent(),
+              toolbarLeading: [
+                if (widget.onSuggest != null)
+                  CcButton(
+                    onPressed: _suggest,
+                    variant: CcButtonVariant.ghost,
+                    size: CcButtonSize.sm,
+                    child: Text(AppLocalizations.of(context).suggestion),
+                  ),
+              ],
+              footer: (context) => Padding(
+                padding: const EdgeInsetsDirectional.only(top: 8, end: 6),
+                child: CommentSendRow(
+                  modes: modes,
+                  mode: mode,
+                  reviewInProgress: widget.reviewInProgress,
+                  sending: _sending,
+                  onSend: _send,
+                  onCancel: widget.onCancel,
                 ),
-            ],
-            footer: (context) => Padding(
-              padding: const EdgeInsetsDirectional.only(top: 8, end: 6),
-              child: CommentSendRow(
-                modes: modes,
-                mode: mode,
-                reviewInProgress: widget.reviewInProgress,
-                sending: _sending,
-                onSend: _send,
-                onCancel: widget.onCancel,
               ),
             ),
           ),

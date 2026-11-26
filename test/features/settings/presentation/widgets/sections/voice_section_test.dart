@@ -151,7 +151,7 @@ void main() {
         );
         await tester.pump();
         await tester.pump();
-        expect(find.text('VOICE TRANSCRIPTION'), findsOneWidget);
+        expect(find.text('Voice transcription'), findsOneWidget);
       });
 
       testWidgets('unknown status shows checking subtitle and Install button', (

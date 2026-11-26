@@ -306,7 +306,7 @@ class _Header extends StatelessWidget {
                 '${formatContextTokenCount(breakdown.totalTokens)} / '
                 '${formatContextTokenCount(breakdown.windowTokens)} '
                 '${l10n.contextUsageTokens}',
-                style: CcFonts.code(
+                style: CcFonts.numeric(
                   textStyle: CcTypography.caption.copyWith(
                     color: tokens.textTertiary,
                   ),
@@ -444,74 +444,71 @@ class _RailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.only(
-            // Aligned under the header labels: sm + twistie (16) + gap (xs).
-            left: indent ? 28 : AppSpacing.sm,
-            right: AppSpacing.sm,
-            top: AppSpacing.xs,
-            bottom: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? t.bgTertiary : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            children: [
-              if (collapsed case final collapsed?) ...[
-                CcTappable(
-                  onPressed: onToggleCollapse,
-                  semanticLabel: collapsed ? l10n.expand : l10n.collapse,
-                  builder: (context, states) => Padding(
-                    padding: const EdgeInsets.all(2),
-                    child: Icon(
-                      collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
-                      size: 12,
-                      color: states.contains(WidgetState.hovered)
-                          ? t.textSecondary
-                          : t.textTertiary,
-                    ),
+    return CcTappable(
+      onPressed: onTap,
+      semanticSelected: selected,
+      borderRadius: BorderRadius.circular(4),
+      builder: (context, _) => Container(
+        padding: EdgeInsets.only(
+          // Aligned under the header labels: sm + twistie (16) + gap (xs).
+          left: indent ? 28 : AppSpacing.sm,
+          right: AppSpacing.sm,
+          top: AppSpacing.xs,
+          bottom: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? t.bgTertiary : null,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          children: [
+            if (collapsed case final collapsed?) ...[
+              CcTappable(
+                onPressed: onToggleCollapse,
+                semanticLabel: collapsed ? l10n.expand : l10n.collapse,
+                semanticExpanded: !collapsed,
+                builder: (context, states) => Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
+                    size: 12,
+                    color: states.contains(WidgetState.hovered)
+                        ? t.textSecondary
+                        : t.textTertiary,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              if (color != null) ...[
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-              Expanded(
-                child: Text(
-                  subtitle == null ? label : '$label · $subtitle',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CcTypography.bodySm.copyWith(
-                    color: selected ? t.textPrimary : t.textSecondary,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            if (color != null) ...[
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                formatContextTokenCount(tokens),
-                style: CcFonts.code(
-                  textStyle: CcTypography.caption.copyWith(
-                    color: t.textTertiary,
-                  ),
+            ],
+            Expanded(
+              child: Text(
+                subtitle == null ? label : '$label · $subtitle',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: CcTypography.bodySm.copyWith(
+                  color: selected ? t.textPrimary : t.textSecondary,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              formatContextTokenCount(tokens),
+              style: CcFonts.numeric(
+                textStyle: CcTypography.caption.copyWith(color: t.textTertiary),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/enriched_pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -8,6 +9,7 @@ import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_re
     show NeedsMyReviewCount;
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_log_entry.dart';
+import 'package:control_center/core/notifications/live_notification_lane.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart'
@@ -465,12 +467,22 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
     ref.watch(reposForWorkspaceProvider(workspaceId));
     final key = '$workspaceId|$userId';
     final lastGood = ref.read(lastGoodMergedPrsProvider)[key];
+    var disposed = false;
+    final notifSub = ref.read(liveNotificationLaneProvider).stream.listen((n) {
+      if (!disposed &&
+          n.category == NotificationCategory.prMerged &&
+          (n.workspaceId == null || n.workspaceId == workspaceId)) {
+        unawaited(refreshNow());
+      }
+    });
+    ref.onDispose(() {
+      disposed = true;
+      unawaited(notifSub.cancel());
+    });
     final fresh = _fetch(workspaceId, key);
     if (lastGood == null) {
       return fresh;
     }
-    var disposed = false;
-    ref.onDispose(() => disposed = true);
     unawaited(
       fresh.then(
         (groups) {
@@ -523,7 +535,13 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
       return;
     }
     try {
-      state = AsyncData(await _fetch(workspaceId, '$workspaceId|$userId'));
+      final groups = await _fetch(workspaceId, '$workspaceId|$userId');
+      if (!ref.mounted ||
+          ref.read(activeWorkspaceIdProvider) != workspaceId ||
+          ref.read(currentUserIdProvider) != userId) {
+        return;
+      }
+      state = AsyncData(groups);
     } catch (_) {
       // Keep the last good page — the surface shows its own error affordance.
     }

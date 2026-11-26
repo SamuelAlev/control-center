@@ -216,14 +216,14 @@ void main() {
       final popup = tester.getRect(find.byType(MentionPopup));
       await _press(tester, LogicalKeyboardKey.arrowUp);
       expect(
-        tester.getRect(find.text('SECTION A')).bottom,
+        tester.getRect(find.text('Section a')).bottom,
         lessThanOrEqualTo(popup.top),
       );
 
       await _press(tester, LogicalKeyboardKey.arrowDown);
       _expectRowFullyVisible(tester, labels.first);
       expect(
-        tester.getRect(find.text('SECTION A')).top,
+        tester.getRect(find.text('Section a')).top,
         greaterThanOrEqualTo(popup.top),
       );
     });

@@ -54,35 +54,28 @@ class _CompactionDividerState extends State<CompactionDivider> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            label: label,
-            button: true,
-            expanded: _expanded,
-            child: GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Row(
-                  children: [
-                    Expanded(child: CcDivider(color: tokens.borderSecondary)),
-                    const SizedBox(width: 12),
-                    Icon(
-                      _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
-                      size: 12,
-                      color: tokens.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: CcDivider(color: tokens.borderSecondary)),
-                  ],
+          CcTappable(
+            onPressed: () => setState(() => _expanded = !_expanded),
+            semanticExpanded: _expanded,
+            builder: (context, _) => Row(
+              children: [
+                Expanded(child: CcDivider(color: tokens.borderSecondary)),
+                const SizedBox(width: 12),
+                Icon(
+                  _expanded ? AppIcons.chevronDown : AppIcons.chevronRight,
+                  size: 12,
+                  color: tokens.textTertiary,
                 ),
-              ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: CcTypography.caption.copyWith(
+                    color: tokens.textTertiary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: CcDivider(color: tokens.borderSecondary)),
+              ],
             ),
           ),
           CcCollapsible(

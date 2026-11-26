@@ -142,10 +142,10 @@ class CcGoalCard extends StatelessWidget {
           if (showTokens) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
-              (tokensLabel ?? 'Tokens').toUpperCase(),
+              tokensLabel ?? 'Tokens',
               style: CcTypography.caption.copyWith(
                 color: t.textQuaternary,
-                letterSpacing: 0.6,
+                letterSpacing: 0.2,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),

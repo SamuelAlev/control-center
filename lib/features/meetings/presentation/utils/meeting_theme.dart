@@ -1,5 +1,4 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:flutter/widgets.dart';
 
 /// Semantic colors for the meetings views, resolved straight from the
@@ -41,15 +40,15 @@ extension MeetingTheme on BuildContext {
   Color get mChipFill => ds.hoverStrong;
 }
 
-/// Monospace (Fira Code) style for the eyebrows, timestamps, counts and pill labels
-/// that read as monospaced in the design.
-TextStyle meetingMono(
+/// Style for the timestamps, counts and pill labels of the meeting surfaces:
+/// small muted text in the UI font, like metadata everywhere else in the app.
+TextStyle meetingMeta(
   BuildContext context, {
   double fontSize = 11,
   Color? color,
   FontWeight? fontWeight,
   double letterSpacing = 0,
-}) => AppFonts.codeStyle(
+}) => TextStyle(
   fontSize: fontSize,
   color: color ?? context.ds.muted,
   fontWeight: fontWeight,

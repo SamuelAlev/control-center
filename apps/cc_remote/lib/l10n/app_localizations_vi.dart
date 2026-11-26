@@ -312,9 +312,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get joinMeeting => 'Tham gia họp';
 
   @override
-  String get join => 'Tham gia';
-
-  @override
   String attendeesCount(int count) {
     return 'Người tham dự ($count)';
   }

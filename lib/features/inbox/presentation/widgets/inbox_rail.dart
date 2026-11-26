@@ -34,20 +34,24 @@ class InboxRail extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     const sections = PrInboxSection.values;
 
-    return CcFluidHover(
-      itemCount: sections.length,
-      itemBuilder: (context, index) {
-        final section = sections[index];
-        return CountRailItem(
-          label: inboxSectionLabel(l10n, section),
-          count: counts[section] ?? 0,
-          selected: section == selected,
-          onPressed: () => onSelect(section),
-        );
-      },
-      layoutBuilder: (context, items) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: items,
+    // One Tab group: the rail sits beside a list, and without a group of
+    // its own the reading-order sort alternates between the two columns.
+    return FocusTraversalGroup(
+      child: CcFluidHover(
+        itemCount: sections.length,
+        itemBuilder: (context, index) {
+          final section = sections[index];
+          return CountRailItem(
+            label: inboxSectionLabel(l10n, section),
+            count: counts[section] ?? 0,
+            selected: section == selected,
+            onPressed: () => onSelect(section),
+          );
+        },
+        layoutBuilder: (context, items) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: items,
+        ),
       ),
     );
   }

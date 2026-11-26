@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:cc_ui/src/foundation/cc_motion.dart';
+import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Configuration for a single region of a [CcResizable].
@@ -318,6 +320,16 @@ class _CcResizableState extends State<CcResizable> {
     }
   }
 
+  /// The share of the split an extent takes, as assistive tech reads a
+  /// divider's position.
+  String _percent(double extent) {
+    final available = _controller.available;
+    if (available == null || available <= 0) {
+      return '0%';
+    }
+    return '${(extent / available * 100).clamp(0, 100).round()}%';
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
@@ -360,7 +372,10 @@ class _CcResizableState extends State<CcResizable> {
                   bottom: isHorizontal ? 0 : null,
                   width: isHorizontal ? extent : null,
                   height: isHorizontal ? null : extent,
-                  child: Builder(builder: widget.regions[i].builder),
+                  // Tab finishes a pane before it moves on to the next one.
+                  child: FocusTraversalGroup(
+                    child: Builder(builder: widget.regions[i].builder),
+                  ),
                 ),
               );
               offset += extent;
@@ -381,12 +396,19 @@ class _CcResizableState extends State<CcResizable> {
                   bottom: isHorizontal ? 0 : null,
                   width: isHorizontal ? widget.dividerHitSize : null,
                   height: isHorizontal ? null : widget.dividerHitSize,
-                  child: _CcResizableDivider(
+                  child: CcResizableDivider(
                     axis: widget.axis,
                     thickness: widget.dividerThickness,
                     hitSize: widget.dividerHitSize,
                     color: widget.dividerColor ?? t.lineStrong,
                     activeColor: t.fgBrandPrimary,
+                    semanticValue: _percent(extents[i]),
+                    semanticIncreasedValue: _percent(
+                      extents[i] + CcResizableDivider.keyboardStep,
+                    ),
+                    semanticDecreasedValue: _percent(
+                      extents[i] - CcResizableDivider.keyboardStep,
+                    ),
                     // The pointer delta is physical; in a mirrored layout a
                     // leftward drag grows the (start-side) region before the
                     // divider, so the sign flips.
@@ -414,18 +436,47 @@ class _CcResizableState extends State<CcResizable> {
 /// not trigger it) and while being dragged, the hairline animates thicker and
 /// takes [activeColor] to signal it is grabbable. The animation collapses to an
 /// instant change when motion is reduced (see [CcMotion.resolve]).
-class _CcResizableDivider extends StatefulWidget {
-  const _CcResizableDivider({
+///
+/// The divider is also one keyboard stop. The arrow keys along [axis] move it
+/// by [keyboardStep] (Shift: [keyboardLargeStep]) in the arrow's on-screen
+/// direction, and Home / End move it as far as it goes toward the start / end
+/// edge; every move arrives through [onDrag] like a pointer drag. Keyboard
+/// focus shows as the same thickened hairline as hover. Assistive tech sees an
+/// adjustable control named `CcStrings.resize`.
+class CcResizableDivider extends StatefulWidget {
+  /// Creates a [CcResizableDivider].
+  const CcResizableDivider({
+    super.key,
     required this.axis,
     required this.thickness,
     required this.hitSize,
     required this.color,
     required this.activeColor,
     required this.onDrag,
-  });
+    this.onDragStart,
+    this.semanticValue,
+    this.semanticIncreasedValue,
+    this.semanticDecreasedValue,
+  }) : assert(
+         (semanticValue == null) == (semanticIncreasedValue == null) &&
+             (semanticValue == null) == (semanticDecreasedValue == null),
+         'Pass all three semantic values or none',
+       );
 
+  /// How far one arrow key moves the divider, in logical pixels.
+  static const double keyboardStep = 16;
+
+  /// How far Shift plus an arrow key moves the divider.
+  static const double keyboardLargeStep = 64;
+
+  /// Whether the divider separates horizontally ([Axis.horizontal], vertical
+  /// line) or vertically ([Axis.vertical], horizontal line).
   final Axis axis;
+
+  /// Resting thickness of the visible hairline.
   final double thickness;
+
+  /// Size of the invisible pointer hit area centered on the seam.
   final double hitSize;
 
   /// The resting hairline color.
@@ -434,22 +485,104 @@ class _CcResizableDivider extends StatefulWidget {
   /// The hairline color while hovered or dragged.
   final Color activeColor;
 
+  /// Called with each pointer delta along [axis] while dragging.
   final ValueChanged<double> onDrag;
 
+  /// Called once on pointer-down before drag deltas arrive, and before each
+  /// keyboard move.
+  final VoidCallback? onDragStart;
+
+  /// The divider's position as assistive tech reads it (e.g. `40%`).
+  final String? semanticValue;
+
+  /// [semanticValue] after one [keyboardStep] toward the end edge.
+  final String? semanticIncreasedValue;
+
+  /// [semanticValue] after one [keyboardStep] toward the start edge.
+  final String? semanticDecreasedValue;
+
   @override
-  State<_CcResizableDivider> createState() => _CcResizableDividerState();
+  State<CcResizableDivider> createState() => _CcResizableDividerState();
 }
 
-class _CcResizableDividerState extends State<_CcResizableDivider> {
+class _CcResizableDividerState extends State<CcResizableDivider> {
   /// How long the pointer must rest on the divider before it highlights, so a
   /// cursor merely crossing the seam does not make it flash bold.
   static const Duration _hoverIntent = Duration(milliseconds: 250);
 
+  /// A press far longer than any split, which the resize clamps to the
+  /// region's minimum or maximum.
+  static const double _toTheEdge = 1e6;
+
+  final FocusNode _focusNode = FocusNode(debugLabel: 'CcResizableDivider');
   bool _hovered = false;
   bool _dragging = false;
+
+  /// Focused from the keyboard: sampled when focus arrives, like [FocusRing].
+  bool _keyboardFocused = false;
   Timer? _hoverTimer;
 
-  bool get _active => _hovered || _dragging;
+  bool get _active => _hovered || _dragging || _keyboardFocused;
+
+  void _onFocusChange(bool focused) {
+    final next = focused && FocusModality.instance.isKeyboard;
+    if (next != _keyboardFocused && mounted) {
+      setState(() => _keyboardFocused = next);
+    }
+  }
+
+  /// Moves the divider by a physical (on-screen) [delta].
+  void _move(double delta) {
+    widget.onDragStart?.call();
+    widget.onDrag(delta);
+  }
+
+  /// The physical delta that moves the divider [logical] pixels toward the
+  /// end edge: a horizontal split's end is on the left under RTL.
+  double _towardEnd(double logical) {
+    final rtl =
+        widget.axis == Axis.horizontal &&
+        Directionality.of(context) == TextDirection.rtl;
+    return rtl ? -logical : logical;
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isControlPressed ||
+        keyboard.isAltPressed ||
+        keyboard.isMetaPressed) {
+      return KeyEventResult.ignored;
+    }
+    final step = keyboard.isShiftPressed
+        ? CcResizableDivider.keyboardLargeStep
+        : CcResizableDivider.keyboardStep;
+    final key = event.logicalKey;
+    final horizontal = widget.axis == Axis.horizontal;
+    final double? delta;
+    if (horizontal && key == LogicalKeyboardKey.arrowLeft) {
+      delta = -step;
+    } else if (horizontal && key == LogicalKeyboardKey.arrowRight) {
+      delta = step;
+    } else if (!horizontal && key == LogicalKeyboardKey.arrowUp) {
+      delta = -step;
+    } else if (!horizontal && key == LogicalKeyboardKey.arrowDown) {
+      delta = step;
+    } else if (key == LogicalKeyboardKey.home) {
+      delta = _towardEnd(-_toTheEdge);
+    } else if (key == LogicalKeyboardKey.end) {
+      delta = _towardEnd(_toTheEdge);
+    } else {
+      delta = null;
+    }
+    if (delta == null) {
+      return KeyEventResult.ignored;
+    }
+    _move(delta);
+    return KeyEventResult.handled;
+  }
 
   void _onEnter() {
     _hoverTimer?.cancel();
@@ -479,6 +612,7 @@ class _CcResizableDividerState extends State<_CcResizableDivider> {
   @override
   void dispose() {
     _hoverTimer?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -508,13 +642,20 @@ class _CcResizableDividerState extends State<_CcResizableDivider> {
       color: lineColor,
     );
 
-    return MouseRegion(
+    // Touch the tracker so the first key press of a session is seen.
+    // ignore: unnecessary_statements
+    FocusModality.instance;
+    final hasValue = widget.semanticValue != null;
+    final Widget divider = MouseRegion(
       cursor: cursor,
       onEnter: (_) => _onEnter(),
       onExit: (_) => _onExit(),
       child: Listener(
         behavior: HitTestBehavior.opaque,
-        onPointerDown: (_) => _setDragging(true),
+        onPointerDown: (_) {
+          widget.onDragStart?.call();
+          _setDragging(true);
+        },
         onPointerUp: (_) => _setDragging(false),
         onPointerCancel: (_) => _setDragging(false),
         onPointerMove: (event) {
@@ -528,6 +669,27 @@ class _CcResizableDividerState extends State<_CcResizableDivider> {
           height: isHorizontal ? null : widget.hitSize,
           child: Center(child: line),
         ),
+      ),
+    );
+    return Semantics(
+      container: true,
+      // The adjustable trait: assistive tech offers increase / decrease.
+      slider: true,
+      label: context.ccStrings.resize,
+      value: widget.semanticValue,
+      increasedValue: widget.semanticIncreasedValue,
+      decreasedValue: widget.semanticDecreasedValue,
+      onIncrease: hasValue
+          ? () => _move(_towardEnd(CcResizableDivider.keyboardStep))
+          : null,
+      onDecrease: hasValue
+          ? () => _move(_towardEnd(-CcResizableDivider.keyboardStep))
+          : null,
+      child: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _onKey,
+        onFocusChange: _onFocusChange,
+        child: divider,
       ),
     );
   }

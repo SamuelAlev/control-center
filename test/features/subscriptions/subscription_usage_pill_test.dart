@@ -2,11 +2,13 @@ import 'dart:math' as math;
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_chip.dart';
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_pill.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,6 +55,62 @@ void main() {
       ),
     ),
   ];
+
+  testWidgets('the chip is a button that Tab reaches, names every reading '
+      'and Enter opens', (tester) async {
+    final semantics = tester.ensureSemantics();
+    var opened = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: appLocalizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: CcTheme(
+          data: CcThemeData.light(),
+          child: Scaffold(
+            body: Center(
+              child: SubscriptionUsageChip(
+                readings: const [
+                  ProviderUsageReading(
+                    providerId: 'claude',
+                    displayName: 'Claude',
+                    fraction: 0.4,
+                    failed: false,
+                  ),
+                ],
+                onTap: () => opened++,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    final chip = find.descendant(
+      of: find.byType(SubscriptionUsageChip),
+      matching: find.byType(CcTappable),
+    );
+    expect(
+      tester.getSemantics(chip),
+      matchesSemantics(
+        label: 'Subscription usage: Claude 40%',
+        isButton: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        isFocusable: true,
+        isFocused: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(opened, 1);
+    semantics.dispose();
+  });
 
   for (final (label, theme) in themes) {
     group('pill border hover transition ($label)', () {

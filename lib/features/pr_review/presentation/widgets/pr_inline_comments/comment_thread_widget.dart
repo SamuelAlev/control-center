@@ -25,6 +25,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,7 +93,26 @@ class PrInlineThreadBlock extends ConsumerStatefulWidget {
       _PrInlineThreadBlockState();
 }
 
-class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
+class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock>
+    with SingleTickerProviderStateMixin {
+  // Runs alongside the body's own height animation (same tokens, same
+  // snapping rules) to move what the header and the card's edge show.
+  late final AnimationController _open = AnimationController(
+    vsync: this,
+    value: widget.collapsed ? 0 : 1,
+    duration: CcMotion.moderate,
+    reverseDuration: CcMotion.moderateExit,
+  );
+  late final CurvedAnimation _openCurve = CurvedAnimation(
+    parent: _open,
+    curve: CcMotion.standard,
+  );
+  late final CurvedAnimation _bodyFade = CurvedAnimation(
+    parent: _open,
+    curve: const Interval(0.3, 1),
+  );
+  final _authorKey = GlobalKey();
+  double _previewDx = 0;
   late TextEditingController _replyCtrl;
   final _replyFocus = FocusNode();
   bool _replying = false;
@@ -136,10 +156,42 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
       _replying = _replyCtrl.text.isNotEmpty;
       _sending = false;
     }
+    if (oldWidget.collapsed != widget.collapsed) {
+      _runToggle();
+    }
+  }
+
+  void _runToggle() {
+    final target = widget.collapsed ? 0.0 : 1.0;
+    // A keyboard toggle snaps, and so does reduced motion: the body does the
+    // same, and reports the change with its own short fade.
+    if (FocusModality.instance.lastInputWasKeyboard ||
+        CcMotion.reduced(context)) {
+      _open.value = target;
+      return;
+    }
+    // The comment's text starts at the card's left edge, back past the
+    // name, the avatar and the caret; that is where the preview heads as it
+    // leaves.
+    final author = _authorKey.currentContext?.findRenderObject();
+    if (author is RenderBox && author.hasSize) {
+      final shift = author.size.width + 50;
+      _previewDx = Directionality.of(context) == TextDirection.rtl
+          ? shift
+          : -shift;
+    }
+    if (widget.collapsed) {
+      _open.reverse();
+    } else {
+      _open.forward();
+    }
   }
 
   @override
   void dispose() {
+    _bodyFade.dispose();
+    _openCurve.dispose();
+    _open.dispose();
     _replyFocus.dispose();
     super.dispose();
   }
@@ -251,445 +303,543 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
     if (thread.entries.isNotEmpty && visible.isEmpty) {
       return const SizedBox.shrink();
     }
-    if (widget.collapsed) {
-      return _CollapsedThreadRow(
-        thread: thread,
-        focused: widget.focused,
-        embedded: widget.embedded,
-        onExpand: widget.onToggleCollapsed,
-      );
-    }
-    final borderColor = widget.focused ? tokens.accent : tokens.borderSecondary;
-    return Container(
-      margin: widget.embedded
-          ? EdgeInsets.zero
-          : const EdgeInsets.fromLTRB(12, 8, 12, 12),
-      decoration: widget.embedded
-          ? BoxDecoration(color: tokens.bgPrimary)
-          : BoxDecoration(
-              color: tokens.bgPrimary,
-              border: Border.all(color: borderColor),
-              boxShadow: AppShadows.soft,
-            ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final toggle = widget.onToggleCollapsed;
+    final first = visible.isEmpty ? null : visible.first;
+    final firstIsSuggestion =
+        thread.isSuggestion &&
+        first != null &&
+        first.id == thread.entries.first.id;
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < visible.length; i++) ...[
           Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 8, 0),
+            // Every comment's text starts on the card's own left edge, the
+            // one the caret and the reply row sit on.
+            padding: EdgeInsets.fromLTRB(14, i == 0 ? 8 : 10, 14, 12),
+            child: _entryTile(
+              thread,
+              visible,
+              i,
+              suggestionEditable: firstIsSuggestion && i == 0,
+            ),
+          ),
+          if (i != visible.length - 1) const CcDivider(),
+        ],
+        if (thread.isSuggestion && !thread.resolved) ...[
+          const CcDivider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
             child: Row(
               children: [
-                if (widget.onToggleCollapsed != null) ...[
-                  CcIconButton(
-                    onPressed: widget.onToggleCollapsed,
-                    icon: AppIcons.chevronDown,
-                    tooltip: AppLocalizations.of(context).collapseComment,
-                  ),
-                  const SizedBox(width: 2),
-                ],
-                Text(
-                  AppLocalizations.of(
-                    context,
-                  ).threadCommentCount(thread.entries.length),
-                  style: CcTypography.caption.copyWith(
-                    color: tokens.textTertiary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                CcButton(
+                  onPressed: () =>
+                      widget.controller.acceptSuggestion(thread.id),
+                  icon: AppIcons.checkCheck,
+                  child: Text(AppLocalizations.of(context).acceptAndResolve),
                 ),
-                // A multi-line comment names its range, the way the forge
-                // does. The highlight already covers those rows; saying which
-                // ones removes any doubt about what the card is attached to.
-                if (thread.isMultiLine) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    AppLocalizations.of(
-                      context,
-                    ).commentOnLinesRange(thread.line, thread.lineEnd),
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textTertiary,
-                    ),
-                  ),
-                ],
                 const SizedBox(width: 8),
-                if (thread.resolved) ...[
-                  CcBadge(
-                    label: AppLocalizations.of(context).resolved,
-                    variant: CcBadgeVariant.success,
-                    icon: AppIcons.checkCircle2,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                _SyncBadge(
-                  state: thread.syncState,
-                  error: thread.syncError,
-                  onRetry: thread.syncState == PrInlineSyncState.error
-                      ? () => widget.controller.retryPost(thread.id)
-                      : null,
+                CcButton(
+                  onPressed: () => widget.controller.dismissThread(thread.id),
+                  variant: CcButtonVariant.secondary,
+                  icon: AppIcons.archive,
+                  child: Text(AppLocalizations.of(context).dismiss),
                 ),
-                const Spacer(),
-                if (widget.resolveBusy)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CcSpinner(size: 14),
-                    ),
-                  )
-                else if (widget.canResolve)
-                  CcIconButton(
-                    onPressed: () => _setResolved(!thread.resolved),
-                    icon: thread.resolved
-                        ? AppIcons.rotateCcw
-                        : AppIcons.checkCircle2,
-                    tooltip: thread.resolved
-                        ? AppLocalizations.of(context).reopen
-                        : AppLocalizations.of(context).resolve,
-                  ),
               ],
             ),
           ),
-          for (var i = 0; i < visible.length; i++) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-              child: _InlineEntryTile(
-                entry: visible[i],
-                prRef: widget.controller.pr,
-                originalCode: thread.originalCode,
-                filePath: thread.filePath,
-                // A file-level thread has no lines; the actions name the file.
-                originalStartLine: thread.isFileLevel ? null : thread.line,
-                lineEnd: thread.isFileLevel ? null : thread.lineEnd,
-                canResolve: widget.canResolve,
-                resolved: thread.resolved,
-                resolveBusy: widget.resolveBusy,
-                onResolve: () => _setResolved(!thread.resolved),
-                thread: [
-                  for (final entry in visible)
-                    (author: entry.author, body: entry.body),
-                ],
-                onDeleteLocal: visible[i].serverCommentId == null
-                    ? () => widget.controller.dismissThread(thread.id)
-                    : null,
-                editDraft: thread.isUnsent || visible[i].serverCommentId != null
-                    ? ref.read(
-                        prCommentDraftControllerProvider(_editKey(visible[i])),
-                      )
-                    : null,
-                onSaveDraft: _saveEntry(thread, visible[i]),
-                isEditing: _editingEntryId == visible[i].id,
-                onToggleReaction: visible[i].serverCommentId == null
-                    ? null
-                    : (content, {required add}) => toggleReaction(
-                        ref,
-                        ReactionTarget.reviewComment,
-                        commentId: visible[i].serverCommentId!,
-                        pr: widget.controller.pr,
-                        content: content,
-                        add: add,
-                      ),
-                onEditStart:
-                    thread.isSuggestion &&
-                        i == 0 &&
-                        visible[i].id == thread.entries.first.id
-                    ? () => setState(() => _editingEntryId = visible[i].id)
-                    : null,
-                onEditSubmit:
-                    thread.isSuggestion &&
-                        i == 0 &&
-                        visible[i].id == thread.entries.first.id
-                    ? (newBody) {
-                        widget.controller.updateEntry(
-                          threadId: thread.id,
-                          entryId: visible[i].id,
-                          newBody: newBody,
-                        );
-                        setState(() => _editingEntryId = null);
-                      }
-                    : null,
-                onEditCancel:
-                    thread.isSuggestion &&
-                        i == 0 &&
-                        visible[i].id == thread.entries.first.id
-                    ? () => setState(() => _editingEntryId = null)
-                    : null,
-              ),
+        ],
+        // A queued comment is not a thread yet — it becomes one when the
+        // review is submitted. Offering a reply here would write text the
+        // batch submit has nowhere to put, so it waits.
+        if (thread.isPendingReview) ...[
+          const CcDivider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            child: Text(
+              AppLocalizations.of(context).queuedCommentHint,
+              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
             ),
-            if (i != visible.length - 1) const CcDivider(),
-          ],
-          if (thread.isSuggestion && !thread.resolved) ...[
-            const CcDivider(),
+          ),
+        ] else ...[
+          const CcDivider(),
+          if (_replying)
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-              child: Row(
-                children: [
-                  CcButton(
-                    onPressed: () =>
-                        widget.controller.acceptSuggestion(thread.id),
-                    icon: AppIcons.checkCheck,
-                    child: Text(AppLocalizations.of(context).acceptAndResolve),
-                  ),
-                  const SizedBox(width: 8),
-                  CcButton(
-                    onPressed: () => widget.controller.dismissThread(thread.id),
-                    variant: CcButtonVariant.secondary,
-                    icon: AppIcons.archive,
-                    child: Text(AppLocalizations.of(context).dismiss),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          // A queued comment is not a thread yet — it becomes one when the
-          // review is submitted. Offering a reply here would write text the
-          // batch submit has nowhere to put, so it waits.
-          if (thread.isPendingReview) ...[
-            const CcDivider(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-              child: Text(
-                AppLocalizations.of(context).queuedCommentHint,
-                style: CcTypography.caption.copyWith(
-                  color: tokens.textTertiary,
-                ),
-              ),
-            ),
-          ] else ...[
-            const CcDivider(),
-            if (_replying)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-                // The same rich field the diff composer and the review body
-                // use — a reply is a comment, so it gets emoji, GIFs,
-                // formatting and a preview rather than a bare line of text.
-                child: SelectionContainer.disabled(
-                  child: PrCommentField(
-                    controller: _replyCtrl,
-                    focusNode: _replyFocus,
-                    hintText: AppLocalizations.of(context).replyEllipsis,
-                    owner: prRepo?.remoteOwner ?? '',
-                    repo: prRepo?.remoteName ?? '',
-                    autofocus: true,
-                    minLines: 2,
-                    maxLines: 8,
-                    onSubmitted: (_) => _sendReply(),
-                    footer: (context) => Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: _sending
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 9),
-                                child: SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CcSpinner(size: 14),
-                                ),
-                              )
-                            : _SendButton(onPressed: _sendReply),
-                      ),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+              // The same rich field the diff composer and the review body
+              // use — a reply is a comment, so it gets emoji, GIFs,
+              // formatting and a preview rather than a bare line of text.
+              child: SelectionContainer.disabled(
+                child: PrCommentField(
+                  controller: _replyCtrl,
+                  focusNode: _replyFocus,
+                  hintText: AppLocalizations.of(context).replyEllipsis,
+                  owner: prRepo?.remoteOwner ?? '',
+                  repo: prRepo?.remoteName ?? '',
+                  autofocus: true,
+                  minLines: 2,
+                  maxLines: 8,
+                  onSubmitted: (_) => _sendReply(),
+                  footer: (context) => Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: _sending
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 9),
+                              child: SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CcSpinner(size: 14),
+                              ),
+                            )
+                          : _SendButton(onPressed: _sendReply),
                     ),
                   ),
                 ),
-              )
-            else
-              // A real button: the reply stub was a bare gesture, so a
-              // keyboard user had no way to start a reply.
-              CcTappable(
-                onPressed: () {
-                  setState(() => _replying = true);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _replying) {
-                      _replyFocus.requestFocus();
-                    }
-                  });
-                },
-                semanticLabel: AppLocalizations.of(context).replyEllipsis,
-                builder: (context, states) => ExcludeSemantics(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                    child: Row(
-                      children: [
-                        Icon(
-                          AppIcons.messageSquare,
-                          size: 14,
+              ),
+            )
+          else
+            // A real button: the reply stub was a bare gesture, so a
+            // keyboard user had no way to start a reply.
+            CcTappable(
+              onPressed: () {
+                setState(() => _replying = true);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _replying) {
+                    _replyFocus.requestFocus();
+                  }
+                });
+              },
+              semanticLabel: AppLocalizations.of(context).replyEllipsis,
+              builder: (context, states) => ExcludeSemantics(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                  child: Row(
+                    children: [
+                      Icon(
+                        AppIcons.messageSquare,
+                        size: 14,
+                        color: tokens.textTertiary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppLocalizations.of(context).replyEllipsis,
+                        style: CcTypography.caption.copyWith(
                           color: tokens.textTertiary,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context).replyEllipsis,
-                          style: CcTypography.caption.copyWith(
-                            color: tokens.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-          ],
+            ),
         ],
-      ),
+      ],
     );
+    final borderColor = widget.focused ? tokens.accent : tokens.borderSecondary;
+    // One card for both states. The header row never changes shape: opening
+    // only grows the card downward, so the caret, the avatar and the name
+    // stay under the pointer that clicked them.
+    return AnimatedBuilder(
+      animation: _openCurve,
+      child: CcCollapsible(expanded: !widget.collapsed, child: body),
+      builder: (context, body) {
+        final open = _openCurve.value;
+        return Container(
+          margin: widget.embedded
+              ? EdgeInsets.zero
+              : const EdgeInsets.fromLTRB(12, 6, 12, 8),
+          decoration: widget.embedded
+              ? BoxDecoration(color: tokens.bgPrimary)
+              : BoxDecoration(
+                  color: tokens.bgPrimary,
+                  border: Border.all(color: borderColor),
+                  boxShadow: BoxShadow.lerpList(null, AppShadows.soft, open),
+                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ThreadHeader(
+                thread: thread,
+                first: first,
+                replies: visible.length - 1,
+                open: open,
+                collapsed: widget.collapsed,
+                onToggle: toggle,
+                authorKey: _authorKey,
+                previewDx: _previewDx,
+                actions: [
+                  if (!thread.isPendingReview)
+                    _SyncBadge(
+                      state: thread.syncState,
+                      error: thread.syncError,
+                      onRetry: thread.syncState == PrInlineSyncState.error
+                          ? () => widget.controller.retryPost(thread.id)
+                          : null,
+                    ),
+                  if (firstIsSuggestion &&
+                      parseSuggestionBlocks(first.body).isNotEmpty)
+                    _suggestionPencil(thread, first),
+                  if (widget.resolveBusy)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CcSpinner(size: 14),
+                      ),
+                    )
+                  else if (widget.canResolve)
+                    CcIconButton(
+                      onPressed: () => _setResolved(!thread.resolved),
+                      icon: thread.resolved
+                          ? AppIcons.rotateCcw
+                          : AppIcons.checkCircle2,
+                      tooltip: thread.resolved
+                          ? AppLocalizations.of(context).reopen
+                          : AppLocalizations.of(context).resolve,
+                    ),
+                ],
+              ),
+              ?body,
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// The session-owned text of a whole-comment edit of [entry], or null when
+  /// the comment cannot be edited (its post is still in flight).
+  TextEditingController? _editDraft(
+    PrInlineThread thread,
+    PrInlineEntry entry,
+  ) => thread.isUnsent || entry.serverCommentId != null
+      ? ref.read(prCommentDraftControllerProvider(_editKey(entry)))
+      : null;
+
+  /// Opens the code-only editor of a suggestion. It lives in the header, next
+  /// to the author it belongs to, and steps aside while the whole comment is
+  /// being edited: one editor replaces the other.
+  Widget _suggestionPencil(PrInlineThread thread, PrInlineEntry entry) {
+    final editing = _editingEntryId == entry.id;
+    final pencil = CcIconButton(
+      onPressed: () =>
+          setState(() => _editingEntryId = editing ? null : entry.id),
+      icon: editing ? AppIcons.x : AppIcons.pencil,
+      tooltip: editing
+          ? AppLocalizations.of(context).cancelEdit
+          : AppLocalizations.of(context).editSuggestion,
+    );
+    final draft = _editDraft(thread, entry);
+    if (draft == null) {
+      return pencil;
+    }
+    return ListenableBuilder(
+      listenable: draft,
+      builder: (context, _) =>
+          draft.text.isEmpty ? pencil : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _entryTile(
+    PrInlineThread thread,
+    List<PrInlineEntry> visible,
+    int i, {
+    required bool suggestionEditable,
+  }) {
+    final entry = visible[i];
+    final tile = _InlineEntryTile(
+      entry: entry,
+      prRef: widget.controller.pr,
+      // The header row already names the first comment's author.
+      showAuthor: i != 0,
+      originalCode: thread.originalCode,
+      filePath: thread.filePath,
+      // A file-level thread has no lines; the actions name the file.
+      originalStartLine: thread.isFileLevel ? null : thread.line,
+      lineEnd: thread.isFileLevel ? null : thread.lineEnd,
+      canResolve: widget.canResolve,
+      resolved: thread.resolved,
+      resolveBusy: widget.resolveBusy,
+      onResolve: () => _setResolved(!thread.resolved),
+      thread: [
+        for (final entry in visible) (author: entry.author, body: entry.body),
+      ],
+      onDeleteLocal: entry.serverCommentId == null
+          ? () => widget.controller.dismissThread(thread.id)
+          : null,
+      editDraft: _editDraft(thread, entry),
+      onSaveDraft: _saveEntry(thread, entry),
+      isEditing: _editingEntryId == entry.id,
+      onToggleReaction: entry.serverCommentId == null
+          ? null
+          : (content, {required add}) => toggleReaction(
+              ref,
+              ReactionTarget.reviewComment,
+              commentId: entry.serverCommentId!,
+              pr: widget.controller.pr,
+              content: content,
+              add: add,
+            ),
+      onEditSubmit: suggestionEditable
+          ? (newBody) {
+              widget.controller.updateEntry(
+                threadId: thread.id,
+                entryId: entry.id,
+                newBody: newBody,
+              );
+              setState(() => _editingEntryId = null);
+            }
+          : null,
+      onEditCancel: suggestionEditable
+          ? () => setState(() => _editingEntryId = null)
+          : null,
+    );
+    // The first comment's text is what the collapsed preview becomes, so it
+    // arrives as the preview leaves.
+    return i == 0 ? FadeTransition(opacity: _bodyFade, child: tile) : tile;
   }
 }
 
-/// The one-line stand-in for a collapsed conversation.
+/// A collapsed conversation's one line: the comment's first meaningful line,
+/// with a ```suggestion fence flattened to a label — a preview that is three
+/// backticks tells the reader nothing. `more` says the comment goes on past
+/// that line, so the row can mark that it is not the whole text.
+({String text, bool more}) _threadPreview(AppLocalizations l10n, String body) {
+  String? preview;
+  for (final raw in const LineSplitter().convert(body)) {
+    final line = raw.trim();
+    if (line.isEmpty) {
+      continue;
+    }
+    if (preview != null) {
+      return (text: preview, more: true);
+    }
+    if (line.startsWith('```suggestion')) {
+      return (text: l10n.suggestedChange, more: false);
+    }
+    if (line.startsWith('```')) {
+      continue;
+    }
+    preview = line;
+  }
+  return (text: preview ?? l10n.emptyComment, more: false);
+}
+
+/// The row a conversation keeps in both states: caret, avatar, author, then
+/// the reply count and its state at the far edge.
 ///
 /// A collapsed thread must stay VISIBLE — the whole point of collapsing is to
 /// read the code with the discussion still marked, and a resolved conversation
-/// that disappears entirely is one nobody finds again. So it keeps the author,
-/// a one-line preview, the reply count and its state, in a row the height of a
-/// couple of code lines, and the whole row expands it.
-class _CollapsedThreadRow extends StatefulWidget {
-  const _CollapsedThreadRow({
+/// that disappears entirely is one nobody finds again. So the row is the same
+/// one the open card starts with, and only the slot after the name changes:
+/// collapsed it holds a one-line preview, open it holds the timestamp while
+/// the preview travels down to where the full comment begins.
+class _ThreadHeader extends StatelessWidget {
+  const _ThreadHeader({
     required this.thread,
-    required this.focused,
-    required this.embedded,
-    required this.onExpand,
+    required this.first,
+    required this.replies,
+    required this.open,
+    required this.collapsed,
+    required this.onToggle,
+    required this.authorKey,
+    required this.previewDx,
+    required this.actions,
   });
 
   final PrInlineThread thread;
-  final bool focused;
-  final bool embedded;
-  final VoidCallback? onExpand;
 
-  @override
-  State<_CollapsedThreadRow> createState() => _CollapsedThreadRowState();
-}
+  /// The comment that opens the conversation; null for an empty thread.
+  final PrInlineEntry? first;
+  final int replies;
 
-class _CollapsedThreadRowState extends State<_CollapsedThreadRow> {
-  /// The comment's first meaningful line, with markdown noise and a
-  /// ```suggestion fence flattened to a label — a preview that is three
-  /// backticks tells the reader nothing.
-  String _preview(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final body = widget.thread.entries.isEmpty
-        ? ''
-        : widget.thread.entries.first.body;
-    for (final raw in const LineSplitter().convert(body)) {
-      final line = raw.trim();
-      if (line.isEmpty) {
-        continue;
-      }
-      if (line.startsWith('```suggestion')) {
-        return l10n.suggestedChange;
-      }
-      if (line.startsWith('```')) {
-        continue;
-      }
-      return line;
-    }
-    return l10n.emptyComment;
-  }
+  /// 0 collapsed, 1 open, in between while the card animates.
+  final double open;
+  final bool collapsed;
+
+  /// Null for a thread its host never collapses: no caret, nothing to press.
+  final VoidCallback? onToggle;
+  final GlobalKey authorKey;
+
+  /// Horizontal distance from the preview to the start of the comment text.
+  final double previewDx;
+
+  /// Controls that only an open conversation offers.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final thread = widget.thread;
-    final author = thread.entries.isEmpty ? null : thread.entries.first;
-    final replies = thread.entries.length - 1;
-    final preview = _preview(context);
-    // A focusable, collapsed disclosure: "Expand comment, collapsed, alice,
-    // <preview>, 2 replies, Resolved". It was a bare gesture before, so a
-    // collapsed (or resolved) conversation could not be opened from the
-    // keyboard at all.
-    return MergeSemantics(
-      child: Semantics(
-        expanded: false,
-        child: CcTappable(
-          onPressed: widget.onExpand,
-          semanticLabel: l10n.expandComment,
-          builder: (context, states) => Container(
-            height: kCollapsedThreadHeight,
-            margin: widget.embedded
-                ? EdgeInsets.zero
-                : const EdgeInsets.fromLTRB(12, 6, 12, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: states.contains(WidgetState.hovered)
-                  ? tokens.bgPrimaryHover
-                  : tokens.bgPrimary,
-              border: widget.embedded
-                  ? null
-                  : Border.all(
-                      color: widget.focused
-                          ? tokens.accent
-                          : tokens.borderSecondary,
-                    ),
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final first = this.first;
+    final preview = _threadPreview(l10n, first?.body ?? '');
+    final meta = CcTypography.caption.copyWith(color: tokens.textTertiary);
+    Widget row(Set<WidgetState> states) => Container(
+      height: kCollapsedThreadHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      color: states.contains(WidgetState.hovered)
+          ? tokens.bgPrimaryHover
+          : null,
+      child: Row(
+        children: [
+          if (onToggle != null) ...[
+            Transform.rotate(
+              angle: (rtl ? -1 : 1) * open * 1.5707963267948966,
+              child: Icon(
+                AppIcons.chevronRight,
+                size: 14,
+                color: tokens.textTertiary,
+              ),
             ),
-            child: Row(
+            const SizedBox(width: 6),
+          ],
+          // The author's name follows; skip the avatar's initial.
+          ExcludeSemantics(
+            child: GitHubUserAvatar(
+              login: first?.author ?? '?',
+              avatarUrl: first?.authorAvatarUrl,
+              size: 18,
+              showHoverCard: false,
+            ),
+          ),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 180),
+            child: Text(
+              first?.author ?? '',
+              key: authorKey,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: CcTypography.caption.copyWith(
+                fontWeight: FontWeight.w700,
+                color: tokens.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              clipBehavior: Clip.none,
               children: [
-                Icon(
-                  AppIcons.chevronRight,
-                  size: 14,
-                  color: tokens.textTertiary,
-                ),
-                const SizedBox(width: 6),
-                // The author's name follows; skip the avatar's initial.
-                ExcludeSemantics(
-                  child: GitHubUserAvatar(
-                    login: author?.author ?? '?',
-                    avatarUrl: author?.authorAvatarUrl,
-                    size: 18,
-                    showHoverCard: false,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 180),
-                  child: Text(
-                    author?.author ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textSecondary,
+                if (open > 0 && first != null)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Opacity(
+                      opacity: open,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppTimestamp(
+                            dateTime: first.createdAt,
+                            child: Text(
+                              formatRelativeTime(context, first.createdAt),
+                              style: meta,
+                            ),
+                          ),
+                          // A multi-line comment names its range, the way
+                          // the forge does. The highlight already covers
+                          // those rows; saying which ones removes any doubt
+                          // about what the card is attached to.
+                          if (thread.isMultiLine) ...[
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                l10n.commentOnLinesRange(
+                                  thread.line,
+                                  thread.lineEnd,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: meta,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    preview,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textTertiary,
+                // The preview leaves toward the line the full comment starts
+                // on, fading out as that text fades in beneath the row.
+                if (open < 1)
+                  IgnorePointer(
+                    child: Transform.translate(
+                      offset: Offset(previewDx * open, 32 * open),
+                      child: Opacity(
+                        opacity: (1 - open / 0.6).clamp(0, 1),
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(
+                            // The mark for "there is more below" is the one
+                            // a clipped line already ends with.
+                            preview.more ? '${preview.text} …' : preview.text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: meta,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                if (replies > 0) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.repliesCountLabel(replies),
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textTertiary,
-                    ),
-                  ),
-                ],
-                if (thread.resolved) ...[
-                  const SizedBox(width: 8),
-                  CcBadge(
-                    label: l10n.resolved,
-                    variant: CcBadgeVariant.success,
-                    icon: AppIcons.checkCircle2,
-                  ),
-                ],
-                if (thread.isPendingReview) ...[
-                  const SizedBox(width: 8),
-                  CcBadge(
-                    label: l10n.pendingReview,
-                    variant: CcBadgeVariant.warning,
-                    icon: AppIcons.cloudOff,
-                  ),
-                ],
               ],
             ),
           ),
-        ),
+          if (open > 0)
+            Opacity(
+              opacity: open,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final action in actions) ...[
+                    const SizedBox(width: 8),
+                    action,
+                  ],
+                ],
+              ),
+            ),
+          if (replies > 0) ...[
+            const SizedBox(width: 8),
+            Text(l10n.repliesCountLabel(replies), style: meta),
+          ],
+          if (thread.resolved) ...[
+            const SizedBox(width: 8),
+            CcBadge(
+              label: l10n.resolved,
+              variant: CcBadgeVariant.success,
+              icon: AppIcons.checkCircle2,
+            ),
+          ],
+          if (thread.isPendingReview) ...[
+            const SizedBox(width: 8),
+            CcBadge(
+              label: l10n.pendingReview,
+              variant: CcBadgeVariant.warning,
+              icon: AppIcons.cloudOff,
+            ),
+          ],
+        ],
       ),
     );
+    if (onToggle == null) {
+      return row(const {});
+    }
+    // A focusable disclosure in both states. Collapsed it reads as one line:
+    // "Expand comment, collapsed, alice, <preview>, 2 replies, Resolved".
+    // Open, the row's own buttons stay separate stops.
+    final tappable = Semantics(
+      expanded: !collapsed,
+      child: CcTappable(
+        onPressed: onToggle,
+        semanticLabel: collapsed ? l10n.expandComment : l10n.collapseComment,
+        builder: (context, states) => row(states),
+      ),
+    );
+    return collapsed ? MergeSemantics(child: tappable) : tappable;
   }
 }
 
@@ -710,8 +860,8 @@ class _InlineEntryTile extends StatelessWidget {
     this.editDraft,
     this.onSaveDraft,
     this.isEditing = false,
+    this.showAuthor = true,
     this.onToggleReaction,
-    this.onEditStart,
     this.onEditSubmit,
     this.onEditCancel,
   });
@@ -741,15 +891,16 @@ class _InlineEntryTile extends StatelessWidget {
   final Future<String?> Function(String body)? onSaveDraft;
   final bool isEditing;
 
+  /// Whether the tile names its author. False for the comment that opens a
+  /// conversation: the thread's header row already carries its author.
+  final bool showAuthor;
+
   /// Reaction toggle for a synced review comment; null while the entry is a
   /// local draft (GitHub reactions only attach to posted comments).
   final Future<void> Function(String content, {required bool add})?
   onToggleReaction;
-  final VoidCallback? onEditStart;
   final void Function(String newBody)? onEditSubmit;
   final VoidCallback? onEditCancel;
-
-  bool get _isSuggestionEntry => parseSuggestionBlocks(entry.body).isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -798,88 +949,78 @@ class _InlineEntryTile extends StatelessWidget {
     DesignSystemTokens tokens,
     Widget? editor,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final content = <Widget>[
+      if (editor != null)
+        SelectionContainer.disabled(child: editor)
+      else if (isEditing && onEditSubmit != null)
+        _SuggestionEditor(
+          initialBody: entry.body,
+          filePath: filePath,
+          onSubmit: onEditSubmit!,
+          onCancel: onEditCancel ?? () {},
+        )
+      else
+        SuggestionAwareMarkdown(
+          prRef: prRef,
+          body: entry.body,
+          originalCode: originalCode,
+          filePath: filePath,
+          originalStartLine: originalStartLine,
+        ),
+      if (onToggleReaction != null && entry.reactions.isNotEmpty) ...[
+        const SizedBox(height: 6),
+        ReactionBar(
+          reactions: entry.reactions,
+          showAdder: false,
+          onToggle: onToggleReaction!,
+        ),
+      ],
+    ];
+    if (!showAuthor) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: content,
+      );
+    }
+    // A reply repeats the header row's shape, with its text on the same
+    // left edge as every other comment in the conversation.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GitHubUserAvatar(
-          login: entry.author,
-          avatarUrl: entry.authorAvatarUrl,
-          size: 24,
-          showHoverCard: false,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    entry.author,
-                    style: CcTypography.caption.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  AppTimestamp(
-                    dateTime: entry.createdAt,
-                    child: Text(
-                      formatRelativeTime(context, entry.createdAt),
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
-                      ),
-                    ),
-                  ),
-                  if (_isSuggestionEntry &&
-                      onEditStart != null &&
-                      editor == null) ...[
-                    const SizedBox(width: 4),
-                    CcIconButton(
-                      onPressed: () {
-                        if (isEditing) {
-                          onEditCancel?.call();
-                        } else {
-                          onEditStart?.call();
-                        }
-                      },
-                      icon: isEditing ? AppIcons.x : AppIcons.pencil,
-                      tooltip: isEditing
-                          ? AppLocalizations.of(context).cancelEdit
-                          : AppLocalizations.of(context).editSuggestion,
-                    ),
-                  ],
-                ],
+        Row(
+          children: [
+            GitHubUserAvatar(
+              login: entry.author,
+              avatarUrl: entry.authorAvatarUrl,
+              size: 18,
+              showHoverCard: false,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                entry.author,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: CcTypography.caption.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: tokens.textPrimary,
+                ),
               ),
-              const SizedBox(height: 4),
-              if (editor != null)
-                SelectionContainer.disabled(child: editor)
-              else if (isEditing && onEditSubmit != null)
-                _SuggestionEditor(
-                  initialBody: entry.body,
-                  filePath: filePath,
-                  onSubmit: onEditSubmit!,
-                  onCancel: onEditCancel ?? () {},
-                )
-              else
-                SuggestionAwareMarkdown(
-                  prRef: prRef,
-                  body: entry.body,
-                  originalCode: originalCode,
-                  filePath: filePath,
-                  originalStartLine: originalStartLine,
+            ),
+            const SizedBox(width: 8),
+            AppTimestamp(
+              dateTime: entry.createdAt,
+              child: Text(
+                formatRelativeTime(context, entry.createdAt),
+                style: CcTypography.caption.copyWith(
+                  color: tokens.textTertiary,
                 ),
-              if (onToggleReaction != null && entry.reactions.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                ReactionBar(
-                  reactions: entry.reactions,
-                  showAdder: false,
-                  onToggle: onToggleReaction!,
-                ),
-              ],
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 6),
+        ...content,
       ],
     );
   }
@@ -1009,7 +1150,7 @@ class _SuggestionEditorState extends ConsumerState<_SuggestionEditor> {
       height: 1.55,
       color: tokens.textPrimary,
     );
-    return Container(
+    final editor = Container(
       decoration: BoxDecoration(
         color: tokens.bgPrimary,
         border: Border.all(color: tokens.borderSecondary),
@@ -1028,7 +1169,6 @@ class _SuggestionEditorState extends ConsumerState<_SuggestionEditor> {
                     child: CcTextField(
                       controller: _controllers[i],
                       focusNode: _focusNodes[i],
-                      autofocus: i == 0,
                       maxLines: null,
                       minLines: 2,
                       textStyle: codeStyle,
@@ -1072,6 +1212,13 @@ class _SuggestionEditorState extends ConsumerState<_SuggestionEditor> {
           ),
         ],
       ),
+    );
+    // The pencil that opened this becomes the close button in place and keeps
+    // focus, so the first block asks for focus itself; Send or Cancel hand it
+    // back to the pencil.
+    return FocusOnMount(
+      focusNode: _focusNodes.first,
+      builder: (_, _) => editor,
     );
   }
 }

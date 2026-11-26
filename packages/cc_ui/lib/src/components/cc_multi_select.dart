@@ -6,11 +6,14 @@ import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
+import 'package:cc_ui/src/foundation/cc_focus_trap.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
+import 'package:cc_ui/src/foundation/cc_submit_keeps_focus.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
+import 'package:cc_ui/src/theme/cc_strings.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
@@ -19,6 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 part 'cc_multi_select_rows.dart';
+part 'cc_multi_select_trigger.dart';
 
 const Color _transparent = Color(0x00000000);
 
@@ -35,12 +39,15 @@ const int _kScrollsFromOption = 6;
 /// [showChips] for dismissible chips. Toggles call [onChanged] without closing.
 /// On reopen, selected options rise (alphanumeric); order is frozen while open.
 ///
-/// [filterable]: typed query narrows the list; filter ✕ clears query only.
-/// Closes on Esc, outside click, or tab away. Focus trapped (`closedLoop`);
-/// arrows highlight, Space/Enter toggle it (only Enter when filter focused).
+/// Closes on Esc or outside click; focus then returns to the trigger. Without
+/// [filterable], opening moves focus into the panel and Tab stays there; with
+/// it, focus stays in the field (typing filters, Tab away closes). Arrows
+/// highlight, Space/Enter toggle it (only Enter while the filter has focus).
 /// Rows never take focus: the list node owns the keyboard. [selectAllLabel]
 /// pins a noun-named select-all row; otherwise "Clear all" while any value is
-/// selected.
+/// selected. The trigger's ✕ buttons are Tab stops of their own beside it.
+///
+/// [filterable]: typed query narrows the list; filter ✕ clears query only.
 class CcMultiSelect<T> extends StatefulWidget {
   /// Creates a [CcMultiSelect].
   const CcMultiSelect({
@@ -94,7 +101,8 @@ class CcMultiSelect<T> extends StatefulWidget {
   /// Trailing chevron icon (rotates when open).
   final IconData chevronIcon;
 
-  /// Accessibility label for the trigger.
+  /// Accessible name of the trigger; defaults to [hintText]. The selection is
+  /// read as its value.
   final String? semanticLabel;
 
   @override
@@ -113,6 +121,18 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
   /// focusable, so Enter/Space reach [_onKey] and act on the highlighted row
   /// instead of activating whichever row happened to hold focus.
   final FocusNode _listFocus = FocusNode(debugLabel: 'CcMultiSelect list');
+
+  /// The trigger's own focus stop; a closing filterable field hands focus
+  /// back to it, since the filter text it held leaves the tree.
+  final FocusNode _triggerFocus = FocusNode(debugLabel: 'CcMultiSelect');
+
+  /// Spans the trigger and its ✕ buttons; while it holds focus a filterable
+  /// panel stays open.
+  final FocusNode _fieldFocus = FocusNode(
+    debugLabel: 'CcMultiSelect field',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
 
   /// Shared tap-region group for the filterable field and the panel: a tap on
   /// an option row must not read as "outside" the filter's EditableText and
@@ -147,6 +167,8 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
     _filterText.dispose();
     _filterFocus.dispose();
     _listFocus.dispose();
+    _triggerFocus.dispose();
+    _fieldFocus.dispose();
     super.dispose();
   }
 
@@ -164,13 +186,39 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
         _filterText.clear();
       }
     });
-    if (_controller.isOpen && widget.filterable) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _controller.isOpen) {
-          _filterFocus.requestFocus();
-        }
-      });
+    if (!widget.filterable) {
+      return;
     }
+    final open = _controller.isOpen;
+    // Opening swaps the summary for the filter text and closing swaps it
+    // back, so focus has to follow onto whichever exists after this frame.
+    final returnFocus = !open && _fieldFocus.hasFocus;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (open && _controller.isOpen) {
+        _filterFocus.requestFocus();
+      } else if (returnFocus && !_controller.isOpen) {
+        _triggerFocus.requestFocus();
+      }
+    });
+  }
+
+  /// A filterable panel closes once focus has left the field and its ✕
+  /// buttons, checked after the frame so the focus hand-over between the
+  /// summary and the filter text never reads as leaving.
+  void _onFieldFocusChange(bool focused) {
+    if (focused || !widget.filterable) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          _controller.isOpen &&
+          !_fieldFocus.hasFocus &&
+          !_panelScope.hasFocus) {
+        _controller.hide();
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   void _onFilterChanged() {
@@ -312,10 +360,11 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
       barrierTargetHole: widget.filterable,
       target: Focus(
         // Ancestor key handler so ↑/↓/Enter/Esc drive the open list while the
-        // filterable field keeps text focus (Space stays with the text).
-        // `canRequestFocus: false` keeps it out of the tab order.
-        canRequestFocus: false,
+        // filterable field keeps text focus (Space stays with the text). The
+        // node itself never takes focus.
+        focusNode: _fieldFocus,
         onKeyEvent: widget.filterable ? _onKey : null,
+        onFocusChange: _onFieldFocusChange,
         child: _CcMultiSelectTrigger<T>(
           options: widget.options,
           values: widget.values,
@@ -327,6 +376,7 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
           chevronIcon: widget.chevronIcon,
           isOpen: _controller.isOpen,
           semanticLabel: widget.semanticLabel,
+          triggerFocusNode: _triggerFocus,
           filterController: _filterText,
           filterFocusNode: _filterFocus,
           tapGroup: _tapGroup,
@@ -379,465 +429,91 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
                   : double.infinity,
             ),
             child: SingleChildScrollView(
-              child: FocusScope(
-                // Trap Tab inside the panel and autofocus the list node so
-                // Escape and the arrow keys work without the mouse. A
-                // filterable field keeps text focus instead.
-                node: _panelScope,
-                child: Focus(
-                  focusNode: _listFocus,
+              // A filterable panel holds nothing to focus; without this its
+              // empty scope would be a Tab stop after the field.
+              child: ExcludeFocus(
+                excluding: widget.filterable,
+                child: CcFocusTrap(
+                  // Take focus from the trigger and hold Tab inside the panel so
+                  // Escape and the arrow keys work without the mouse; focus goes
+                  // back on close. A filterable field keeps text focus instead.
+                  node: _panelScope,
                   autofocus: !widget.filterable,
-                  canRequestFocus: !widget.filterable,
-                  onKeyEvent: _onKey,
-                  child: Builder(
-                    builder: (context) {
-                      final selectedCount = widget.options
-                          .where((o) => widget.values.contains(o.value))
-                          .length;
-                      // Edge-to-edge rows: no panel padding, so the hover wash
-                      // spans the full width of the list.
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (widget.selectAllLabel != null)
-                            _CcMultiSelectAllRow(
-                              label: widget.selectAllLabel!,
-                              allSelected:
-                                  selectedCount > 0 &&
-                                  selectedCount == widget.options.length,
-                              someSelected: selectedCount > 0,
-                              onToggle: _toggleAll,
-                            )
-                          else if (widget.values.isNotEmpty)
-                            _CcMultiSelectClearRow(onClear: _clearAll),
-                          if (options.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.sm,
-                              ),
-                              child: Text(
-                                'No matching options',
-                                style: CcTypography.caption.copyWith(
-                                  color: t.textTertiary,
+                  child: Focus(
+                    focusNode: _listFocus,
+                    autofocus: !widget.filterable,
+                    canRequestFocus: !widget.filterable,
+                    onKeyEvent: _onKey,
+                    child: Builder(
+                      builder: (context) {
+                        final selectedCount = widget.options
+                            .where((o) => widget.values.contains(o.value))
+                            .length;
+                        // Edge-to-edge rows: no panel padding, so the hover wash
+                        // spans the full width of the list.
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (widget.selectAllLabel != null)
+                              _CcMultiSelectAllRow(
+                                label: widget.selectAllLabel!,
+                                allSelected:
+                                    selectedCount > 0 &&
+                                    selectedCount == widget.options.length,
+                                someSelected: selectedCount > 0,
+                                onToggle: _toggleAll,
+                              )
+                            else if (widget.values.isNotEmpty)
+                              _CcMultiSelectClearRow(onClear: _clearAll),
+                            if (options.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
                                 ),
-                              ),
-                            )
-                          else
-                            CcFluidHover(
-                              itemCount: options.length,
-                              onActiveIndexChanged: (index) {
-                                if (index != null && _highlighted != index) {
-                                  setState(() => _highlighted = index);
-                                }
-                              },
-                              itemBuilder: (context, i) => KeyedSubtree(
-                                key: _rows.keyAt(i),
-                                child: _CcMultiSelectRow<T>(
-                                  option: options[i],
-                                  checked: widget.values.contains(
-                                    options[i].value,
+                                child: Text(
+                                  context.ccStrings.noMatches,
+                                  style: CcTypography.caption.copyWith(
+                                    color: t.textTertiary,
                                   ),
-                                  highlighted: i == _highlighted,
-                                  onToggle: () => _toggleOption(options[i]),
+                                ),
+                              )
+                            else
+                              CcFluidHover(
+                                itemCount: options.length,
+                                onActiveIndexChanged: (index) {
+                                  if (index != null && _highlighted != index) {
+                                    setState(() => _highlighted = index);
+                                  }
+                                },
+                                itemBuilder: (context, i) => KeyedSubtree(
+                                  key: _rows.keyAt(i),
+                                  child: _CcMultiSelectRow<T>(
+                                    option: options[i],
+                                    checked: widget.values.contains(
+                                      options[i].value,
+                                    ),
+                                    highlighted: i == _highlighted,
+                                    onToggle: () => _toggleOption(options[i]),
+                                  ),
+                                ),
+                                layoutBuilder: (context, items) => Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: items,
                                 ),
                               ),
-                              layoutBuilder: (context, items) => Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: items,
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CcMultiSelectTrigger<T> extends StatelessWidget {
-  const _CcMultiSelectTrigger({
-    required this.options,
-    required this.values,
-    required this.hintText,
-    required this.enabled,
-    required this.showChips,
-    required this.filterable,
-    required this.countLabel,
-    required this.chevronIcon,
-    required this.isOpen,
-    required this.semanticLabel,
-    required this.filterController,
-    required this.filterFocusNode,
-    required this.tapGroup,
-    required this.onPressed,
-    required this.onClearAll,
-    required this.onRemoveValue,
-    required this.onClearFilter,
-  });
-
-  final List<CcSelectOption<T>> options;
-  final Set<T> values;
-  final String? hintText;
-  final bool enabled;
-  final bool showChips;
-  final bool filterable;
-  final String Function(int count)? countLabel;
-  final IconData chevronIcon;
-  final bool isOpen;
-  final String? semanticLabel;
-
-  /// Text controller for the filterable field's typed query.
-  final TextEditingController filterController;
-
-  /// Focus node for the filterable field's editable text.
-  final FocusNode filterFocusNode;
-
-  /// Tap-region group shared with the panel, so toggling a row never blurs
-  /// the filter field.
-  final Object tapGroup;
-
-  final VoidCallback? onPressed;
-
-  /// Clears the whole selection from the trigger's count tag ✕.
-  final VoidCallback? onClearAll;
-
-  /// Removes a single value from a summary chip's ✕ (showChips mode).
-  final ValueChanged<T>? onRemoveValue;
-
-  /// Clears the typed filter text (never the selection).
-  final VoidCallback? onClearFilter;
-
-  List<CcSelectOption<T>> get _selectedOptions =>
-      options.where((o) => values.contains(o.value)).toList(growable: false);
-
-  /// Whether the field currently shows an interactive clear affordance (the
-  /// count tag's ✕, removable chips, or the clear-filter ✕) — that plus the
-  /// interactive chevron is exactly when Carbon puts a vertical divider
-  /// between the two interactive elements.
-  bool get _showsInteractiveClear {
-    if (!enabled) {
-      return false;
-    }
-    if (filterable && isOpen && filterController.text.isNotEmpty) {
-      return true;
-    }
-    if (values.isEmpty) {
-      return false;
-    }
-    return showChips ? onRemoveValue != null : onClearAll != null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final input = CcInputTokens.resolve(t);
-    final duration = CcMotion.resolve(context, CcMotion.fast);
-    final hasValue = values.isNotEmpty;
-    final editing = filterable && isOpen && enabled;
-
-    return CcTappable(
-      onPressed: onPressed,
-      borderRadius: AppRadii.brSm,
-      // A filterable field signals text entry with the I-beam on hover.
-      mouseCursor: filterable && enabled ? SystemMouseCursors.text : null,
-      semanticLabel: semanticLabel ?? hintText,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        // Field chrome: 1px bottom underline at rest; open draws the 2px accent
-        // outline over the whole box (foregroundDecoration, no layout shift).
-        // Transparent (not null) at rest keeps the foregroundDecoration always
-        // present so the subtree is never restructured on open/close.
-        final underlineColor = !enabled ? t.borderDisabled : input.border;
-        final outlineColor = enabled && isOpen
-            ? input.borderFocused
-            : _transparent;
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: !enabled
-                ? t.bgDisabled
-                : hovered
-                ? t.bgSecondaryHover
-                : input.bg,
-            border: Border(bottom: BorderSide(color: underlineColor)),
-          ),
-          foregroundDecoration: BoxDecoration(
-            border: Border.all(color: outlineColor, width: 2),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: editing
-                    ? _buildEditingSummary(t, input, hasValue)
-                    : _buildSummary(t, input, enabled, hasValue),
-              ),
-              if (editing && filterController.text.isNotEmpty) ...[
-                AppSpacing.hGapSm,
-                // Clears the typed filter text only — never the selection.
-                CcTooltip(
-                  message: 'Clear filter',
-                  child: CcTappable(
-                    onPressed: onClearFilter,
-                    borderRadius: AppRadii.brXs,
-                    semanticLabel: 'Clear filter',
-                    builder: (context, states) => Icon(
-                      CcIcons.x,
-                      size: 14,
-                      color: states.contains(WidgetState.hovered)
-                          ? t.textPrimary
-                          : t.textTertiary,
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
-              ],
-              if (_showsInteractiveClear) ...[
-                AppSpacing.hGapSm,
-                const _CcFieldDivider(),
-              ],
-              AppSpacing.hGapSm,
-              AnimatedRotation(
-                turns: isOpen ? 0.5 : 0,
-                duration: duration,
-                curve: CcMotion.standard,
-                child: Icon(
-                  chevronIcon,
-                  size: 16,
-                  color: enabled ? t.fgTertiary : t.fgDisabled,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// The open filterable field: the count tag stays pinned at the left and
-  /// the rest of the row is the editable query text.
-  Widget _buildEditingSummary(
-    DesignSystemTokens t,
-    CcInputTokens input,
-    bool hasValue,
-  ) {
-    final count = values.length;
-    return Row(
-      children: [
-        if (hasValue && !showChips) ...[
-          _CcCountTag(
-            label: countLabel?.call(count) ?? '$count selected',
-            enabled: enabled,
-            onClear: onClearAll,
-          ),
-          AppSpacing.hGapSm,
-        ],
-        Expanded(
-          child: EditableText(
-            controller: filterController,
-            focusNode: filterFocusNode,
-            groupId: tapGroup,
-            style: CcTypography.bodySm.copyWith(color: input.text),
-            cursorColor: t.accent,
-            backgroundCursorColor: t.hover,
-            maxLines: 1,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummary(
-    DesignSystemTokens t,
-    CcInputTokens input,
-    bool enabled,
-    bool hasValue,
-  ) {
-    if (!hasValue) {
-      return Text(
-        hintText ?? '',
-        style: CcTypography.bodySm.copyWith(
-          color: enabled ? input.placeholder : t.textDisabled,
-        ),
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-
-    if (showChips) {
-      final selected = _selectedOptions;
-      return Wrap(
-        spacing: AppSpacing.xs,
-        runSpacing: AppSpacing.xs,
-        children: [
-          for (final option in selected)
-            _CcSummaryChip(
-              label: option.label,
-              enabled: enabled,
-              onRemove: onRemoveValue == null
-                  ? null
-                  : () => onRemoveValue!(option.value),
-            ),
-        ],
-      );
-    }
-
-    // A count tag (with its own ✕ to clear the whole selection in place)
-    // sits before the persistent hint text, so the field keeps saying what
-    // it selects even while values are chosen.
-    final count = values.length;
-    final text = countLabel?.call(count) ?? '$count selected';
-    return Row(
-      children: [
-        _CcCountTag(label: text, enabled: enabled, onClear: onClearAll),
-        if (hintText != null) ...[
-          AppSpacing.hGapSm,
-          Flexible(
-            child: Text(
-              hintText!,
-              style: CcTypography.bodySm.copyWith(
-                color: enabled ? input.placeholder : t.textDisabled,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// A 1px vertical separator between two interactive elements inside an input
-/// field (e.g. a clear ✕ and the chevron). Never drawn next to non-interactive
-/// content and never between the caret and the placeholder/value text.
-class _CcFieldDivider extends StatelessWidget {
-  const _CcFieldDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    return Container(width: 1, height: 20, color: t.borderPrimary);
-  }
-}
-
-/// The selection-count tag in the trigger: the count summary plus a ✕ that
-/// clears the whole selection without opening the panel.
-class _CcCountTag extends StatelessWidget {
-  const _CcCountTag({
-    required this.label,
-    required this.enabled,
-    required this.onClear,
-  });
-
-  final String label;
-  final bool enabled;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final fg = enabled ? t.textPrimary : t.textDisabled;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: enabled ? t.bgSecondary : t.bgDisabled,
-        borderRadius: AppRadii.brSm,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xxs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: CcTypography.caption.copyWith(color: fg)),
-            if (onClear != null) ...[
-              const SizedBox(width: AppSpacing.xs),
-              CcTooltip(
-                message: 'Clear all selected options',
-                child: CcTappable(
-                  onPressed: onClear,
-                  borderRadius: AppRadii.brXs,
-                  semanticLabel: 'Clear selection',
-                  builder: (context, states) => Icon(
-                    CcIcons.x,
-                    size: 12,
-                    color: states.contains(WidgetState.hovered)
-                        ? t.textPrimary
-                        : t.textTertiary,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CcSummaryChip extends StatelessWidget {
-  const _CcSummaryChip({
-    required this.label,
-    required this.enabled,
-    this.onRemove,
-  });
-
-  final String label;
-  final bool enabled;
-
-  /// Dismisses this chip's value from the selection (a dismissible tag).
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final fg = enabled ? t.textPrimary : t.textDisabled;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: enabled ? t.surface : t.bgDisabled,
-        borderRadius: AppRadii.brSm,
-        border: Border.all(color: t.borderPrimary),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xxs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: CcTypography.caption.copyWith(color: fg),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (enabled && onRemove != null) ...[
-              const SizedBox(width: AppSpacing.xs),
-              CcTappable(
-                onPressed: onRemove,
-                borderRadius: AppRadii.brXs,
-                semanticLabel: 'Remove $label',
-                builder: (context, states) => Icon(
-                  CcIcons.x,
-                  size: 12,
-                  color: states.contains(WidgetState.hovered)
-                      ? t.textPrimary
-                      : t.textTertiary,
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

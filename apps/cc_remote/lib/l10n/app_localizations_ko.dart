@@ -306,9 +306,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get joinMeeting => '회의 참가';
 
   @override
-  String get join => '참가';
-
-  @override
   String attendeesCount(int count) {
     return '참석자 ($count)';
   }

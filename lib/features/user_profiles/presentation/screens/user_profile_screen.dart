@@ -56,8 +56,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     setState(() => _refreshing = true);
     try {
       await Future.wait([
-        ref.refresh(githubUserProfileProvider(widget.login).future),
-        ref.refresh(userProfileActivityProvider(widget.login).future),
+        refreshGitHubUserProfile(ref, widget.login),
+        refreshUserProfileActivity(ref, widget.login),
       ]);
     } catch (_) {
       // Each surface keeps its last data / shows its own error; the spin
@@ -195,36 +195,39 @@ class _MetadataRow extends StatelessWidget {
       if (items.isNotEmpty) {
         items.add(const SizedBox(width: 16));
       }
+      final item = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: tokens.textTertiary),
+          const SizedBox(width: 4),
+          if (onTap != null)
+            CcLinkText(
+              text,
+              style: CcTypography.caption
+                  .copyWith(color: tokens.textTertiary)
+                  .copyWith(color: tokens.textPrimary)
+                  .withLinkUnderline(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          else
+            Text(
+              text,
+              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      );
       items.add(
-        GestureDetector(
-          onTap: onTap,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 13, color: tokens.textTertiary),
-              const SizedBox(width: 4),
-              if (onTap != null)
-                CcLinkText(
-                  text,
-                  style: CcTypography.caption
-                      .copyWith(color: tokens.textTertiary)
-                      .copyWith(color: tokens.textPrimary)
-                      .withLinkUnderline(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              else
-                Text(
-                  text,
-                  style: CcTypography.caption.copyWith(
-                    color: tokens.textTertiary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-            ],
-          ),
-        ),
+        onTap == null
+            ? item
+            // It opens a page, so it reads as the link it shows.
+            : CcTappable(
+                onPressed: onTap,
+                semanticButton: false,
+                builder: (context, _) => item,
+              ),
       );
     }
 
@@ -279,78 +282,73 @@ class _OrgRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: organizations.map((org) {
-        return GestureDetector(
-          onTap: org.url.isNotEmpty ? () => openExternalUrl(org.url) : null,
-          child: CcTooltip(
-            message: org.name.isNotEmpty ? org.name : org.login,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: tokens.bgPrimary,
-                border: Border.all(color: tokens.borderSecondary),
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (org.avatarUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CcImageFade(
-                          image: ResizeImage(
-                            DiskCachedNetworkImage(
-                              MediaProxyScope.urlOf(
-                                context,
-                                sizedGitHubAvatarUrl(
-                                  org.avatarUrl,
-                                  16,
-                                  MediaQuery.devicePixelRatioOf(context),
-                                ),
-                              ),
+        final chip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: tokens.bgPrimary,
+            border: Border.all(color: tokens.borderSecondary),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (org.avatarUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CcImageFade(
+                      image: ResizeImage(
+                        DiskCachedNetworkImage(
+                          MediaProxyScope.urlOf(
+                            context,
+                            sizedGitHubAvatarUrl(
+                              org.avatarUrl,
+                              16,
+                              MediaQuery.devicePixelRatioOf(context),
                             ),
-                            width: (16 * MediaQuery.devicePixelRatioOf(context))
-                                .round(),
-                            height:
-                                (16 * MediaQuery.devicePixelRatioOf(context))
-                                    .round(),
-                          ),
-                          fit: BoxFit.cover,
-                          placeholder: ColoredBox(color: tokens.bgSecondary),
-                          errorBuilder: (_, _) => Icon(
-                            AppIcons.building2,
-                            size: 14,
-                            color: tokens.textTertiary,
                           ),
                         ),
+                        width: (16 * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
+                        height: (16 * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
                       ),
-                    )
-                  else
-                    Icon(
-                      AppIcons.building2,
-                      size: 14,
-                      color: tokens.textTertiary,
-                    ),
-                  const SizedBox(width: 6),
-                  Text(
-                    org.name.isNotEmpty ? org.name : org.login,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textSecondary,
-                      fontWeight: FontWeight.w500,
+                      fit: BoxFit.cover,
+                      placeholder: ColoredBox(color: tokens.bgSecondary),
+                      errorBuilder: (_, _) => Icon(
+                        AppIcons.building2,
+                        size: 14,
+                        color: tokens.textTertiary,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    AppIcons.externalLink,
-                    size: 10,
-                    color: tokens.textTertiary,
-                  ),
-                ],
+                )
+              else
+                Icon(AppIcons.building2, size: 14, color: tokens.textTertiary),
+              const SizedBox(width: 6),
+              Text(
+                org.name.isNotEmpty ? org.name : org.login,
+                style: CcTypography.caption.copyWith(
+                  color: tokens.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
+              const SizedBox(width: 4),
+              Icon(AppIcons.externalLink, size: 10, color: tokens.textTertiary),
+            ],
           ),
+        );
+        return CcTooltip(
+          message: org.name.isNotEmpty ? org.name : org.login,
+          child: org.url.isEmpty
+              ? chip
+              : CcTappable(
+                  onPressed: () => openExternalUrl(org.url),
+                  borderRadius: BorderRadius.circular(2),
+                  builder: (context, _) => chip,
+                ),
         );
       }).toList(),
     );

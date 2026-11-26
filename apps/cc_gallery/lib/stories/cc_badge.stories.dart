@@ -5,7 +5,8 @@ import 'package:widgetbook/widgetbook.dart';
 
 part 'cc_badge.stories.g.dart';
 
-/// Stories for [CcBadge] — the design system's small status pill.
+/// Stories for [CcBadge] — the design system's small, square, hairline-bordered
+/// status badge.
 ///
 /// Status is carried by tint *and* label text (and a leading icon), never color
 /// alone, per the accessibility bar. The builders return the component directly;
@@ -65,7 +66,8 @@ Widget ccBadgeVariantsStory(BuildContext context) {
       children: [
         CcBadge(label: 'Idle'),
         CcBadge(label: 'Claude Opus', variant: CcBadgeVariant.brand),
-        CcBadge(label: 'Merged', variant: CcBadgeVariant.success),
+        CcBadge(label: 'Open', variant: CcBadgeVariant.success),
+        CcBadge(label: 'Merged', variant: CcBadgeVariant.merged),
         CcBadge(label: 'Blocked', variant: CcBadgeVariant.warning),
         CcBadge(label: 'Failed', variant: CcBadgeVariant.danger),
         CcBadge(label: 'Draft', variant: CcBadgeVariant.info),
@@ -106,6 +108,11 @@ Widget ccBadgeWithIconStory(BuildContext context) {
           label: 'Synced',
           variant: CcBadgeVariant.info,
           icon: CcIcons.refreshCw,
+        ),
+        CcBadge(
+          label: 'Merged',
+          variant: CcBadgeVariant.merged,
+          icon: CcIcons.gitMerge,
         ),
       ],
     ),

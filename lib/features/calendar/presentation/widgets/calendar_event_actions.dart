@@ -55,9 +55,9 @@ Future<bool> moveCalendarEvent(
   return true;
 }
 
-/// Starts a local recording seeded from [event] and links the two. Closed on
-/// public demo workspaces: only the Meetings page starts the scripted
-/// session there.
+/// Joins [event]'s call (when it has one), starts a local recording seeded
+/// from the event and links the two. Closed on public demo workspaces: only
+/// the Meetings page starts the scripted session there.
 Future<void> startCalendarRecording(
   BuildContext context,
   WidgetRef ref,
@@ -79,7 +79,7 @@ Future<void> startCalendarRecording(
     context.go(meetingsRecordRoute(ws));
   } else {
     CcToastScope.of(context).show(
-      result.error ?? l10n.calendarConnectError,
+      result.error ?? l10n.calendarRecordFailed,
       variant: CcToastVariant.danger,
     );
   }

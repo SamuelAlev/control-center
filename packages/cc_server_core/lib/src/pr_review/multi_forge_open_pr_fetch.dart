@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show min;
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
@@ -91,7 +92,45 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     required String workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
   }) => Future.value(const {});
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    required String workspaceId,
+  }) async {
+    if (prNumbers.isEmpty) {
+      return const {};
+    }
+    final client = _clientFor(repo, workspaceId: workspaceId);
+    final out = <int, PullRequest>{};
+    var succeeded = 0;
+    Object? failure;
+    await Future.wait([
+      for (final n in prNumbers.toSet())
+        () async {
+          try {
+            final pr = await client.getPullRequest(n);
+            succeeded++;
+            if (pr != null) {
+              out[n] = pr;
+            }
+          } on Object catch (e) {
+            failure = e;
+          }
+        }(),
+    ]);
+    if (succeeded == 0 && failure != null) {
+      CcHostLog.warning(
+        'open_pr_poll: ${repo.forge.displayName} surgical PR fetch failed for '
+        '${repo.fullName}: $failure',
+      );
+      return null;
+    }
+    return out;
+  }
 
   @override
   Future<ClosedPrOutcome?> closedOutcome(
@@ -285,6 +324,7 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     required String workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
   }) async {
     final grouped = _byForge(repos);
     final merged = <String, Map<int, PrStatusOverlay>>{};
@@ -297,7 +337,11 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
         }
         try {
           merged.addAll(
-            await delegate.fetchChecks(entry.value, workspaceId: workspaceId),
+            await delegate.fetchChecks(
+              entry.value,
+              workspaceId: workspaceId,
+              prNodeIdsByRepoId: prNodeIdsByRepoId,
+            ),
           );
         } on Object catch (e) {
           CcHostLog.warning(
@@ -308,6 +352,23 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
     );
 
     return merged;
+  }
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    required String workspaceId,
+  }) async {
+    final delegate = _delegateFor(repo);
+    if (delegate == null) {
+      return null;
+    }
+    return delegate.fetchPullRequests(
+      repo,
+      prNumbers,
+      workspaceId: workspaceId,
+    );
   }
 
   @override
@@ -572,8 +633,22 @@ class MultiForgeMergedHistory {
     int width,
     Future<void> Function(T item) each,
   ) async {
-    for (var i = 0; i < items.length; i += width) {
-      await Future.wait(items.skip(i).take(width).map(each));
+    if (items.isEmpty) {
+      return;
     }
+    var next = 0;
+    final workers = min(width, items.length);
+    await Future.wait([
+      for (var w = 0; w < workers; w++)
+        () async {
+          while (true) {
+            final i = next++;
+            if (i >= items.length) {
+              break;
+            }
+            await each(items[i]);
+          }
+        }(),
+    ]);
   }
 }

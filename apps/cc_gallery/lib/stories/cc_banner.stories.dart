@@ -73,8 +73,8 @@ Widget ccBannerVariantsStory(BuildContext context) {
             body: 'Daily sync starts in 2 minutes.',
             icon: CcIcons.calendarClock,
             actions: [
-              CcBannerAction(label: 'Join', onPressed: () {}, primary: true),
-              CcBannerAction(label: 'Record & link', onPressed: () {}),
+              CcBannerAction(label: 'Join meeting', onPressed: () {}, primary: true),
+              CcBannerAction(label: 'Join and record', onPressed: () {}),
             ],
             onDismiss: () {},
           ),
@@ -134,9 +134,9 @@ Widget ccBannerPlaygroundStory(
         body: body.isEmpty ? null : body,
         actions: [
           if (withPrimary)
-            CcBannerAction(label: 'Join', onPressed: () {}, primary: true),
+            CcBannerAction(label: 'Join meeting', onPressed: () {}, primary: true),
           if (withSecondary)
-            CcBannerAction(label: 'Record & link', onPressed: () {}),
+            CcBannerAction(label: 'Join and record', onPressed: () {}),
         ],
         onDismiss: dismissible ? () {} : null,
       ),

@@ -95,7 +95,6 @@
   "eventNotFound": "Không tìm thấy sự kiện",
   "eventNotFoundDescription": "Có thể nằm ngoài cửa sổ lịch trình, hoặc đã bị xóa phía nguồn.",
   "joinMeeting": "Tham gia họp",
-  "join": "Tham gia",
   "attendeesCount": "Người tham dự ({count})",
   "details": "Chi tiết",
   "allDay": "Cả ngày",

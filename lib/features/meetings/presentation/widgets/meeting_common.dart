@@ -21,9 +21,9 @@ enum MeetingPillTone {
   success,
 }
 
-/// A compact monospaced pill: a small icon plus a label, in one of the
-/// [MeetingPillTone]s. Used for the per-row signal chips (decisions, action
-/// items, enhanced). Colors come from the design-system tokens.
+/// A compact signal badge: a small icon plus a label, in one of the
+/// [MeetingPillTone]s. Used for the per-row signal tags (decisions, action
+/// items, enhanced), backed by [CcBadge].
 class MeetingSignalPill extends StatelessWidget {
   /// Creates a [MeetingSignalPill].
   const MeetingSignalPill({
@@ -36,7 +36,7 @@ class MeetingSignalPill extends StatelessWidget {
   /// Leading glyph.
   final IconData icon;
 
-  /// Pill text.
+  /// Badge text.
   final String label;
 
   /// Color treatment.
@@ -44,27 +44,13 @@ class MeetingSignalPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (tone) {
-      MeetingPillTone.neutral => (context.mChipFill, context.ds.muted),
-      MeetingPillTone.accent => (context.mAccentSoft, context.mAccent),
-      MeetingPillTone.warn => (context.mWarnSoft, context.mWarn),
-      MeetingPillTone.success => (context.mSuccessSoft, context.mSuccess),
+    final variant = switch (tone) {
+      MeetingPillTone.neutral => CcBadgeVariant.neutral,
+      MeetingPillTone.accent => CcBadgeVariant.info,
+      MeetingPillTone.warn => CcBadgeVariant.warning,
+      MeetingPillTone.success => CcBadgeVariant.success,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: fg),
-          const SizedBox(width: 5),
-          Text(label, style: meetingMono(context, fontSize: 11, color: fg)),
-        ],
-      ),
-    );
+    return CcBadge(label: label, icon: icon, variant: variant);
   }
 }
 
@@ -195,17 +181,17 @@ class _MeetingEqualizerBarsState extends State<MeetingEqualizerBars>
 bool meetingCompactActions(BuildContext context) =>
     MediaQuery.sizeOf(context).width < 1100;
 
-/// Height of the heading row above the notes and transcript panels (it fits
-/// the Enhanced/Your notes toggle).
-const double kMeetingNotesHeadingHeight = 28;
+/// Height of the header strip inside the notes and transcript panels, bottom
+/// rule included: the notes panel's Enhanced/Your notes tabs and the
+/// transcript panel's title share it, so the two rules meet on one line.
+const double kMeetingPanelHeaderHeight = 40;
 
-/// A monospaced, letter-spaced, uppercase eyebrow label — the design system's
-/// signature mono label. Colors come from the design-system tokens.
+/// A small, letter-spaced eyebrow label. Colors come from the design-system tokens.
 class MeetingEyebrow extends StatelessWidget {
   /// Creates a [MeetingEyebrow].
   const MeetingEyebrow(this.text, {super.key, this.color});
 
-  /// Eyebrow text (rendered uppercase).
+  /// Eyebrow text.
   final String text;
 
   /// Optional color override.
@@ -214,12 +200,12 @@ class MeetingEyebrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      text.toUpperCase(),
-      style: meetingMono(
-        context,
+      text,
+      style: TextStyle(
         fontSize: 11,
+        fontWeight: FontWeight.w600,
         color: color ?? context.ds.muted,
-        letterSpacing: 0.8,
+        letterSpacing: 0.2,
       ),
     );
   }

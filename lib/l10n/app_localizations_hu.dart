@@ -1087,14 +1087,13 @@ class AppLocalizationsHu extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Nincs esemény ebben a tartományban';
 
   @override
-  String get calendarStartRecording => 'Felvétel indítása';
-
-  @override
-  String get calendarStartRecordingAndLink =>
-      'Felvétel indítása és összekapcsolás';
-
-  @override
   String get calendarJoinMeet => 'Csatlakozás a megbeszéléshez';
+
+  @override
+  String get calendarJoinAndRecord => 'Csatlakozás és felvétel';
+
+  @override
+  String get calendarRecordFailed => 'Nem sikerült elindítani a felvételt';
 
   @override
   String get calendarFromCalendar => 'Naptárból';
@@ -1936,9 +1935,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get activity => 'Tevékenység';
-
-  @override
-  String get activityLabel => 'TEVÉKENYSÉG';
 
   @override
   String get activitySearchHint => 'Tevékenység keresése';
@@ -2890,7 +2886,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get briefDescription => 'Rövid leírás';
 
   @override
-  String get bugLabel => 'HIBA';
+  String get bugLabel => 'Hiba';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4478,7 +4474,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get pullRequests => 'Pull requestek';
 
   @override
-  String get questionLabel => 'KÉRDÉS';
+  String get questionLabel => 'Kérdés';
 
   @override
   String get queued => 'Várólistán';
@@ -4493,7 +4489,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get reasoningEffort => 'Gondolkodási erőfeszítés';
 
   @override
-  String get recommendLabel => 'AJÁNLÁS';
+  String get recommendLabel => 'Ajánlás';
 
   @override
   String recordingFromDevice(String device) {
@@ -5163,7 +5159,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get suggestion => 'Javaslat';
 
   @override
-  String get suggestLabel => 'JAVASLAT';
+  String get suggestLabel => 'Javaslat';
 
   @override
   String get superseded => 'Felülírva';
@@ -5208,7 +5204,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get thisCannotBeUndone => 'Ezt nem lehet visszavonni.';
 
   @override
-  String get ticketLabel => 'JEGY';
+  String get ticketLabel => 'Jegy';
 
   @override
   String get titleLabel => 'Cím';
@@ -7521,6 +7517,14 @@ class AppLocalizationsHu extends AppLocalizations {
   String get addReviewers => 'Átnézők hozzáadása';
 
   @override
+  String get reRequestReview => 'Átnézés újbóli kérése';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Átnézés újbóli kérése tőle: $label';
+  }
+
+  @override
   String get addAssignees => 'Hozzárendeltek hozzáadása';
 
   @override
@@ -7688,6 +7692,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get meetingStatusRecording => 'Felvétel';
 
   @override
+  String get meetingStatusPaused => 'Szüneteltetve';
+
+  @override
   String get meetingStatusProcessing => 'Feldolgozás';
 
   @override
@@ -7715,34 +7722,10 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# megbeszélés',
-      one: '# megbeszélés',
-      zero: 'Nincsenek megbeszélések',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Nyitott teendők';
-
-  @override
-  String get meetingsLedgerDecisions => 'Döntések';
-
-  @override
   String get meetingsLiveOpen => 'Felvétel megnyitása';
 
   @override
   String get meetingTemplateShort => 'Sablon';
-
-  @override
-  String get meetingsStatThisWeek => 'Ez a hét';
-
-  @override
-  String get meetingsStatRecorded => 'Rögzítve';
 
   @override
   String get meetingsFilterAll => 'Mind';
@@ -7786,9 +7769,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total teendő';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'bővített';
 
   @override
   String get meetingsTranscribing => 'átírás és összefoglalás…';
@@ -8024,9 +8004,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Úgy tűnik, megbeszélés van folyamatban. Felvegye?';
-
-  @override
-  String get meetingDetectedRecord => 'Felvétel';
 
   @override
   String get meetingDetectedDismiss => 'Elvetés';
@@ -9560,6 +9537,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get deviceNeverSeen => 'Soha nem csatlakozott';
 
   @override
+  String get deviceAwaitingApproval => 'Jóváhagyásra vár';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10389,12 +10369,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Sikertelen';
-
-  @override
-  String get bannerMeetingJoin => 'Csatlakozás';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Felvétel és összekapcsolás';
 
   @override
   String get bannerCalendarReconnect => 'Újracsatlakozás';
@@ -13728,6 +13702,11 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Nem sikerült elküldeni a megjegyzést: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '$line. sor';
   }
@@ -15217,16 +15196,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '$tab bezárása';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count megjegyzés',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21513,10 +21482,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get dispatchSettingsTitle => 'Ütemezések';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Korlátok az ütemezésekre és figyelőkre, és az arra nem válaszolt kérésekre vonatkozó szabályok.';
-
-  @override
   String get dispatchLimitsLabel => 'Ütemezési korlátok';
 
   @override
@@ -21595,9 +21560,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Cél';
-
-  @override
-  String get scheduleRecordCrumb => 'Ütemezés';
 
   @override
   String get improvementRecordCrumb => 'Javaslat';
@@ -22001,5 +21963,38 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent a(z) $cap keretből, beleszámítva a láncban lévő összes ütemezést';
+  }
+
+  @override
+  String get ccLoading => 'Betöltés';
+
+  @override
+  String get ccProgress => 'Folyamat';
+
+  @override
+  String get ccBreadcrumb => 'Navigációs útvonal';
+
+  @override
+  String get ccDialog => 'Párbeszédpanel';
+
+  @override
+  String get ccResize => 'Átméretezés';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (nem ellenőrzött)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title kijelölése';
+  }
+
+  @override
+  String get prTableSelectAll => 'Összes pull request kijelölése';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Visszaállítás erre a verzióra: $version';
   }
 }

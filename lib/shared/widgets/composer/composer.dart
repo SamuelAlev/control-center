@@ -26,6 +26,7 @@ import 'package:control_center/shared/widgets/composer/long_paste.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_popup.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
+import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -1661,7 +1662,7 @@ class _ComposerState extends ConsumerState<Composer> {
             expands: fill,
             textInputAction: TextInputAction.send,
             textStyle: CcTypography.body.copyWith(color: ds.textPrimary),
-            inputFormatters: [_longPaste],
+            inputFormatters: [_longPaste, const AutoWrapSelectionFormatter()],
             onSubmitted: (_) => _onFieldSubmitted(),
             hintText: widget.hint,
             chromeless: true,

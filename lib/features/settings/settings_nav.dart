@@ -36,6 +36,12 @@ String _memoryFactDetailRoute(String workspaceId) =>
 String _memoryPolicyDetailRoute(String workspaceId) =>
     memoryPolicyRoute(workspaceId, ':policyId');
 
+String _memoryImprovementDetailRoute(String workspaceId) =>
+    memoryImprovementRoute(workspaceId, ':proposalId');
+
+String _scheduleDetailRoute(String workspaceId) =>
+    scheduleRoute(workspaceId, ':recordId');
+
 /// One settings destination.
 @immutable
 class SettingsNavItem {
@@ -277,7 +283,11 @@ const List<SettingsNavGroup> kSettingsNav = [
         label: _memoryLabel,
         route: memoryRoute,
         matchesSubroutes: true,
-        detailRoutes: [_memoryFactDetailRoute, _memoryPolicyDetailRoute],
+        detailRoutes: [
+          _memoryFactDetailRoute,
+          _memoryPolicyDetailRoute,
+          _memoryImprovementDetailRoute,
+        ],
       ),
       SettingsNavItem(
         id: 'workspace.permissions',
@@ -293,9 +303,11 @@ const List<SettingsNavGroup> kSettingsNav = [
       ),
       SettingsNavItem(
         id: 'workspace.schedules',
-        icon: AppIcons.calendarClock,
+        icon: AppIcons.clock,
         label: _schedulesLabel,
         route: settingsSchedulesRoute,
+        matchesSubroutes: true,
+        detailRoutes: [_scheduleDetailRoute],
       ),
       SettingsNavItem(
         id: 'workspace.pipelines',

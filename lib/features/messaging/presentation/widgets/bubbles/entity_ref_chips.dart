@@ -159,37 +159,39 @@ class _EntityRefChip extends ConsumerWidget {
     required VoidCallback? onTap,
   }) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    Widget chip = MouseRegion(
-      cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: t.bgSecondary,
-            borderRadius: AppRadii.brMd,
-            border: Border.all(color: t.borderSecondary),
+    Widget chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: t.bgSecondary,
+        borderRadius: AppRadii.brMd,
+        border: Border.all(color: t.borderSecondary),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: t.fgTertiary),
+          const SizedBox(width: 5),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: CcTypography.caption.copyWith(color: t.textPrimary),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 13, color: t.fgTertiary),
-              const SizedBox(width: 5),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 220),
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CcTypography.caption.copyWith(color: t.textPrimary),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
+    // A chip with nowhere to go stays a plain label.
+    if (onTap != null) {
+      final body = chip;
+      chip = CcTappable(
+        onPressed: onTap,
+        borderRadius: AppRadii.brMd,
+        builder: (context, _) => body,
+      );
+    }
     if (tooltip != null && tooltip.isNotEmpty) {
       chip = CcTooltip(message: tooltip, child: chip);
     }

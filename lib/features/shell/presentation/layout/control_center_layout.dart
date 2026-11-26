@@ -108,71 +108,106 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
       child: MouseNavigationHandler(
         historyController: historyNotifier,
         child: Scaffold(
-          body: Stack(
-            children: [
-              Column(
-                children: [
-                  // Web-only "a new version is available" strip (a no-op on
-                  // desktop — the desktop updater lives in Settings → About).
-                  // In-flow above the title bar so it never overlaps the
-                  // banner rail or the HUD.
-                  const WebUpdateBanner(),
-                  // Full-width top bar: sidebar toggle, back/forward,
-                  // breadcrumb, notifications, focus.
-                  // Each chrome region is its own layer so scrolling the
-                  // routed page does not repaint the bar or the sidebars,
-                  // and a sidebar hover does not repaint the page.
-                  RepaintBoundary(
-                    child: ShellTitleBar(
-                      canGoBack: navState.canGoBack,
-                      canGoForward: navState.canGoForward,
-                      onGoBack: historyNotifier.goBack,
-                      onGoForward: historyNotifier.goForward,
+          // Tab finishes one region before the next, in reading order down
+          // the window: the bars on top, then the panes, then whatever floats
+          // over them. Without the regions one geometric sort ran over the
+          // whole window and interleaved them.
+          body: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    // Web-only "a new version is available" strip (a no-op on
+                    // desktop — the desktop updater lives in Settings →
+                    // About). In-flow above the title bar so it never overlaps
+                    // the banner rail or the HUD.
+                    const _ShellRegion(order: 0, child: WebUpdateBanner()),
+                    // Full-width top bar: sidebar toggle, back/forward,
+                    // breadcrumb, notifications, focus.
+                    // Each chrome region is its own layer so scrolling the
+                    // routed page does not repaint the bar or the sidebars,
+                    // and a sidebar hover does not repaint the page.
+                    _ShellRegion(
+                      order: 1,
+                      child: RepaintBoundary(
+                        child: ShellTitleBar(
+                          canGoBack: navState.canGoBack,
+                          canGoForward: navState.canGoForward,
+                          onGoBack: historyNotifier.goBack,
+                          onGoForward: historyNotifier.goForward,
+                        ),
+                      ),
+                    ),
+                    // No code host answers for this workspace: warn in place
+                    // with the sign-in one click away, rather than gating the
+                    // whole app on it.
+                    const _ShellRegion(order: 2, child: ForgeSignInBanner()),
+                    // The workspace's database failed its integrity check: it
+                    // reads but refuses writes until restored. Said once,
+                    // here, before anyone types.
+                    const _ShellRegion(
+                      order: 3,
+                      child: WorkspaceReadOnlyBanner(),
+                    ),
+                    // The panes sit side by side with the same top, so a
+                    // geometric sort inside them gives sidebar, sub-sidebar,
+                    // content in either text direction.
+                    Expanded(
+                      child: _ShellRegion(
+                        order: 4,
+                        child: _buildPanes(showSpacesSubSidebar),
+                      ),
+                    ),
+                  ],
+                ),
+                // The floating layers share one region after the panes. The
+                // HUD is a Positioned, so they keep a Stack of their own.
+                const Positioned.fill(
+                  child: _ShellRegion(
+                    order: 5,
+                    child: Stack(
+                      children: [
+                        // Floating recording HUD — persists across navigation
+                        // while a meeting is being recorded.
+                        MeetingRecordingHud(),
+                        // Agent-action approvals awaiting a human decision —
+                        // surfaces anywhere in the app so a blocked agent can
+                        // be unblocked in a glance. Renders nothing when
+                        // nothing is pending.
+                        AgentApprovalOverlay(),
+                        // Runs the server has PARKED on a credential — a spent
+                        // plan, a signed-out account, a provider with no key.
+                        // Unlike the approval above, nothing has failed: the
+                        // turn is held open and continues by itself once the
+                        // credential works, so this is a modal rather than a
+                        // card (the fix is a login form, not a yes/no).
+                        CredentialGateOverlay(),
+                        // Ambient banner rail (PRD 25 §1): time-critical,
+                        // actionable events (meeting starting, calendar auth
+                        // expired). Self-positions top-center below the title
+                        // bar; renders nothing when idle.
+                        BannerRail(),
+                        // The demo's first-run disclosure. Positioned like the
+                        // banner rail and, like it, renders nothing when there
+                        // is nothing to say — against a real server that is
+                        // always. It says the three things a visitor cannot
+                        // work out for themselves: the data is invented, the
+                        // agents are scripted, and the workspace is temporary.
+                        DemoShellOverlay(),
+                      ],
                     ),
                   ),
-                  // No code host answers for this workspace: warn in place
-                  // with the sign-in one click away, rather than gating the
-                  // whole app on it.
-                  const ForgeSignInBanner(),
-                  // The workspace's database failed its integrity check: it
-                  // reads but refuses writes until restored. Said once, here,
-                  // before anyone types.
-                  const WorkspaceReadOnlyBanner(),
-                  Expanded(child: _buildPanes(showSpacesSubSidebar)),
-                ],
-              ),
-              // Floating recording HUD — persists across navigation while a
-              // meeting is being recorded.
-              const MeetingRecordingHud(),
-              // Agent-action approvals awaiting a human decision — surfaces
-              // anywhere in the app so a blocked agent can be unblocked in a
-              // glance. Renders nothing when nothing is pending.
-              const AgentApprovalOverlay(),
-              // Runs the server has PARKED on a credential — a spent plan, a
-              // signed-out account, a provider with no key. Unlike the approval
-              // above, nothing has failed: the turn is held open and continues
-              // by itself once the credential works, so this is a modal rather
-              // than a card (the fix is a login form, not a yes/no).
-              const CredentialGateOverlay(),
-              // Ambient banner rail (PRD 25 §1): time-critical, actionable
-              // events (meeting starting, calendar auth expired). Self-positions
-              // top-center below the title bar; renders nothing when idle.
-              const BannerRail(),
-              // The demo's first-run disclosure. Positioned like the banner
-              // rail and, like it, renders nothing when there is nothing to
-              // say — against a real server that is always. It says the three
-              // things a visitor cannot work out for themselves: the data is
-              // invented, the agents are scripted, and the workspace is
-              // temporary.
-              const DemoShellOverlay(),
-              // Always-mounted soundscape audio host: owns the Player that
-              // streams the server-generated ambience and persists across
-              // navigation. Renders nothing (SizedBox.shrink).
-              const SoundscapeAudioHost(),
-              // Opens What's new on the first launch of a new version. Renders
-              // nothing.
-              const ChangelogAfterUpdate(),
-            ],
+                ),
+                // Always-mounted soundscape audio host: owns the Player that
+                // streams the server-generated ambience and persists across
+                // navigation. Renders nothing (SizedBox.shrink).
+                const SoundscapeAudioHost(),
+                // Opens What's new on the first launch of a new version.
+                // Renders nothing.
+                const ChangelogAfterUpdate(),
+              ],
+            ),
           ),
         ),
       ),
@@ -180,17 +215,22 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
   }
 
   Widget _buildPanes(bool showSpacesSubSidebar) {
-    final sidebar = RepaintBoundary(
+    final sidebar = FocusTraversalGroup(
       key: _sidebarKey,
-      child: const AppSidebar(),
+      child: const RepaintBoundary(child: AppSidebar()),
     );
-    final content = RepaintBoundary(key: _contentKey, child: widget.child);
+    final content = FocusTraversalGroup(
+      key: _contentKey,
+      child: RepaintBoundary(child: widget.child),
+    );
     if (ref.watch(sidebarCollapsedProvider)) {
       return Row(
         children: [
           sidebar,
           if (showSpacesSubSidebar)
-            const RepaintBoundary(child: SpacesSubSidebar()),
+            FocusTraversalGroup(
+              child: const RepaintBoundary(child: SpacesSubSidebar()),
+            ),
           Expanded(child: content),
         ],
       );
@@ -234,6 +274,23 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
           ],
         );
       },
+    );
+  }
+}
+
+/// One Tab region of the shell: Tab finishes it before moving on, and the
+/// shell visits the regions by [order].
+class _ShellRegion extends StatelessWidget {
+  const _ShellRegion({required this.order, required this.child});
+
+  final double order;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(order),
+      child: FocusTraversalGroup(child: child),
     );
   }
 }

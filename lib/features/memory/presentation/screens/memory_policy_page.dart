@@ -1,9 +1,12 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/improvement_proposal_view.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/improvement_values.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_actions.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_fact_details.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_record_links.dart';
@@ -173,6 +176,20 @@ class _MemoryPolicyPageState extends ConsumerState<MemoryPolicyPage> {
       for (final id in policy.sourceFactIds)
         ?facts.firstWhereOrNull((fact) => fact.id == id),
     ];
+    final improvements =
+        ref
+            .watch(workspaceImprovementsProvider(widget.workspaceId))
+            .asData
+            ?.value ??
+        const <ImprovementProposalView>[];
+    final sourceImprovements = [
+      for (final view in improvements)
+        if (view.proposal.status == ImprovementStatus.accepted &&
+            view.proposal.kind == ImprovementKind.policy &&
+            (view.proposal.appliedRef == policy.id ||
+                view.proposal.targetRef == policy.id))
+          view,
+    ];
     return MemoryRecordPage(
       title: l10n.policy,
       editing: _editing,
@@ -190,6 +207,11 @@ class _MemoryPolicyPageState extends ConsumerState<MemoryPolicyPage> {
       links: [
         if (sources.isNotEmpty)
           MemoryFactLinks(label: l10n.memorySourceFacts, facts: sources),
+        if (sourceImprovements.isNotEmpty)
+          MemoryImprovementLinks(
+            label: l10n.improvementsTitle,
+            proposals: sourceImprovements,
+          ),
       ],
       saveBar: _editing
           ? SettingsSaveBar(

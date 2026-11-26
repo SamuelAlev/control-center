@@ -1,17 +1,42 @@
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show
+        GitHubReviewCommentInput,
+        GitHubReviewCommentOutcome,
+        GitHubReviewCommentStatus,
+        connectMaxReviewCommentBodyLength;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_finding_status_port.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
+    show neutralizeMentions;
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_harness/cc_harness.dart';
 import 'package:cc_host/cc_host.dart';
+import 'package:cc_infra/cc_infra.dart'
+    show AutomatedReviewAttribution, kNeedsSignInCode, kRepoReplacedCode;
 
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+
+/// Posts a batch of inline pull-request review comments through Connect when
+/// the workspace routes GitHub through Connect, returning `null` otherwise.
+typedef ConnectReviewCommentPoster =
+    Future<List<GitHubReviewCommentOutcome>?> Function({
+      required String workspaceId,
+      required Repo repo,
+      required String userId,
+      required int prNumber,
+      required String commitSha,
+      required List<GitHubReviewCommentInput> comments,
+    });
 
 /// Builds the `pr_review.*` RepoOps (review CRUD, stacks, previews).
 ///
@@ -26,6 +51,15 @@ List<RepoOp> buildPrReviewOps({
     required String userId,
   })
   resolvePrReviewRepository,
+  Future<({Repo repo, ForgePrClient client})?> Function(
+    String workspaceId,
+    String owner,
+    String repo, {
+    required String userId,
+  })?
+  resolveReviewBotClient,
+  ConnectReviewCommentPoster? postConnectReviewComments,
+  AutomatedReviewAttribution? automatedReviewAttribution,
   required ({String owner, String repo}) Function(Map<String, dynamic> args)
   requireRepoCoords,
   required Future<Map<String, dynamic>?> Function({
@@ -275,8 +309,11 @@ List<RepoOp> buildPrReviewOps({
       return {'ok': true};
     },
   ),
-  // Posts review findings as inline PR comments on the caller's own GitHub
-  // sign-in: the person choosing which findings go out is who publishes them.
+  // Posts agent-authored review findings as inline PR comments through the
+  // workspace's bot/App identity bounded by `ctx.userId` (installation token
+  // on own Apps and listed Connect installs, `connectBotOrPerson` fallback on
+  // unlisted Connect installs, automation token on GitLab/Bitbucket), with
+  // mentions neutralized and attribution applied when posting on GitHub.
   // Bodies read from stored `review_node` messages (not the client).
   //
   // Unanchored findings counted, never dropped. Anchors outside the diff
@@ -301,6 +338,7 @@ List<RepoOp> buildPrReviewOps({
       await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
       final c = requireRepoCoords(ctx.args);
       final prNumber = (ctx.args['pr_number'] as num).toInt();
+      final commitSha = ctx.args['commit_sha'] as String;
       final wanted = <String>{
         for (final id in (ctx.args['message_ids'] as List? ?? const []))
           if (id is String && id.isNotEmpty) id,
@@ -308,6 +346,25 @@ List<RepoOp> buildPrReviewOps({
       if (wanted.isEmpty) {
         return {'posted': 0, 'skipped': 0, 'outOfDiff': 0, 'failed': 0};
       }
+
+      // Resolve before reading findings so an unauthorized or unsigned-in
+      // caller fails immediately with a typed error (e.g. `needs_sign_in`).
+      final bot = resolveReviewBotClient == null
+          ? null
+          : await resolveReviewBotClient(
+              workspaceId,
+              c.owner,
+              c.repo,
+              userId: ctx.userId,
+            );
+      final fallbackRepo = bot == null
+          ? await resolvePrReviewRepository(
+              workspaceId,
+              c.owner,
+              c.repo,
+              userId: ctx.userId,
+            )
+          : null;
 
       // Space-wide, NOT the standing conversation: each reviewer files its
       // findings into its own stream, so gathering from one conversation
@@ -318,18 +375,15 @@ List<RepoOp> buildPrReviewOps({
         workspaceId,
         spaceId,
       );
-      final repository = await resolvePrReviewRepository(
-        workspaceId,
-        c.owner,
-        c.repo,
-        userId: ctx.userId,
-      );
 
       var posted = 0;
       var skipped = 0;
       var outOfDiff = 0;
       final outOfDiffPaths = <String>{};
       final errors = <String>[];
+      final anchored =
+          <({String path, int line, int? startLine, String rawBody})>[];
+
       for (final m in messages) {
         if (m.messageType != MessageType.reviewNode || !wanted.contains(m.id)) {
           continue;
@@ -337,29 +391,148 @@ List<RepoOp> buildPrReviewOps({
         final payload = ReviewNodePayload.fromMetadata(m.metadata);
         final path = payload?.anchor.filePath;
         final line = payload?.anchor.lineNumber;
-        if (payload == null || path == null || line == null) {
+        if (payload == null ||
+            path == null ||
+            line == null ||
+            line <= 0 ||
+            m.content.trim().isEmpty) {
           skipped++;
           continue;
         }
+        final rawEnd = payload.anchor.lineEnd;
+        final endLine = rawEnd != null && rawEnd > line ? rawEnd : line;
+        final startLine = rawEnd != null && rawEnd > line ? line : null;
+        anchored.add((
+          path: path,
+          line: endLine,
+          startLine: startLine,
+          rawBody: m.content,
+        ));
+      }
+
+      if (anchored.isNotEmpty &&
+          bot != null &&
+          bot.repo.forge == ForgeHost.github &&
+          postConnectReviewComments != null) {
+        final inputs = [
+          for (final item in anchored)
+            GitHubReviewCommentInput(
+              path: item.path,
+              line: item.line,
+              startLine: item.startLine,
+              startSide: item.startLine == null ? null : 'RIGHT',
+              body: item.rawBody.length > connectMaxReviewCommentBodyLength
+                  ? item.rawBody.substring(0, connectMaxReviewCommentBodyLength)
+                  : item.rawBody,
+            ),
+        ];
+        final connectOutcomes = await postConnectReviewComments(
+          workspaceId: workspaceId,
+          repo: bot.repo,
+          userId: ctx.userId,
+          prNumber: prNumber,
+          commitSha: commitSha,
+          comments: inputs,
+        );
+        if (connectOutcomes != null) {
+          for (final outcome in connectOutcomes) {
+            if (outcome.index < 0 || outcome.index >= anchored.length) {
+              continue;
+            }
+            switch (outcome.status) {
+              case GitHubReviewCommentStatus.posted:
+                posted++;
+              case GitHubReviewCommentStatus.outOfDiff:
+                outOfDiff++;
+                outOfDiffPaths.add(anchored[outcome.index].path);
+              case GitHubReviewCommentStatus.failed:
+                errors.add('GitHub rejected comment on ${anchored[outcome.index].path}');
+            }
+          }
+          if (posted > 0) {
+            final repo = await resolvePrReviewRepository(
+              workspaceId,
+              c.owner,
+              c.repo,
+              userId: ctx.userId,
+            );
+            await repo.invalidatePullRequest(prNumber);
+          }
+          return {
+            'posted': posted,
+            'skipped': skipped,
+            'outOfDiff': outOfDiff,
+            'failed': errors.length,
+            if (outOfDiffPaths.isNotEmpty)
+              'outOfDiffPaths': outOfDiffPaths.toList(),
+            if (errors.isNotEmpty) 'errors': errors,
+          };
+        }
+      }
+
+      final attribute = bot != null && bot.repo.forge == ForgeHost.github
+          ? await automatedReviewAttribution?.call(
+              workspaceId: workspaceId,
+              owner: bot.repo.remoteOwner,
+              actingUserId: ctx.userId,
+            )
+          : null;
+
+      for (final item in anchored) {
+        final safeBody = neutralizeMentions(item.rawBody);
+        final body = attribute == null ? safeBody : attribute(safeBody);
         try {
-          await repository.postReviewComment(
-            prNumber: prNumber,
-            commitSha: ctx.args['commit_sha'] as String,
-            path: path,
-            line: payload.anchor.lineEnd ?? line,
-            side: 'RIGHT',
-            body: m.content,
-            startLine: payload.anchor.lineEnd != null ? line : null,
-          );
+          if (bot != null) {
+            await bot.client.postReviewComment(
+              prNumber: prNumber,
+              commitSha: commitSha,
+              path: item.path,
+              line: item.line,
+              side: 'RIGHT',
+              body: body,
+              startLine: item.startLine,
+            );
+          } else {
+            await fallbackRepo!.postReviewComment(
+              prNumber: prNumber,
+              commitSha: commitSha,
+              path: item.path,
+              line: item.line,
+              side: 'RIGHT',
+              body: body,
+              startLine: item.startLine,
+            );
+          }
           posted++;
+        } on NeedsSignInException {
+          rethrow;
+        } on NetworkException catch (e) {
+          if (e.code == kNeedsSignInCode || e.code == kRepoReplacedCode) {
+            rethrow;
+          }
+          if (isOutOfDiffAnchorRejection(e)) {
+            outOfDiff++;
+            outOfDiffPaths.add(item.path);
+          } else {
+            errors.add('$e');
+          }
         } on Object catch (e) {
           if (isOutOfDiffAnchorRejection(e)) {
             outOfDiff++;
-            outOfDiffPaths.add(path);
+            outOfDiffPaths.add(item.path);
           } else {
             errors.add('$e');
           }
         }
+      }
+      if (bot != null && posted > 0) {
+        final repo = await resolvePrReviewRepository(
+          workspaceId,
+          c.owner,
+          c.repo,
+          userId: ctx.userId,
+        );
+        await repo.invalidatePullRequest(prNumber);
       }
       return {
         'posted': posted,
@@ -876,6 +1049,32 @@ List<RepoOp> buildPrReviewOps({
         prNumber: (ctx.args['pr_number'] as num).toInt(),
         title: ctx.args['title'] as String?,
         body: ctx.args['body'] as String?,
+      );
+      return {'ok': true};
+    },
+  ),
+  RepoOp(
+    name: 'pr_review.postIssueComment',
+    kind: RepoOpKind.mutate,
+    // Irreversible: publishes a top-level comment to the forge (external side
+    // effect).
+    undoClass: UndoClass.irreversible,
+    requiredArgs: ['owner', 'repo', 'pr_number', 'body'],
+    handler: (ctx) async {
+      final c = requireRepoCoords(ctx.args);
+      final body = ctx.args['body'] as String;
+      if (body.trim().isEmpty) {
+        throw const ValidationException('Comment body cannot be empty.');
+      }
+      final repo = await resolvePrReviewRepository(
+        ctx.workspaceId!,
+        c.owner,
+        c.repo,
+        userId: ctx.userId,
+      );
+      await repo.postIssueComment(
+        prNumber: (ctx.args['pr_number'] as num).toInt(),
+        body: body,
       );
       return {'ok': true};
     },

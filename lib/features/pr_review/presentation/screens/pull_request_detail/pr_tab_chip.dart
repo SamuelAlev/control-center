@@ -19,7 +19,8 @@ class CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: selected ? t.bgPrimary : t.bgSecondary,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: t.borderSecondary),
       ),
       child: DefaultTextStyle.merge(
         style: TextStyle(

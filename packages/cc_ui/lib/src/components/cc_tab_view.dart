@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/components/cc_roving_focus.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -6,7 +7,6 @@ import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// One entry in a [CcTabView]: a strip [label] (any widget) and its [content].
@@ -35,8 +35,9 @@ class CcTabViewEntry {
 /// strip with the selected panel.
 ///
 /// Controlled: the caller owns [selectedIndex] and updates it from [onChanged].
-/// The strip uses WAI-ARIA-style roving-tabindex (Tab lands on the selected
-/// tab; `←`/`→`/`↑`/`↓`/`Home`/`End` move between tabs). Set [scrollable] when
+/// The strip uses WAI-ARIA-style roving-tabindex: it is one Tab stop (the
+/// selected tab), `←`/`→` (mirrored under RTL) and `Home`/`End` move between
+/// tabs and select them, and `↑`/`↓` are left to directional focus. Set [scrollable] when
 /// the strip can overflow horizontally and [expand] to make the selected panel
 /// fill the remaining height (the view must then sit in a bounded-height
 /// parent).
@@ -71,103 +72,69 @@ class CcTabView extends StatefulWidget {
 }
 
 class _CcTabViewState extends State<CcTabView> {
-  final FocusScopeNode _scopeNode = FocusScopeNode(
-    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  late final CcRovingFocusNodes _tabNodes = CcRovingFocusNodes(
+    'CcTabView tab',
+    widget.tabs.length,
   );
-  List<FocusNode> _tabNodes = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabNodes = [for (var i = 0; i < widget.tabs.length; i++) FocusNode()];
-  }
 
   @override
   void didUpdateWidget(covariant CcTabView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.tabs.length != widget.tabs.length) {
-      for (final n in _tabNodes) {
-        n.dispose();
-      }
-      _tabNodes = [for (var i = 0; i < widget.tabs.length; i++) FocusNode()];
-    }
+    _tabNodes.sync(widget.tabs.length);
   }
 
   @override
   void dispose() {
-    for (final n in _tabNodes) {
-      n.dispose();
-    }
-    _scopeNode.dispose();
+    _tabNodes.dispose();
     super.dispose();
   }
 
-  void _select(int index) {
-    widget.onChanged(index);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && index < _tabNodes.length) {
-        _tabNodes[index].requestFocus();
-      }
-    });
-  }
-
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) {
+    final target = ccRovingTarget(
+      event: event,
+      current: _tabNodes.focusedIndex ?? widget.selectedIndex,
+      count: widget.tabs.length,
+      rtl: Directionality.of(context) == TextDirection.rtl,
+    );
+    if (target == null) {
       return KeyEventResult.ignored;
     }
-    final count = widget.tabs.length;
-    if (count == 0) {
-      return KeyEventResult.ignored;
+    _tabNodes[target].requestFocus();
+    if (target != widget.selectedIndex) {
+      widget.onChanged(target);
     }
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowRight ||
-        key == LogicalKeyboardKey.arrowDown) {
-      _select((widget.selectedIndex + 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowUp) {
-      _select((widget.selectedIndex - 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.home) {
-      _select(0);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.end) {
-      _select(count - 1);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
+    return KeyEventResult.handled;
   }
 
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
+    final count = widget.tabs.length;
+    final selected = widget.selectedIndex;
+    _tabNodes.setStop(selected >= 0 && selected < count ? selected : 0);
     final strip = Container(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: t.borderPrimary)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: FocusScope(
-          node: _scopeNode,
-          child: Focus(
-            canRequestFocus: false,
-            onKeyEvent: _onKey,
-            child: CcFluidHover(
-              axis: CcFluidHoverAxis.x,
-              itemCount: widget.tabs.length,
-              itemBuilder: (context, i) => _Tab(
-                label: widget.tabs[i].label,
-                semanticLabel: widget.tabs[i].semanticLabel,
-                selected: i == widget.selectedIndex,
-                // Roving tabindex: only the selected tab is a Tab stop.
-                focusable: i == widget.selectedIndex,
-                focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
-                tokens: t,
-                onPressed: () => _select(i),
-              ),
-              layoutBuilder: (context, items) =>
-                  Row(mainAxisSize: MainAxisSize.min, children: items),
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onKeyEvent: _onKey,
+          child: CcFluidHover(
+            axis: CcFluidHoverAxis.x,
+            itemCount: count,
+            itemBuilder: (context, i) => _Tab(
+              label: widget.tabs[i].label,
+              semanticLabel: widget.tabs[i].semanticLabel,
+              selected: i == selected,
+              focusNode: _tabNodes[i],
+              tokens: t,
+              onPressed: () => widget.onChanged(i),
             ),
+            layoutBuilder: (context, items) =>
+                Row(mainAxisSize: MainAxisSize.min, children: items),
           ),
         ),
       ),
@@ -200,7 +167,6 @@ class _Tab extends StatelessWidget {
     required this.label,
     required this.semanticLabel,
     required this.selected,
-    required this.focusable,
     required this.focusNode,
     required this.tokens,
     required this.onPressed,
@@ -209,8 +175,7 @@ class _Tab extends StatelessWidget {
   final Widget label;
   final String? semanticLabel;
   final bool selected;
-  final bool focusable;
-  final FocusNode? focusNode;
+  final FocusNode focusNode;
   final DesignSystemTokens tokens;
   final VoidCallback onPressed;
 
@@ -218,72 +183,69 @@ class _Tab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = tokens;
     final duration = CcMotion.resolveFade(context, CcMotion.moderate);
-    return Semantics(
-      selected: selected,
-      child: CcTappable(
-        onPressed: onPressed,
-        focusNode: focusNode,
-        canRequestFocus: focusable,
-        borderRadius: AppRadii.brSm,
-        semanticLabel: semanticLabel,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          final pressed = states.contains(WidgetState.pressed);
-          final fluidActive = CcFluidHover.isItemActive(context);
-          final Color background = pressed
-              ? t.hoverStrong
-              : (hovered && !selected && !fluidActive
-                    ? t.hover
-                    : t.hover.withValues(alpha: 0));
-          final foreground = selected
-              ? t.fg
-              : (hovered ? t.fgSecondary : t.textTertiary);
-          return AnimatedContainer(
-            duration: duration,
-            curve: CcMotion.standard,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: AppRadii.brSm,
-            ),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
+    return CcTappable(
+      onPressed: onPressed,
+      focusNode: focusNode,
+      borderRadius: AppRadii.brSm,
+      semanticLabel: semanticLabel,
+      semanticSelected: selected,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
+        final Color background = pressed
+            ? t.hoverStrong
+            : (hovered && !selected && !fluidActive
+                  ? t.hover
+                  : t.hover.withValues(alpha: 0));
+        final foreground = selected
+            ? t.fg
+            : (hovered ? t.fgSecondary : t.textTertiary);
+        return AnimatedContainer(
+          duration: duration,
+          curve: CcMotion.standard,
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: AppRadii.brSm,
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: DefaultTextStyle.merge(
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    fontWeight: CcTypography.regularWeight,
+                    color: foreground,
                   ),
-                  child: DefaultTextStyle.merge(
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
-                      fontWeight: CcTypography.regularWeight,
-                      color: foreground,
-                    ),
-                    child: IconTheme.merge(
-                      data: IconThemeData(color: foreground, size: 15),
-                      child: label,
-                    ),
+                  child: IconTheme.merge(
+                    data: IconThemeData(color: foreground, size: 15),
+                    child: label,
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 2,
-                  child: AnimatedOpacity(
-                    duration: duration,
-                    curve: CcMotion.standard,
-                    opacity: selected ? 1 : 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(color: t.accent),
-                    ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 2,
+                child: AnimatedOpacity(
+                  duration: duration,
+                  curve: CcMotion.standard,
+                  opacity: selected ? 1 : 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: t.accent),
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

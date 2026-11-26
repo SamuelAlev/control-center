@@ -32,6 +32,21 @@ abstract final class CcFonts {
   /// is the default. [_resolve] short-circuits on this set for that reason.
   static const bundledFamilies = {uiFamily, codeFamily};
 
+  static const Map<String, String> _bundledAliases = {
+    'Manrope': uiFamily,
+    'Fira Code': codeFamily,
+  };
+
+  /// Returns the bundled asset family name if [family] names a bundled font
+  /// (either by its full `packages/cc_ui/...` name or its display name),
+  /// otherwise null.
+  static String? resolveBundled(String family) {
+    if (bundledFamilies.contains(family)) {
+      return family;
+    }
+    return _bundledAliases[family];
+  }
+
   /// Fallback families for the *active* locale's script, or empty when
   /// Manrope covers it. Never the full catalogue — attaching every companion
   /// would FontLoader Thai while the UI is in Hebrew.
@@ -82,13 +97,25 @@ abstract final class CcFonts {
   static TextStyle ui({TextStyle? textStyle, String? family}) =>
       _resolve(textStyle: textStyle, family: family, bundled: uiFamily);
 
+  /// Numeric text — counts, durations, costs, timestamps — in the ambient UI
+  /// font with tabular figures, so columns align and ticking values do not
+  /// jitter. Sets no family: this is NOT monospace. A call site that names its
+  /// own [TextStyle.fontFeatures] keeps them verbatim.
+  static TextStyle numeric({TextStyle? textStyle}) {
+    final style = textStyle ?? const TextStyle();
+    return style.fontFeatures != null
+        ? style
+        : style.copyWith(fontFeatures: CcTypography.numeralFeatures);
+  }
+
   /// Monospace text in the bundled Fira Code, or in [family] when given.
   ///
-  /// This is also where tabular figures live: going monospace is what makes
-  /// digits share one advance width, so every code/mono surface gets
-  /// [CcTypography.numeralFeatures] and no proportional surface does. A call
-  /// site that names its own [TextStyle.fontFeatures] (ligature toggles, for
-  /// instance) keeps them verbatim.
+  /// For code only: code, diffs, terminals, logs, paths, branches, SHAs,
+  /// commands, keyboard keys. Labels, statuses and numerics stay in the UI
+  /// font ([numeric] for the ones that need to line up). Code surfaces get
+  /// [CcTypography.numeralFeatures] too; a call site that names its own
+  /// [TextStyle.fontFeatures] (ligature toggles, for instance) keeps them
+  /// verbatim.
   static TextStyle code({TextStyle? textStyle, String? family}) => _resolve(
     textStyle: textStyle,
     family: family,
@@ -129,14 +156,12 @@ abstract final class CcFonts {
       );
     }
     // A bundled family is already registered under its real name, so it is
-    // applied directly and never routed through the registry — that named a
-    // per-weight variant (`packages/cc_ui/Manrope 400`) that nothing
-    // registers, which left the real font reachable only as a fallback. The
-    // script fallbacks still ride along behind it, for the same reason as
-    // above.
-    if (bundledFamilies.contains(family)) {
+    // applied directly and never routed through the registry. The script
+    // fallbacks still ride along behind it, for the same reason as above.
+    final resolvedBundled = resolveBundled(family);
+    if (resolvedBundled != null) {
       return style.copyWith(
-        fontFamily: family,
+        fontFamily: resolvedBundled,
         fontFamilyFallback: [..._scriptFallbacks, ...?style.fontFamilyFallback],
       );
     }

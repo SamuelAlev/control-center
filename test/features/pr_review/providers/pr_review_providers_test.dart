@@ -315,6 +315,95 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(container.read(prFilesProvider(pr)).value, isEmpty);
     });
+
+    test(
+      'invalidating prFilesProvider replays latest complete load and ignores loading state',
+      () async {
+        const pr = (
+          workspaceId: 'w',
+          repoFullName: 'o/r',
+          number: 4,
+          forge: null,
+        );
+        var loadCount = 0;
+        final secondController = StreamController<PrFilesLoad>();
+        addTearDown(secondController.close);
+
+        final container = ProviderContainer(
+          overrides: [
+            prFilesLoadProvider(pr).overrideWith((ref) {
+              loadCount++;
+              if (loadCount == 1) {
+                return Stream.value(
+                  PrFilesLoad(
+                    files: [
+                      PrFile(
+                        filename: 'v1.dart',
+                        status: PrFileStatus.modified,
+                        additions: 1,
+                        deletions: 0,
+                        patch: '@@ -1 +1 @@',
+                      ),
+                    ],
+                    isComplete: true,
+                  ),
+                );
+              }
+              return secondController.stream;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final listener = container.listen(prFilesProvider(pr), (_, _) {});
+        addTearDown(listener.close);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(prFilesProvider(pr)).value?.single.filename,
+          'v1.dart',
+        );
+
+        // Invalidating prFilesProvider when prFilesLoadProvider already has
+        // a complete load immediately replays that value.
+        container.invalidate(prFilesProvider(pr));
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(prFilesProvider(pr)).value?.single.filename,
+          'v1.dart',
+        );
+
+        // When prFilesLoadProvider starts reloading, prFilesProvider stays
+        // loading rather than re-emitting the stale retained v1 list.
+        container.invalidate(prFilesLoadProvider(pr));
+        container.invalidate(prFilesProvider(pr));
+        await Future<void>.delayed(Duration.zero);
+        expect(container.read(prFilesProvider(pr)).isLoading, isTrue);
+
+        secondController.add(
+          PrFilesLoad(
+            files: [
+              PrFile(
+                filename: 'v2.dart',
+                status: PrFileStatus.added,
+                additions: 2,
+                deletions: 0,
+                patch: '@@ -1 +1 @@',
+              ),
+            ],
+            isComplete: true,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(prFilesProvider(pr)).value?.single.filename,
+          'v2.dart',
+        );
+      },
+    );
   });
 
   group('prFileIndexProvider', () {

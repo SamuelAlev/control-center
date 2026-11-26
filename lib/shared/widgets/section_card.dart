@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// Mirrors the visual treatment of the dashboard's CPU usage card:
 /// `bg-primary` background, `border-secondary` outline, no hover state.
-/// A small uppercase label header sits above the content.
+/// A small tracked label header sits above the content.
 ///
 /// For interactive (clickable) cards that should react to hover, use
 /// `AppCard` instead.
@@ -26,9 +26,9 @@ class SectionCard extends StatelessWidget {
     this.expands = false,
   });
 
-  /// Small uppercase label rendered at the top of the card (e.g. "CPU USAGE",
-  /// "READER PREFERENCES"). When provided it is rendered with the dashboard
-  /// stat-card treatment: caps + letter-spacing + muted color.
+  /// Small label rendered at the top of the card (e.g. "CPU usage",
+  /// "Reader preferences"), painted as written. When provided it is rendered
+  /// with the dashboard stat-card treatment: letter-spacing + muted color.
   final String? label;
 
   /// How many things the card's body lists, rendered as a quiet badge beside
@@ -141,12 +141,12 @@ class _Header extends StatelessWidget {
 
     if (label != null) {
       final labelText = Text(
-        label!.toUpperCase(),
+        label!,
         style: TextStyle(
           fontSize: 12,
           height: 1.4,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.8,
+          letterSpacing: 0.2,
           color: muted,
         ),
       );
@@ -193,7 +193,7 @@ class _Header extends StatelessWidget {
     }
 
     // Top-aligned by default: a tall trailing (e.g. a 40px button) must not
-    // push the small caps label below the card's top padding — the label
+    // push the small label below the card's top padding — the label
     // anchors the header, the trailing hangs from the same top line.
     final headerBody = Row(
       crossAxisAlignment: alignment,

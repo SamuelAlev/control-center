@@ -96,7 +96,7 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
     final labelStyle = CcTypography.caption.copyWith(
       color: t.textTertiary,
       fontWeight: FontWeight.w600,
-      letterSpacing: 1.2,
+      letterSpacing: 0.2,
     );
 
     return Semantics(
@@ -165,7 +165,7 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                l10n.soundscapeTuneBright.toUpperCase(),
+                                l10n.soundscapeTuneBright,
                                 style: labelStyle,
                               ),
                             ),
@@ -175,7 +175,7 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 6),
                               child: Text(
-                                l10n.soundscapeTuneSpacy.toUpperCase(),
+                                l10n.soundscapeTuneSpacy,
                                 style: labelStyle,
                               ),
                             ),
@@ -187,7 +187,7 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
                               child: RotatedBox(
                                 quarterTurns: 3,
                                 child: Text(
-                                  l10n.soundscapeTuneMellow.toUpperCase(),
+                                  l10n.soundscapeTuneMellow,
                                   style: labelStyle,
                                 ),
                               ),
@@ -200,7 +200,7 @@ class _SoundscapeTunePadState extends ConsumerState<SoundscapeTunePad> {
                               child: RotatedBox(
                                 quarterTurns: 1,
                                 child: Text(
-                                  l10n.soundscapeTuneEnergetic.toUpperCase(),
+                                  l10n.soundscapeTuneEnergetic,
                                   style: labelStyle,
                                 ),
                               ),

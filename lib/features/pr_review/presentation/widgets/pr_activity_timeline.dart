@@ -1220,12 +1220,18 @@ class _TimelineThreadCard extends StatelessWidget {
           // The forge's own hunk, not the live diff: for an outdated
           // conversation this is the only surviving picture of the code it was
           // about, and for a current one it saves a trip to the Diff tab.
-          if (thread.root.diffHunk.trim().isNotEmpty && !collapsed)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
-              child: ReviewDiffHunkSnippet(
-                hunk: thread.root.diffHunk,
-                path: thread.path,
+          // It opens with the conversation rather than appearing above it:
+          // a hunk that pops in pushes the row that was just clicked away
+          // from the pointer.
+          if (thread.root.diffHunk.trim().isNotEmpty)
+            CcCollapsible(
+              expanded: !collapsed,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+                child: ReviewDiffHunkSnippet(
+                  hunk: thread.root.diffHunk,
+                  path: thread.path,
+                ),
               ),
             ),
           PrInlineThreadBlock(
@@ -1629,7 +1635,8 @@ class _VerdictChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: fg.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

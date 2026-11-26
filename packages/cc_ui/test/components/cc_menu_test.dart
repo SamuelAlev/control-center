@@ -1,5 +1,8 @@
+import 'dart:ui' show CheckedState, Tristate;
+
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_menu.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -407,7 +410,7 @@ void main() {
   });
 
   group('CcMenu sections', () {
-    testWidgets('renders a section heading in uppercase without making it '
+    testWidgets('renders a section heading as written without making it '
         'selectable', (tester) async {
       var picked = 0;
       await tester.pumpWidget(
@@ -427,9 +430,9 @@ void main() {
       await tester.tap(find.text('Menu'));
       await tester.pumpAndSettle();
 
-      // The copy is sentence case; the uppercase is a rendering treatment.
-      expect(find.text('TOOLS'), findsOneWidget);
-      expect(find.text('Tools'), findsNothing);
+      // The heading is painted as written, never upper-cased.
+      expect(find.text('Tools'), findsOneWidget);
+      expect(find.text('TOOLS'), findsNothing);
 
       // One arrow-down lands on the row BELOW the heading, not the heading.
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -558,8 +561,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Search'), findsOneWidget);
-      expect(find.text('TOOLS'), findsOneWidget);
-      expect(find.text('VIRTUAL MACHINE'), findsOneWidget);
+      expect(find.text('Tools'), findsOneWidget);
+      expect(find.text('Virtual machine'), findsOneWidget);
 
       // The field holds focus, so typing goes into it rather than nowhere.
       await tester.enterText(find.byType(EditableText), 'fire');
@@ -579,13 +582,13 @@ void main() {
 
       expect(find.text('Firefox'), findsOneWidget);
       expect(
-        find.text('VIRTUAL MACHINE'),
+        find.text('Virtual machine'),
         findsNothing,
         reason:
             'A query ranks globally, so groups are dropped wholesale rather '
             'than leaving a heading standing over an emptied group.',
       );
-      expect(find.text('TOOLS'), findsNothing);
+      expect(find.text('Tools'), findsNothing);
     });
 
     testWidgets('searchText matches a word the section heading lifted out of '
@@ -611,7 +614,10 @@ void main() {
       await tester.pumpWidget(
         buildSearchable(
           items: [
-            CcMenuItem(label: 'Terminal', onSelected: () => picked = 'Terminal'),
+            CcMenuItem(
+              label: 'Terminal',
+              onSelected: () => picked = 'Terminal',
+            ),
             CcMenuItem(label: 'Firefox', onSelected: () => picked = 'Firefox'),
           ],
         ),
@@ -643,7 +649,7 @@ void main() {
       await tester.pumpAndSettle();
       // Still open, back to the full grouped list.
       expect(find.text('Terminal'), findsOneWidget);
-      expect(find.text('TOOLS'), findsOneWidget);
+      expect(find.text('Tools'), findsOneWidget);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -716,6 +722,252 @@ void main() {
             'widest visible row changed, which cannot be read while typing.',
       );
       expect(before, 280);
+    });
+  });
+
+  group('CcMenu keyboard and focus', () {
+    late List<String> picked;
+    late FocusNode after;
+    setUp(() {
+      picked = [];
+      after = FocusNode(debugLabel: 'after');
+    });
+    tearDown(() => after.dispose());
+
+    List<CcMenuItem> items() => [
+      CcMenuItem(label: 'Archive', onSelected: () => picked.add('Archive')),
+      CcMenuItem(label: 'Branch', onSelected: () => picked.add('Branch')),
+      const CcMenuItem.divider(),
+      CcMenuItem(
+        label: 'Bisect',
+        enabled: false,
+        onSelected: () => picked.add('Bisect'),
+      ),
+      CcMenuItem(label: 'Blame', onSelected: () => picked.add('Blame')),
+      CcMenuItem(label: 'Copy', onSelected: () => picked.add('Copy')),
+    ];
+
+    Widget host() => ccTestApp(
+      Column(
+        children: [
+          CcMenu(target: const Text('Menu'), items: items()),
+          CcTappable(
+            focusNode: after,
+            onPressed: () {},
+            builder: (context, states) => const Text('After'),
+          ),
+        ],
+      ),
+    );
+
+    FocusNode trigger(WidgetTester tester) =>
+        Focus.of(tester.element(find.text('Menu')));
+
+    Future<void> open(WidgetTester tester) async {
+      await tester.tap(find.text('Menu'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
+      await tester.sendKeyEvent(k);
+      await tester.pump();
+    }
+
+    testWidgets('arrows and Enter work at once, focus returns to the trigger', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+      await open(tester);
+      expect(trigger(tester).hasFocus, isFalse);
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(picked, ['Branch']);
+      expect(find.text('Archive'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('Escape closes and returns focus; Tab stays in the panel', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.tab);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasFocus, isFalse);
+      expect(find.text('Archive'), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.text('Archive'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('an outside tap returns focus to the trigger', (tester) async {
+      await tester.pumpWidget(host());
+      await open(tester);
+      await tester.tapAt(const Offset(780, 580));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Archive'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('Home, End, typeahead and Space', (tester) async {
+      await tester.pumpWidget(host());
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.end);
+      await key(tester, LogicalKeyboardKey.home);
+      // "b" jumps to Branch, again to Blame (the disabled Bisect is skipped).
+      await key(tester, LogicalKeyboardKey.keyB);
+      await tester.pump(const Duration(seconds: 1));
+      await key(tester, LogicalKeyboardKey.keyB);
+      await tester.pump(const Duration(seconds: 1));
+      await key(tester, LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(picked, ['Blame']);
+
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.end);
+      await key(tester, LogicalKeyboardKey.enter);
+      expect(picked, ['Blame', 'Copy']);
+    });
+
+    testWidgets('the highlight and the check are on the row semantics', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcMenu(
+              target: const Text('Menu'),
+              items: [
+                CcMenuItem(label: 'Light', selected: true, onSelected: () {}),
+                CcMenuItem(label: 'Dark', onSelected: () {}),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(
+        tester.getSemantics(find.text('Menu')).flagsCollection.isExpanded,
+        Tristate.isFalse,
+      );
+      await open(tester);
+      expect(
+        tester.getSemantics(find.text('Menu')).flagsCollection.isExpanded,
+        Tristate.isTrue,
+      );
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      final light = tester.getSemantics(find.text('Light'));
+      // One name, not the label plus the merged visible text.
+      expect(light.label, 'Light');
+      expect(light.flagsCollection.isSelected, Tristate.isTrue);
+      expect(light.flagsCollection.isChecked, CheckedState.isTrue);
+      final dark = tester.getSemantics(find.text('Dark'));
+      expect(dark.flagsCollection.isSelected, Tristate.isFalse);
+      expect(dark.flagsCollection.isChecked, CheckedState.isFalse);
+      semantics.dispose();
+    });
+  });
+
+  group('showCcMenuAt focus', () {
+    testWidgets('takes focus from the page, keys work, focus returns', (
+      tester,
+    ) async {
+      final opener = FocusNode(debugLabel: 'opener');
+      addTearDown(opener.dispose);
+      final picked = <String>[];
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: Builder(
+              builder: (context) => CcTappable(
+                focusNode: opener,
+                onPressed: () => showCcMenuAt(
+                  context: context,
+                  position: const Offset(100, 100),
+                  items: [
+                    CcMenuItem(label: 'Open', onSelected: () {}),
+                    CcMenuItem.submenu(
+                      label: 'Share',
+                      children: [
+                        CcMenuItem(
+                          label: 'Link',
+                          onSelected: () => picked.add('Link'),
+                        ),
+                        CcMenuItem(
+                          label: 'Mail',
+                          onSelected: () => picked.add('Mail'),
+                        ),
+                      ],
+                    ),
+                    CcMenuItem(
+                      label: 'Save',
+                      onSelected: () => picked.add('Save'),
+                    ),
+                  ],
+                ),
+                builder: (context, states) => const Text('Trigger'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Trigger'));
+      await tester.pump();
+      await tester.pump();
+      expect(opener.hasFocus, isFalse);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(find.text('Link'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump();
+      expect(picked, ['Mail']);
+      expect(opener.hasPrimaryFocus, isTrue);
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('Escape from the root closes and returns focus', (
+      tester,
+    ) async {
+      final opener = FocusNode(debugLabel: 'opener');
+      addTearDown(opener.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: Builder(
+              builder: (context) => CcTappable(
+                focusNode: opener,
+                onPressed: () => showCcMenuAt(
+                  context: context,
+                  position: const Offset(100, 100),
+                  items: [CcMenuItem(label: 'Open', onSelected: () {})],
+                ),
+                builder: (context, states) => const Text('Trigger'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Trigger'));
+      await tester.pump();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Open'), findsNothing);
+      expect(opener.hasPrimaryFocus, isTrue);
     });
   });
 }

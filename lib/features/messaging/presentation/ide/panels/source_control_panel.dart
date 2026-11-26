@@ -983,7 +983,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               ],
             ],
           ),
-          uppercaseTitle: false,
+          sectionTitle: false,
           collapsed: _collapsed,
           onToggleCollapse: () {
             setState(() => _collapsed = !_collapsed);

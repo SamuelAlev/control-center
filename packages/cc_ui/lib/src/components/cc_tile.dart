@@ -156,6 +156,7 @@ class CcTile extends StatelessWidget {
       onPressed: onTap,
       borderRadius: AppRadii.brSm,
       semanticLabel: semanticLabel,
+      semanticSelected: selected ? true : null,
       builder: (context, states) => _buildRow(
         context,
         t,

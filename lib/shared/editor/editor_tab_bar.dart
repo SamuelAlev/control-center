@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
@@ -117,8 +119,10 @@ class EditorTabBar extends StatefulWidget {
   /// on hover / when selected) or a middle-click on the tab. Null disables both.
   final ValueChanged<int>? onTabClosed;
 
-  /// Called on a secondary (right) click of a tab, with its index and the global
-  /// pointer position — the host opens a context menu there. Null disables it.
+  /// Called on a secondary (right) click of a tab, or Shift+F10 / the
+  /// context-menu key on a focused one, with its index and a global position
+  /// (the pointer, or the tab's bottom start corner) — the host opens a
+  /// context menu there. Null disables it.
   ///
   /// Right-clicking deliberately does NOT select the tab (so you can close one
   /// without loading it), which means the returned future is the strip's only
@@ -314,6 +318,26 @@ class _EditorTabBarState extends State<EditorTabBar> {
       return KeyEventResult.handled;
     }
     final rtl = Directionality.of(context) == TextDirection.rtl;
+    // Shift+F10 or the context-menu key opens the menu a right-click opens,
+    // anchored under the tab's start corner since there is no pointer.
+    if (event is KeyDownEvent &&
+        widget.onTabContextMenu != null &&
+        (key == LogicalKeyboardKey.contextMenu ||
+            (key == LogicalKeyboardKey.f10 &&
+                HardwareKeyboard.instance.isShiftPressed))) {
+      final box =
+          _tabKeys[widget.tabs[index]]?.currentContext?.findRenderObject()
+              as RenderBox?;
+      final anchor = box == null || !box.hasSize
+          ? Offset.zero
+          : box.localToGlobal(
+              rtl
+                  ? box.size.bottomRight(Offset.zero)
+                  : box.size.bottomLeft(Offset.zero),
+            );
+      unawaited(_openContextMenu(index, anchor));
+      return KeyEventResult.handled;
+    }
     int? target;
     if (key == LogicalKeyboardKey.arrowRight) {
       target = rtl ? index - 1 : index + 1;

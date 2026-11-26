@@ -195,6 +195,25 @@ void main() {
       expect(back.line, isNull);
     });
 
+    test('an outdated review comment round-trips isOutdated', () {
+      final c = PrCodeReviewComment(
+        id: 9,
+        body: 'old',
+        user: const PrUser(login: 'u', avatarUrl: ''),
+        path: 'lib/a.dart',
+        position: null,
+        createdAt: DateTime.utc(2025),
+        originalLine: 27,
+        isOutdated: true,
+      );
+      final back = PrCacheCodec.reviewCommentFromCache(
+        PrCacheCodec.reviewCommentToCache(c),
+      );
+      expect(back.isOutdated, isTrue);
+      expect(back.originalLine, 27);
+      expect(back.anchorLine, isNull);
+    });
+
     test('a conversation comment', () {
       final c = IssueComment(
         id: 1,

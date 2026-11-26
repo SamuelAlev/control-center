@@ -1,6 +1,8 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_strip.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -39,6 +41,44 @@ void main() {
     expect(identical(provider(), before), isTrue);
     final image = tester.widget<Image>(find.byType(Image));
     expect(image.gaplessPlayback, isTrue);
+  });
+
+  testWidgets('an openable card opens with Enter; others are not buttons', (
+    tester,
+  ) async {
+    const attachment = ComposerAttachment(
+      id: 'a1',
+      kind: 'file',
+      label: 'notes.txt',
+    );
+    final opened = <String>[];
+    await tester.pumpWidget(
+      testWrap(
+        AttachmentStrip(
+          attachments: const [attachment],
+          onRemove: (_) {},
+          onOpen: (a) => opened.add(a.id),
+        ),
+      ),
+    );
+    final card = find.ancestor(
+      of: find.text('notes.txt'),
+      matching: find.byType(CcTappable),
+    );
+    expect(card, findsOneWidget);
+
+    Focus.of(tester.element(find.text('notes.txt'))).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(opened, ['a1']);
+
+    // Without a preview to open, the card is only a label.
+    await tester.pumpWidget(
+      testWrap(
+        AttachmentStrip(attachments: const [attachment], onRemove: (_) {}),
+      ),
+    );
+    expect(card, findsNothing);
   });
 
   group('overflowing cards scroll', () {

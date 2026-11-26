@@ -274,7 +274,7 @@ void main() {
       identity.ssoIssuer = 'https://idp.acme.dev';
       await pump(tester, const IdentityProviderSection());
 
-      expect(find.text(l10n.settingsServerSso.toUpperCase()), findsOneWidget);
+      expect(find.text(l10n.settingsServerSso), findsOneWidget);
       expect(find.text(l10n.ssoIdentityDescription), findsOneWidget);
       expect(find.text(l10n.linkedAccountsIdentityProvider), findsOneWidget);
       expect(find.text('https://idp.acme.dev'), findsOneWidget);

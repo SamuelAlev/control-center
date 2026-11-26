@@ -5,7 +5,7 @@ import 'package:control_center/features/meetings/presentation/utils/meeting_them
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// One transcript line: a monospaced timestamp beside a speaker label and the
+/// One transcript line: a timestamp beside a speaker label and the
 /// transcribed text. Once diarization has run a segment carries a
 /// [MeetingSegment.speakerLabel] (e.g. `Person 1`); that label — or the name the
 /// user gave it — is shown in place of the coarse "You" / "Others". The
@@ -101,23 +101,18 @@ class MeetingTranscriptRow extends StatelessWidget {
     final canRename = label != null && onRenameSpeaker != null;
     Widget speakerText = Text(
       who,
-      style: meetingMono(context, fontSize: 11, color: speakerColor),
+      style: meetingMeta(context, fontSize: 11, color: speakerColor),
     );
     if (canRename) {
+      final name = speakerText;
       speakerText = CcTooltip(
         message: l10n.meetingRenameSpeakerTooltip,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            // Opaque so the bare text registers a hit: a plain RenderParagraph
-            // doesn't, so the default deferToChild would show the hover cursor +
-            // tooltip (handled by the opaque MouseRegion) yet never deliver the
-            // tap. Being the innermost detector it also wins the gesture arena
-            // over the row's seek-on-tap handler.
-            behavior: HitTestBehavior.opaque,
-            onTap: onRenameSpeaker,
-            child: speakerText,
-          ),
+        // The innermost tappable, so it wins the gesture arena over the row's
+        // seek-on-tap handler.
+        child: CcTappable(
+          onPressed: onRenameSpeaker,
+          semanticHint: l10n.meetingRenameSpeakerTooltip,
+          builder: (context, _) => name,
         ),
       );
     }
@@ -145,7 +140,7 @@ class MeetingTranscriptRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 3),
               child: Text(
                 MeetingFormat.stamp(startMs),
-                style: meetingMono(context, fontSize: 11),
+                style: meetingMeta(context, fontSize: 11),
               ),
             ),
           ),
@@ -182,14 +177,8 @@ class MeetingTranscriptRow extends StatelessWidget {
       ),
     );
     if (onTap != null) {
-      row = MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: row,
-        ),
-      );
+      final body = row;
+      row = CcTappable(onPressed: onTap, builder: (context, _) => body);
     }
     return row;
   }

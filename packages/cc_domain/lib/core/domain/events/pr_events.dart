@@ -466,6 +466,7 @@ class PrThreadResolved implements DomainEvent {
     this.commentId,
     this.path,
     this.line,
+    this.resolvedByLogin,
     this.forUserId,
   });
 
@@ -495,6 +496,9 @@ class PrThreadResolved implements DomainEvent {
 
   /// Line the thread is anchored to.
   final int? line;
+
+  /// GitHub login of the person who resolved the thread, when known.
+  final String? resolvedByLogin;
 
   /// The Control Center user this concerns.
   final String? forUserId;

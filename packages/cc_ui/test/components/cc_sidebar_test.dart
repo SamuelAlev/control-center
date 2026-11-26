@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../cc_test_app.dart';
@@ -310,5 +311,47 @@ void main() {
     // keeps a usable slice instead of being squeezed into a negative size.
     expect(find.text('Space'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Tab finishes the sidebar before the page beside it', (
+    tester,
+  ) async {
+    final first = FocusNode(debugLabel: 'first');
+    final second = FocusNode(debugLabel: 'second');
+    final page = FocusNode(debugLabel: 'page');
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+    addTearDown(page.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CcSidebar(
+              children: [
+                Focus(focusNode: first, child: const SizedBox(height: 32)),
+                // Far down the sidebar, below the page's control.
+                const SizedBox(height: 200),
+                Focus(focusNode: second, child: const SizedBox(height: 32)),
+              ],
+            ),
+            // Level with the sidebar's first row: reading order alone would
+            // visit it before the sidebar's second.
+            Focus(
+              focusNode: page,
+              child: const SizedBox(width: 40, height: 40),
+            ),
+          ],
+        ),
+      ),
+    );
+    first.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(second.hasPrimaryFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(page.hasPrimaryFocus, isTrue);
   });
 }

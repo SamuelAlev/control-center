@@ -37,6 +37,37 @@ void main() {
     });
 
     test(
+      'tells a line the person seeked into from one playback reached',
+      () async {
+        final container = makeContainer();
+        final controller = container.read(meetingPlaybackProvider.notifier);
+        Future<void> seek(Duration position) async {}
+        controller.attach(seek);
+
+        // Nothing seeked yet: every activation is playback's own.
+        expect(controller.wasSeekedInto(0, 1000), isFalse);
+
+        // A transcript-line tap and a waveform click both count.
+        await controller.seekToMs(1500);
+        expect(controller.wasSeekedInto(1000, 2000), isTrue);
+        expect(controller.wasSeekedInto(2000, 3000), isFalse);
+        controller.reportSeek(9000);
+        expect(controller.wasSeekedInto(8000, null), isTrue);
+        expect(controller.wasSeekedInto(1000, 2000), isFalse);
+        expect(container.read(meetingPlaybackProvider).positionMs, 9000);
+
+        // Playback ticks do not: the line they reach is followed.
+        controller.report(positionMs: 2500);
+        expect(controller.wasSeekedInto(2000, 3000), isFalse);
+
+        // A torn-down player takes its seek with it.
+        controller.detach(seek);
+        await flush();
+        expect(controller.wasSeekedInto(8000, null), isFalse);
+      },
+    );
+
+    test(
       'detach with the SAME handler clears it and resets the state',
       () async {
         final container = makeContainer();

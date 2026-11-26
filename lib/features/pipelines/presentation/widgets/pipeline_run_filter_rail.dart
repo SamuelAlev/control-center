@@ -58,20 +58,24 @@ class PipelineRunFilterRail extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     const filters = PipelineRunFilter.values;
 
-    return CcFluidHover(
-      itemCount: filters.length,
-      itemBuilder: (context, index) {
-        final filter = filters[index];
-        return CountRailItem(
-          label: filter.label(l10n),
-          count: counts[filter] ?? 0,
-          selected: filter == selected,
-          onPressed: () => onSelect(filter),
-        );
-      },
-      layoutBuilder: (context, items) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: items,
+    // One Tab group: the rail sits beside a list, and without a group of
+    // its own the reading-order sort alternates between the two columns.
+    return FocusTraversalGroup(
+      child: CcFluidHover(
+        itemCount: filters.length,
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          return CountRailItem(
+            label: filter.label(l10n),
+            count: counts[filter] ?? 0,
+            selected: filter == selected,
+            onPressed: () => onSelect(filter),
+          );
+        },
+        layoutBuilder: (context, items) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: items,
+        ),
       ),
     );
   }

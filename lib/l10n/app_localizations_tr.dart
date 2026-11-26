@@ -1080,13 +1080,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Bu aralıkta etkinlik yok';
 
   @override
-  String get calendarStartRecording => 'Kaydı başlat';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Kaydı başlat ve bağla';
-
-  @override
   String get calendarJoinMeet => 'Toplantıya katıl';
+
+  @override
+  String get calendarJoinAndRecord => 'Katıl ve kaydet';
+
+  @override
+  String get calendarRecordFailed => 'Kayıt başlatılamadı';
 
   @override
   String get calendarFromCalendar => 'Takvimden';
@@ -1923,9 +1923,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get activity => 'Etkinlik';
-
-  @override
-  String get activityLabel => 'ETKİNLİK';
 
   @override
   String get activitySearchHint => 'Etkinlik ara';
@@ -2879,7 +2876,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get briefDescription => 'Kısa açıklama';
 
   @override
-  String get bugLabel => 'HATA';
+  String get bugLabel => 'Hata';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4457,7 +4454,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get pullRequests => 'Pull request\'ler';
 
   @override
-  String get questionLabel => 'SORU';
+  String get questionLabel => 'Soru';
 
   @override
   String get queued => 'Kuyrukta';
@@ -4472,7 +4469,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reasoningEffort => 'Akıl yürütme eforu';
 
   @override
-  String get recommendLabel => 'ÖNER';
+  String get recommendLabel => 'Öner';
 
   @override
   String recordingFromDevice(String device) {
@@ -7481,6 +7478,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get addReviewers => 'İnceleyen ekle';
 
   @override
+  String get reRequestReview => 'İncelemeyi yeniden iste';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '$label kullanıcısından incelemeyi yeniden iste';
+  }
+
+  @override
   String get addAssignees => 'Atanan ekle';
 
   @override
@@ -7647,6 +7652,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get meetingStatusRecording => 'Kaydediliyor';
 
   @override
+  String get meetingStatusPaused => 'Duraklatıldı';
+
+  @override
   String get meetingStatusProcessing => 'İşleniyor';
 
   @override
@@ -7674,34 +7682,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count toplantı',
-      one: '1 toplantı',
-      zero: 'Toplantı yok',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Açık eylemler';
-
-  @override
-  String get meetingsLedgerDecisions => 'Kararlar';
-
-  @override
   String get meetingsLiveOpen => 'Kaydı aç';
 
   @override
   String get meetingTemplateShort => 'Şablon';
-
-  @override
-  String get meetingsStatThisWeek => 'Bu hafta';
-
-  @override
-  String get meetingsStatRecorded => 'Kaydedildi';
 
   @override
   String get meetingsFilterAll => 'Tümü';
@@ -7745,9 +7729,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total eylem maddesi';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'geliştirilmiş';
 
   @override
   String get meetingsTranscribing => 'yazıya dökülüyor ve özetleniyor…';
@@ -7982,9 +7963,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Bir toplantı devam ediyor gibi görünüyor. Kaydedilsin mi?';
-
-  @override
-  String get meetingDetectedRecord => 'Kaydet';
 
   @override
   String get meetingDetectedDismiss => 'Yoksay';
@@ -9513,6 +9491,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get deviceNeverSeen => 'Hiç bağlanmadı';
 
   @override
+  String get deviceAwaitingApproval => 'Onay bekleniyor';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10339,12 +10320,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Başarısız';
-
-  @override
-  String get bannerMeetingJoin => 'Katıl';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Kaydet ve bağla';
 
   @override
   String get bannerCalendarReconnect => 'Yeniden bağlan';
@@ -13669,6 +13644,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Yorum gönderilemedi: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Satır $line';
   }
@@ -15148,16 +15128,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Kapat: $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count yorum',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21412,10 +21382,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dispatchSettingsTitle => 'Zamanlamalar';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Zamanlamalar ve izlemeler için sınırlar ve kimsenin yanıtlamadığı isteklere ne olacağı.';
-
-  @override
   String get dispatchLimitsLabel => 'Zamanlama sınırları';
 
   @override
@@ -21494,9 +21460,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Hedef';
-
-  @override
-  String get scheduleRecordCrumb => 'Zamanlama';
 
   @override
   String get improvementRecordCrumb => 'Öneri';
@@ -21899,5 +21862,38 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$cap sınırından $spent, zincirindeki her zamanlama dahil';
+  }
+
+  @override
+  String get ccLoading => 'Yükleniyor';
+
+  @override
+  String get ccProgress => 'İlerleme';
+
+  @override
+  String get ccBreadcrumb => 'Gezinti yolu';
+
+  @override
+  String get ccDialog => 'İletişim kutusu';
+
+  @override
+  String get ccResize => 'Yeniden boyutlandır';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (doğrulanmadı)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title seç';
+  }
+
+  @override
+  String get prTableSelectAll => 'Tüm pull request\'leri seç';
+
+  @override
+  String planVersionRewind(int version) {
+    return '$version sürümüne geri dön';
   }
 }

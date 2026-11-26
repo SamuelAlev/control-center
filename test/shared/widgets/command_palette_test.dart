@@ -163,8 +163,8 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('NAVIGATION'), findsOneWidget);
-      expect(find.text('TOOLS'), findsOneWidget);
+      expect(find.text('Navigation'), findsOneWidget);
+      expect(find.text('Tools'), findsOneWidget);
     });
 
     testWidgets('dialog shows descriptions on items that have them', (
@@ -372,7 +372,7 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('OTHER'), findsOneWidget);
+      expect(find.text('Other'), findsOneWidget);
     });
 
     testWidgets('single command renders without category header', (

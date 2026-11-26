@@ -876,7 +876,8 @@ class _CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: tokens.bgSecondary,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: tokens.borderSecondary),
       ),
       child: Text(
         '$count',

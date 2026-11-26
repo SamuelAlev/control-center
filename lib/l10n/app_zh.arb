@@ -474,9 +474,9 @@
   "calendarDisconnect": "断开连接",
   "calendarReconnect": "重新连接",
   "calendarEmptyNoEvents": "此时间范围内没有活动",
-  "calendarStartRecording": "开始录制",
-  "calendarStartRecordingAndLink": "开始录制并关联",
   "calendarJoinMeet": "加入会议",
+  "calendarJoinAndRecord": "加入并录制",
+  "calendarRecordFailed": "无法开始录制",
   "calendarFromCalendar": "来自日历",
   "calendarLinkedMeeting": "已关联的会议",
   "calendarToday": "今天",
@@ -899,7 +899,6 @@
   "actions": "操作",
   "activate": "启用",
   "activity": "活动",
-  "activityLabel": "活动",
   "activitySearchHint": "搜索活动",
   "activityNoMatches": "没有符合筛选条件的活动",
   "activityPageRange": "第 {start}–{end} 条，共 {total} 条",
@@ -1639,7 +1638,7 @@
   "blocking": "阻塞",
   "bookmarkLabel": "书签",
   "briefDescription": "简短描述",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "内置默认值——从不更新",
   "cancel": "取消",
   "cancelEdit": "取消编辑",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "模板",
   "prTemplateDefault": "默认",
   "addReviewers": "添加审阅者",
-  "addAssignees": "添加经办人",
+
+  "reRequestReview": "重新请求审阅",
+  "reRequestReviewFor": "向 {label} 重新请求审阅",  "addAssignees": "添加经办人",
   "addLabels": "添加标签",
   "searchLabels": "搜索标签…",
   "noMatchingLabels": "没有匹配的标签",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "随手记下要点 — 会后由智能体扩写。",
   "meetingSpeakerMe": "我",
   "meetingStatusRecording": "录制中",
+  "meetingStatusPaused": "已暂停",
   "meetingStatusProcessing": "处理中",
   "meetingStatusDone": "已完成",
   "meetingStatusFailed": "失败",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{暂无会议} =1{1 场会议} other{{count} 场会议}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "未完成待办",
-  "meetingsLedgerDecisions": "决策",
   "meetingsLiveOpen": "打开录制",
   "meetingTemplateShort": "模板",
-  "meetingsStatThisWeek": "本周",
-  "meetingsStatRecorded": "已录制",
   "meetingsFilterAll": "全部",
   "meetingsFilterDone": "已完成",
   "meetingsFilterProcessing": "处理中",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "已增强",
   "meetingsTranscribing": "正在转写并生成摘要…",
   "meetingsOpenAction": "打开",
   "meetingsStopProcessing": "停止",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "似乎正在开会。要录制吗？",
-  "meetingDetectedRecord": "录制",
   "meetingDetectedDismiss": "忽略",
   "meetingAutoStopTitle": "这次会议似乎已结束。要停止录制吗？",
   "meetingAutoStopStop": "停止",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "从未连接",
+  "deviceAwaitingApproval": "等待批准",
   "profileSectionLabel": "个人资料",
   "profileSectionDescription": "你在此工作区对同事和 git 提交作者信息中的显示方式。空字段继承账户的姓名和电子邮件。",
   "displayNameLabel": "显示名称",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "运行中",
   "evalsStatusPassed": "已通过",
   "evalsStatusFailed": "已失败",
-  "bannerMeetingJoin": "加入",
-  "bannerMeetingRecordAndLink": "录制并链接",
   "bannerCalendarReconnect": "重新连接",
   "bannerView": "查看",
   "soundscapeTitle": "声景",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "无法发布评论：{error}",
   "commentOnLine": "第 {line} 行",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "始终允许从环境复制",
   "rigClipboardAlwaysCopyDescription": "无需询问，将任何环境中的剪贴板内容放到此设备上。",
   "imageDiffBefore": "更改前",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "更改后",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "并排",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "滑动",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "差异",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "已更改 {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "图片",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "源码",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "已删除",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "已将 {path} 标记为未查看",
   "prLineChangesSemantics": "新增行数：{additions}，删除行数：{deletions}",
   "closeTabNamed": "关闭{tab}",
-  "threadCommentCount": "{count, plural, other{{count} 条评论}}",
   "notificationAgentAwaitingInput": "智能体需要关注",
   "notifyAgentAwaitingInput": "当智能体需要批准、回答或有效凭据，或策略阻止某项操作时",
   "notificationAgentNeedsApproval": "{agent} 需要你的批准",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "由管理员决定",
   "improvementNotFound": "此提议不存在，或位于你无法打开的空间中。",
   "dispatchSettingsTitle": "定时",
-  "dispatchSettingsSubtitle": "定时与监视的限制，以及无人回应的请求会如何处理。",
   "dispatchLimitsLabel": "定时限制",
   "dispatchLimitsSubtitle": "智能体可持有的定时与监视数量上限，及其默认值。",
   "dispatchLimitRange": "1 到 {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "按 {zone}（上方所选时区）计算。",
   "dispatchDigestHourRange": "0 到 23",
   "goalRecordCrumb": "目标",
-  "scheduleRecordCrumb": "定时",
   "improvementRecordCrumb": "提议",
   "goalNodeNeedsAgent": "请选择负责推进该目标的智能体。",
   "goalNodeNeedsObjective": "请填写目标描述。",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "这不是浏览器显示的代码。{count, plural, other{还剩 {count} 次尝试机会。}}",
   "mcpServerSignInEnded": "超时、被拒绝，或错误代码输入次数过多。请重新开始以获取新的登录页面。",
   "mcpServerSignInStartAgain": "重新开始",
-  "mcpServerSignedIn": "已登录 {name}。"
+  "mcpServerSignedIn": "已登录 {name}。",
+  "ccLoading": "加载中",
+  "ccProgress": "进度",
+  "ccBreadcrumb": "面包屑导航",
+  "ccDialog": "对话框",
+  "ccResize": "调整大小",
+  "ccUnverifiedLabel": "{label}（未验证）",
+  "prRowSelect": "选择{title}",
+  "prTableSelectAll": "选择所有 Pull requests",
+  "planVersionRewind": "回滚到版本 {version}"
 }

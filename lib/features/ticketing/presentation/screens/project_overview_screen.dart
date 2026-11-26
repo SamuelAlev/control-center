@@ -8,6 +8,7 @@ import 'package:control_center/features/ticketing/presentation/widgets/new_proje
 import 'package:control_center/features/ticketing/presentation/widgets/new_ticket_dialog.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/project_visuals.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu.dart';
+import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu_keys.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_visuals.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -470,7 +471,7 @@ class _ProjectTicketRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return CcTappable(
+    final row = CcTappable(
       onPressed: () =>
           context.go(ticketDetailRoute(context.currentWorkspaceId!, ticket.id)),
       builder: (context, states) {
@@ -521,6 +522,11 @@ class _ProjectTicketRow extends ConsumerWidget {
           ),
         );
       },
+    );
+    return TicketContextMenuKeys(
+      ticket: ticket,
+      workspaceId: workspaceId,
+      child: row,
     );
   }
 }

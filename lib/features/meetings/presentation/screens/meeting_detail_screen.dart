@@ -13,7 +13,6 @@ import 'package:control_center/features/meetings/presentation/utils/meeting_form
 import 'package:control_center/features/meetings/presentation/utils/meeting_theme.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_action_items_tab.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_decisions_tab.dart';
-import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_detail_row_widgets.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_edit_dialogs.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_notes_tab.dart';
 import 'package:control_center/features/meetings/presentation/widgets/detail/meeting_playback_bar.dart';
@@ -204,6 +203,14 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         return PageWrapper(child: InlineLoadError(source.error!));
       }
     }
+    // Hold the page until the transcript, action items and decisions have all
+    // answered. Painting the meeting first and letting the three arrive after
+    // it reflows the notes into two columns and bumps every tab count.
+    if (!segmentsAsync.hasValue ||
+        !actionsAsync.hasValue ||
+        !decisionsAsync.hasValue) {
+      return const PageWrapper(child: Center(child: CcSpinner()));
+    }
     final segments = segmentsAsync.value ?? const <MeetingSegment>[];
     final actionItems = actionsAsync.value ?? const <MeetingActionItem>[];
     final decisions = decisionsAsync.value ?? const <MeetingDecision>[];
@@ -317,33 +324,37 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
               tabs: [
                 CcTabViewEntry(
                   label: const _TabLabel(_notesTabKey),
-                  content: MeetingNotesTab(
-                    meeting: meeting,
-                    mode: _notesMode,
-                    onModeChanged: (m) => setState(() => _notesMode = m),
-                    notesController: _notesController,
-                    onNotesChanged: _onNotesChanged,
-                    savingLabel: _saving
-                        ? l10n.meetingNotesSaving
-                        : l10n.meetingNotesSavedLocally,
-                    segments: segments,
-                    actionItems: actionItems,
-                    decisions: decisions,
-                    onViewFullTranscript: () =>
-                        setState(() => _tab = MeetingDetailTab.transcript),
-                    onViewActionItems: () =>
-                        setState(() => _tab = MeetingDetailTab.actionItems),
-                    onViewDecisions: () =>
-                        setState(() => _tab = MeetingDetailTab.decisions),
-                    onGenerateNotes: () => _reRun(meeting, segments),
+                  content: _TabBody(
+                    child: MeetingNotesTab(
+                      meeting: meeting,
+                      mode: _notesMode,
+                      onModeChanged: (m) => setState(() => _notesMode = m),
+                      notesController: _notesController,
+                      onNotesChanged: _onNotesChanged,
+                      savingLabel: _saving
+                          ? l10n.meetingNotesSaving
+                          : l10n.meetingNotesSavedLocally,
+                      segments: segments,
+                      actionItems: actionItems,
+                      decisions: decisions,
+                      onViewFullTranscript: () =>
+                          setState(() => _tab = MeetingDetailTab.transcript),
+                      onViewActionItems: () =>
+                          setState(() => _tab = MeetingDetailTab.actionItems),
+                      onViewDecisions: () =>
+                          setState(() => _tab = MeetingDetailTab.decisions),
+                      onGenerateNotes: () => _reRun(meeting, segments),
+                    ),
                   ),
                 ),
                 CcTabViewEntry(
                   label: _TabLabel(_transcriptTabKey, count: segments.length),
-                  content: MeetingTranscriptTab(
-                    segments: segments,
-                    workspaceId: meeting.workspaceId,
-                    meetingId: meeting.id,
+                  content: _TabBody(
+                    child: MeetingTranscriptTab(
+                      segments: segments,
+                      workspaceId: meeting.workspaceId,
+                      meetingId: meeting.id,
+                    ),
                   ),
                 ),
                 CcTabViewEntry(
@@ -351,16 +362,20 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
                     _actionItemsTabKey,
                     count: actionItems.length,
                   ),
-                  content: MeetingActionItemsTab(
-                    meeting: meeting,
-                    actionItems: actionItems,
+                  content: _TabBody(
+                    child: MeetingActionItemsTab(
+                      meeting: meeting,
+                      actionItems: actionItems,
+                    ),
                   ),
                 ),
                 CcTabViewEntry(
                   label: _TabLabel(_decisionsTabKey, count: decisions.length),
-                  content: MeetingDecisionsTab(
-                    meeting: meeting,
-                    decisions: decisions,
+                  content: _TabBody(
+                    child: MeetingDecisionsTab(
+                      meeting: meeting,
+                      decisions: decisions,
+                    ),
                   ),
                 ),
               ],
@@ -370,6 +385,22 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
       ],
     );
   }
+}
+
+/// A tab's content, set off from the tab strip.
+///
+/// Every tab opens on a bordered panel; flush against the strip, the panel's
+/// top hairline and the strip's rule read as one doubled border.
+class _TabBody extends StatelessWidget {
+  const _TabBody({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: AppSpacing.lg),
+    child: child,
+  );
 }
 
 // Tab-label resolution is deferred to build (needs l10n + selected styling from
@@ -419,7 +450,7 @@ class _TabCount extends StatelessWidget {
       decoration: BoxDecoration(color: ds.hoverStrong),
       child: Text(
         '$count',
-        style: meetingMono(context, fontSize: 11, color: ds.muted),
+        style: meetingMeta(context, fontSize: 11, color: ds.muted),
       ),
     );
   }
@@ -506,10 +537,11 @@ class _DetailTitle extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.xs),
-        MeetingRowIconButton(
+        CcIconButton(
           icon: AppIcons.pencil,
+          size: CcButtonSize.sm,
           tooltip: l10n.meetingEditTitle,
-          onTap: onEditTitle,
+          onPressed: onEditTitle,
         ),
       ],
     );
@@ -547,49 +579,54 @@ class _DetailMeta extends StatelessWidget {
       MeetingStatus.failed => l10n.meetingStatusFailed,
     };
 
-    Widget sep() => Text('·', style: meetingMono(context, fontSize: 12));
+    Widget sep() => Text('·', style: meetingMeta(context, fontSize: 12));
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 10,
-      runSpacing: AppSpacing.xs,
-      children: [
-        MeetingStatusGlyph(status: meeting.status, size: 14),
-        Text(statusLabel, style: meetingMono(context, fontSize: 12)),
-        sep(),
-        AppTimestamp(
-          dateTime: meeting.startedAt,
-          child: Text(when, style: meetingMono(context, fontSize: 12)),
-        ),
-        sep(),
-        Text(duration, style: meetingMono(context, fontSize: 12)),
-        if (meeting.sourceApp != null && meeting.sourceApp!.isNotEmpty) ...[
+    // A fixed line height: the calendar chip resolves a beat after the rest
+    // and is taller than the text, so without it the line grows under it.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 24),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: AppSpacing.xs,
+        children: [
+          MeetingStatusGlyph(status: meeting.status, size: 14),
+          Text(statusLabel, style: meetingMeta(context, fontSize: 12)),
           sep(),
-          _SourceChip(label: meeting.sourceApp!),
+          AppTimestamp(
+            dateTime: meeting.startedAt,
+            child: Text(when, style: meetingMeta(context, fontSize: 12)),
+          ),
+          sep(),
+          Text(duration, style: meetingMeta(context, fontSize: 12)),
+          if (meeting.sourceApp != null && meeting.sourceApp!.isNotEmpty) ...[
+            sep(),
+            _SourceChip(label: meeting.sourceApp!),
+          ],
+          Consumer(
+            builder: (context, ref, _) {
+              final event = ref
+                  .watch(
+                    eventForMeetingProvider((
+                      workspaceId: meeting.workspaceId,
+                      meetingId: meeting.id,
+                    )),
+                  )
+                  .asData
+                  ?.value;
+              if (event == null) {
+                return const SizedBox.shrink();
+              }
+              return _FromCalendarChip(
+                title: event.title,
+                onTap: () => context.go(
+                  calendarDetailRoute(context.currentWorkspaceId!, event.id),
+                ),
+              );
+            },
+          ),
         ],
-        Consumer(
-          builder: (context, ref, _) {
-            final event = ref
-                .watch(
-                  eventForMeetingProvider((
-                    workspaceId: meeting.workspaceId,
-                    meetingId: meeting.id,
-                  )),
-                )
-                .asData
-                ?.value;
-            if (event == null) {
-              return const SizedBox.shrink();
-            }
-            return _FromCalendarChip(
-              title: event.title,
-              onTap: () => context.go(
-                calendarDetailRoute(context.currentWorkspaceId!, event.id),
-              ),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 }
@@ -610,7 +647,7 @@ class _SourceChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: meetingMono(context, fontSize: 12, color: ds.fg),
+        style: meetingMeta(context, fontSize: 12, color: ds.fg),
       ),
     );
   }
@@ -628,9 +665,9 @@ class _FromCalendarChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ds = context.ds;
     final l10n = AppLocalizations.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return CcTappable(
+      onPressed: onTap,
+      builder: (context, _) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
         decoration: BoxDecoration(
           color: ds.surface,
@@ -643,7 +680,7 @@ class _FromCalendarChip extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '${l10n.calendarFromCalendar} · $title',
-              style: meetingMono(context, fontSize: 12, color: ds.fg),
+              style: meetingMeta(context, fontSize: 12, color: ds.fg),
             ),
           ],
         ),

@@ -1059,13 +1059,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get calendarEmptyNoEvents => 'この範囲に予定はありません';
 
   @override
-  String get calendarStartRecording => '録音を開始';
-
-  @override
-  String get calendarStartRecordingAndLink => '録音を開始してリンク';
-
-  @override
   String get calendarJoinMeet => '会議に参加';
+
+  @override
+  String get calendarJoinAndRecord => '参加して録音';
+
+  @override
+  String get calendarRecordFailed => '録音を開始できませんでした';
 
   @override
   String get calendarFromCalendar => 'カレンダーから';
@@ -1881,9 +1881,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get activity => 'アクティビティ';
-
-  @override
-  String get activityLabel => 'アクティビティ';
 
   @override
   String get activitySearchHint => 'アクティビティを検索';
@@ -7337,6 +7334,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get addReviewers => 'レビュアーを追加';
 
   @override
+  String get reRequestReview => 'レビューを再リクエスト';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '$label にレビューを再リクエスト';
+  }
+
+  @override
   String get addAssignees => '担当者を追加';
 
   @override
@@ -7499,6 +7504,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get meetingStatusRecording => '録音中';
 
   @override
+  String get meetingStatusPaused => '一時停止中';
+
+  @override
   String get meetingStatusProcessing => '処理中';
 
   @override
@@ -7525,34 +7533,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count件の会議',
-      one: '1件の会議',
-      zero: '会議なし',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => '未完了アクション';
-
-  @override
-  String get meetingsLedgerDecisions => '決定事項';
-
-  @override
   String get meetingsLiveOpen => '録音を開く';
 
   @override
   String get meetingTemplateShort => 'テンプレート';
-
-  @override
-  String get meetingsStatThisWeek => '今週';
-
-  @override
-  String get meetingsStatRecorded => '録音済み';
 
   @override
   String get meetingsFilterAll => 'すべて';
@@ -7596,9 +7580,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total 件のアクションアイテム';
   }
-
-  @override
-  String get meetingsEnhancedPill => '拡張済み';
 
   @override
   String get meetingsTranscribing => '文字起こしと要約中…';
@@ -7823,9 +7804,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get meetingDetectedSubtitleGeneric => 'ミーティングが始まっているようです。録音しますか？';
-
-  @override
-  String get meetingDetectedRecord => '録音';
 
   @override
   String get meetingDetectedDismiss => '閉じる';
@@ -9318,6 +9296,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deviceNeverSeen => '未接続';
 
   @override
+  String get deviceAwaitingApproval => '承認待ち';
+
+  @override
   String get profileSectionLabel => 'プロフィール';
 
   @override
@@ -10136,12 +10117,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => '失敗';
-
-  @override
-  String get bannerMeetingJoin => '参加';
-
-  @override
-  String get bannerMeetingRecordAndLink => '録画してリンク';
 
   @override
   String get bannerCalendarReconnect => '再接続';
@@ -13383,6 +13358,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'コメントを投稿できませんでした: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '$line行目';
   }
@@ -14830,17 +14810,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '$tab を閉じる';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'コメント $count 件',
-      one: 'コメント 1 件',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -20875,9 +20844,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dispatchSettingsTitle => 'スケジュール';
 
   @override
-  String get dispatchSettingsSubtitle => 'スケジュールと監視の上限、および誰も回答しないリクエストの扱い。';
-
-  @override
   String get dispatchLimitsLabel => 'スケジュールの上限';
 
   @override
@@ -20954,9 +20920,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'ゴール';
-
-  @override
-  String get scheduleRecordCrumb => 'スケジュール';
 
   @override
   String get improvementRecordCrumb => '提案';
@@ -21343,5 +21306,38 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent / $cap、チェーン内のすべてのスケジュールを含めて集計しています。';
+  }
+
+  @override
+  String get ccLoading => '読み込み中';
+
+  @override
+  String get ccProgress => '進捗';
+
+  @override
+  String get ccBreadcrumb => 'パンくずリスト';
+
+  @override
+  String get ccDialog => 'ダイアログ';
+
+  @override
+  String get ccResize => 'サイズ変更';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label（未検証）';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title を選択';
+  }
+
+  @override
+  String get prTableSelectAll => 'すべてのプルリクエストを選択';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'バージョン $version に戻す';
   }
 }

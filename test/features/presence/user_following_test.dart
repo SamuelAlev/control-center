@@ -8,6 +8,7 @@ import 'package:control_center/features/presence/presentation/widgets/whos_here_
 import 'package:control_center/features/presence/presentation/widgets/workspace_presence_rail.dart';
 import 'package:control_center/features/presence/providers/follow_providers.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +136,48 @@ void main() {
       expect(container.read(followedPrincipalProvider), isNull);
     });
   }
+
+  testWidgets('an avatar is a toggle the keyboard can reach and press', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final container = await _pumpPresence(tester, [
+      _presence(const UserPrincipal('me'), 'Me', spaceId: 'space-1'),
+      _presence(const UserPrincipal('alice'), 'Alice', spaceId: 'space-1'),
+    ]);
+
+    final chip = _chipsIn(WorkspacePresenceRail).first;
+    Focus.of(
+      tester.element(
+        find.descendant(of: chip, matching: find.byType(CcAvatar)),
+      ),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(
+      container.read(followedPrincipalProvider),
+      const UserPrincipal('alice'),
+    );
+    expect(
+      tester.getSemantics(
+        find.descendant(of: chip, matching: find.byType(CcTappable)),
+      ),
+      matchesSemantics(
+        label: 'Alice — Online',
+        isButton: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        isFocusable: true,
+        isFocused: true,
+        hasToggledState: true,
+        isToggled: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
 
   testWidgets('agents neither occupy avatar slots nor inflate overflow', (
     tester,

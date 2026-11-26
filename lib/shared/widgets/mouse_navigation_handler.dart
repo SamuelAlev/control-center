@@ -42,8 +42,16 @@ class NavigationHistoryController extends Notifier<NavigationHistoryState> {
   void goForward() => _onGoForward?.call();
 
   /// Moves to [location] in place of the current entry, so Back skips the page
-  /// being left: `/new` becoming the id it was saved under.
-  void replace(String location) => _onReplace?.call(location);
+  /// being left: `/new` becoming the id it was saved under. Returns whether a
+  /// mounted [MouseNavigationHandler] handled the replacement.
+  bool replace(String location) {
+    final handler = _onReplace;
+    if (handler == null) {
+      return false;
+    }
+    handler(location);
+    return true;
+  }
 
   /// Steps back out of a page opened from [parent]: to wherever it was reached
   /// from, or to [parent] when nothing came before it (a restored or linked
@@ -143,15 +151,21 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
     // a `?m=` permalink — is a real navigation the back/forward stack must
     // see. matchedLocation strips the query and would skip those entries.
     final location = GoRouterState.of(context).uri.toString();
-    if (location != _currentRoute && !_navigating) {
-      if (_currentRoute != null) {
-        _backStack.add(_currentRoute!);
+    if (location != _currentRoute) {
+      if (!_navigating) {
+        if (_currentRoute != null) {
+          _backStack.add(_currentRoute!);
+        }
+        _forwardStack.clear();
+      } else if (_replacing != null &&
+          _backStack.isNotEmpty &&
+          _backStack.last == location) {
+        _backStack.removeLast();
       }
-      _forwardStack.clear();
+      _currentRoute = location;
+      _navigating = false;
+      _replacing = null;
     }
-    _currentRoute = location;
-    _navigating = false;
-    _replacing = null;
     _syncController();
 
     return Listener(

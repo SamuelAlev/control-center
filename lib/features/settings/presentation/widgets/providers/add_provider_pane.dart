@@ -139,7 +139,7 @@ class _AddProviderPaneState extends ConsumerState<AddProviderPane> {
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   '${_drafts.length}',
-                  style: CcFonts.code(
+                  style: CcFonts.numeric(
                     textStyle: CcTypography.caption.copyWith(
                       color: tokens.textTertiary,
                     ),
@@ -316,7 +316,7 @@ class _DraftRow extends StatelessWidget {
           if (modelOverride.contextWindow != null)
             Text(
               l10n.contextTokens('${modelOverride.contextWindow}'),
-              style: CcFonts.code(
+              style: CcFonts.numeric(
                 textStyle: CcTypography.caption.copyWith(
                   color: tokens.textTertiary,
                 ),

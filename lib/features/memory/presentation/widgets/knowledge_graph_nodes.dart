@@ -168,32 +168,29 @@ class TopicNode extends StatelessWidget {
             // a different press from opening its detail sheet.
             CcTooltip(
               message: label,
-              child: Semantics(
-                button: true,
-                label: label,
-                child: GestureDetector(
-                  onTap: onToggle,
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    height: 22,
-                    child: Row(
-                      children: [
-                        Text(
-                          factCount == 1
-                              ? l10n.factCount(factCount)
-                              : l10n.factCountPlural(factCount),
-                          style: CcTypography.caption.copyWith(
-                            color: tokens.textTertiary,
-                          ),
+              child: CcTappable(
+                onPressed: onToggle,
+                semanticLabel: label,
+                semanticExpanded: expanded,
+                builder: (context, _) => SizedBox(
+                  height: 22,
+                  child: Row(
+                    children: [
+                      Text(
+                        factCount == 1
+                            ? l10n.factCount(factCount)
+                            : l10n.factCountPlural(factCount),
+                        style: CcTypography.caption.copyWith(
+                          color: tokens.textTertiary,
                         ),
-                        const Spacer(),
-                        Icon(
-                          expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
-                          size: 14,
-                          color: tokens.textSecondary,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
+                        size: 14,
+                        color: tokens.textSecondary,
+                      ),
+                    ],
                   ),
                 ),
               ),

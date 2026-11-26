@@ -43,7 +43,9 @@ class JumpToLatest extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 44),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: t.accent,
+                // The solid brand fill keeps the white label at 4.5:1 in the
+                // dark theme, where raw `accent` is too bright for it.
+                color: t.bgBrandSolid,
                 borderRadius: const BorderRadius.all(Radius.circular(999)),
               ),
               child: Row(
@@ -61,7 +63,7 @@ class JumpToLatest extends StatelessWidget {
                   ),
                   if (newCount > 0) ...[
                     const SizedBox(width: 8),
-                    _CountPill(count: newCount, accent: t.accent),
+                    _CountPill(count: newCount, accent: t.bgBrandSolid),
                   ] else if (isStreaming) ...[
                     const SizedBox(width: 8),
                     CcSpinner(size: 12, strokeWidth: 1.6, color: t.accentOn),

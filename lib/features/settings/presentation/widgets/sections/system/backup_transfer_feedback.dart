@@ -188,7 +188,7 @@ class BackupTransferProgressBar extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           label,
-          style: CcFonts.code(
+          style: CcFonts.numeric(
             textStyle: CcTypography.caption.copyWith(
               color: tokens.textTertiary,
             ),

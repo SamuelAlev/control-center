@@ -378,6 +378,7 @@ class DemoProfile {
     'pr_review.postReviewComment',
     'pr_review.postFileComment',
     'pr_review.replyToReviewComment',
+    'pr_review.postIssueComment',
     'pr_review.submitReview',
     'pr_review.upsertDraft',
     'pr_review.clearDraft',

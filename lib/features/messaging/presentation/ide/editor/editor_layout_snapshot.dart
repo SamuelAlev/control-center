@@ -22,6 +22,7 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     MessagingTabKinds.codeServer,
     MessagingTabKinds.file,
     MessagingTabKinds.plan,
+    MessagingTabKinds.goal,
     // An artifact is a durable, server-held document keyed by id — exactly the
     // kind of tab an operator expects to still be open tomorrow. A deleted one
     // degrades to the pane's "unavailable" state, which is one closeable tab.
@@ -62,7 +63,11 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   rewriteArgsOnDecode: _deferResourceStart,
   // A typed-but-not-run command belongs to the press that opened the tab; a
   // restored shell must come back with an empty prompt.
-  transientArgs: {EditorLayoutCodec.deferStartArg, 'initialInput'},
+  transientArgs: {
+    EditorLayoutCodec.deferStartArg,
+    'initialInput',
+    'openContractEditor',
+  },
   requiredStringArgs: {
     MessagingTabKinds.chat: ['spaceId'],
     // The session id is how a restored terminal re-claims its kept shell.
@@ -72,6 +77,7 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     // A rig tab with no surface has no machine to show.
     MessagingTabKinds.rig: ['surface'],
     MessagingTabKinds.plan: ['planKind', 'planId'],
+    MessagingTabKinds.goal: ['workspaceId', 'goalId'],
     MessagingTabKinds.artifact: ['workspaceId', 'workProductId'],
     MessagingTabKinds.agentActivity: ['workspaceId', 'spaceId', 'runId'],
     MessagingTabKinds.contextExplorer: [

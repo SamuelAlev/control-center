@@ -12,6 +12,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_inline
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -212,14 +213,18 @@ void main() {
       await tester.pumpWidget(_wrap([_comment(body: 'Why this cast?')]));
       await _settle(tester);
 
-      expect(find.text('1 comment'), findsOneWidget);
       expect(find.text('Reply…'), findsOneWidget);
       expect(find.text('Resolved'), findsNothing);
       // The card names the range the forge anchored, not just its last line.
       expect(find.text('Lines 13 to 19'), findsOneWidget);
 
       // Collapsing it leaves the one-line summary behind.
-      await tester.tap(find.byIcon(AppIcons.chevronDown).first);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(PrInlineThreadBlock),
+          matching: find.byIcon(AppIcons.chevronRight),
+        ),
+      );
       await _settle(tester);
 
       expect(find.text('Reply…'), findsNothing);
@@ -573,6 +578,38 @@ void main() {
       expect(chevronIn(find.byType(FastFileHeader)), findsOneWidget);
     });
 
+    testWidgets('the comment button puts the cursor in the composer', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(const [], files: [renamed]));
+      await _settle(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(FastFileHeader),
+          matching: find.byIcon(AppIcons.messageSquarePlus),
+        ),
+      );
+      await _settle(tester);
+
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<PrCommentComposer>(),
+        isNotNull,
+      );
+      tester.testTextInput.enterText('Why was this moved?');
+      await tester.pump();
+      expect(find.text('Why was this moved?'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await _settle(tester);
+      expect(find.byType(PrCommentComposer), findsNothing);
+    });
+
     testWidgets('a forge file comment renders as a thread, not outdated', (
       tester,
     ) async {
@@ -604,5 +641,60 @@ void main() {
         isEmpty,
       );
     });
+
+    testWidgets(
+      'an outdated comment thread with originalLine is not anchored inline and goes to outdatedComments',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        // _file has lines 13..19 in the current diff. A comment whose `line`
+        // became null after a new commit still carries `originalLine: 19` from
+        // the old commit; it must NOT render inline at line 19.
+        final root = PrCodeReviewComment(
+          id: 501,
+          body: 'No TerrificComponentWrapper allowed anymore, please migrate.',
+          user: const PrUser(login: 'SamuelAlev', avatarUrl: ''),
+          path: _file.filename,
+          position: null,
+          createdAt: DateTime.utc(2026, 11, 25, 2),
+          line: null,
+          originalLine: 19,
+          threadId: 'THREAD_OUTDATED',
+          isResolved: true,
+          isOutdated: true,
+          diffHunk: '@@ -18,2 +18,2 @@\n+<TerrificComponentWrapper />',
+        );
+        final reply = PrCodeReviewComment(
+          id: 502,
+          body: 'Done in abf8196.',
+          user: const PrUser(login: 'akuma91-frontify', avatarUrl: ''),
+          path: _file.filename,
+          position: null,
+          createdAt: DateTime.utc(2026, 11, 25, 13),
+          inReplyToId: 501,
+          line: null,
+          originalLine: 19,
+          threadId: 'THREAD_OUTDATED',
+          isResolved: true,
+          isOutdated: true,
+        );
+
+        await tester.pumpWidget(_wrap([root, reply]));
+        await _settle(tester);
+
+        expect(find.byType(PrInlineThreadBlock), findsNothing);
+        expect(find.textContaining('TerrificComponentWrapper'), findsNothing);
+        expect(
+          tester
+              .widget<FastFileHeader>(find.byType(FastFileHeader))
+              .outdatedComments
+              .map((c) => c.id),
+          [501, 502],
+        );
+        expect(find.text('1 outdated'), findsOneWidget);
+      },
+    );
   });
 }

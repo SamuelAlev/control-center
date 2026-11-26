@@ -474,9 +474,9 @@
   "calendarDisconnect": "منقطع کریں",
   "calendarReconnect": "دوبارہ منسلک کریں",
   "calendarEmptyNoEvents": "اس رینج میں کوئی ایونٹ نہیں",
-  "calendarStartRecording": "ریکارڈنگ شروع کریں",
-  "calendarStartRecordingAndLink": "ریکارڈنگ شروع کریں اور لنک کریں",
   "calendarJoinMeet": "میٹنگ میں شامل ہوں",
+  "calendarJoinAndRecord": "شامل ہوں اور ریکارڈ کریں",
+  "calendarRecordFailed": "ریکارڈنگ شروع نہیں ہو سکی",
   "calendarFromCalendar": "کیلنڈر سے",
   "calendarLinkedMeeting": "لنک شدہ میٹنگ",
   "calendarToday": "آج",
@@ -899,7 +899,6 @@
   "actions": "ایکشنز",
   "activate": "فعال کریں",
   "activity": "سرگرمی",
-  "activityLabel": "سرگرمی",
   "activitySearchHint": "سرگرمی تلاش کریں",
   "activityNoMatches": "آپ کے فلٹرز سے کوئی سرگرمی میل نہیں کھاتی",
   "activityPageRange": "{start}–{end} از {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "بلاک کر رہا ہے",
   "bookmarkLabel": "بک مارک",
   "briefDescription": "مختصر تفصیل",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "بنڈل شدہ ڈیفالٹس — کبھی اپ ڈیٹ نہیں ہوئے",
   "cancel": "منسوخ",
   "cancelEdit": "ترمیم منسوخ کریں",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "ٹیمپلیٹ",
   "prTemplateDefault": "ڈیفالٹ",
   "addReviewers": "ریویوورز شامل کریں",
-  "addAssignees": "تفویض شدہ شامل کریں",
+
+  "reRequestReview": "دوبارہ ریویو کی درخواست کریں",
+  "reRequestReviewFor": "{label} سے دوبارہ ریویو کی درخواست کریں",  "addAssignees": "تفویض شدہ شامل کریں",
   "addLabels": "لیبل شامل کریں",
   "searchLabels": "لیبل تلاش کریں…",
   "noMatchingLabels": "کوئی مماثل لیبل نہیں",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "جلدی نوٹس لکھیں — میٹنگ کے بعد ایجنٹ انہیں پھیلا دیتا ہے۔",
   "meetingSpeakerMe": "آپ",
   "meetingStatusRecording": "ریکارڈ ہو رہا ہے",
+  "meetingStatusPaused": "توقف",
   "meetingStatusProcessing": "پروسیس ہو رہا ہے",
   "meetingStatusDone": "مکمل",
   "meetingStatusFailed": "ناکام",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{کوئی میٹنگ نہیں} one{1 میٹنگ} other{{count} میٹنگز}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "کھلے ایکشنز",
-  "meetingsLedgerDecisions": "فیصلے",
   "meetingsLiveOpen": "ریکارڈنگ کھولیں",
   "meetingTemplateShort": "ٹیمپلیٹ",
-  "meetingsStatThisWeek": "اس ہفتے",
-  "meetingsStatRecorded": "ریکارڈ شدہ",
   "meetingsFilterAll": "سب",
   "meetingsFilterDone": "مکمل",
   "meetingsFilterProcessing": "پروسیس",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "بہتر",
   "meetingsTranscribing": "ٹرانسکرائب اور خلاصہ ہو رہا ہے…",
   "meetingsOpenAction": "کھولیں",
   "meetingsStopProcessing": "روکیں",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "لگتا ہے میٹنگ ہو رہی ہے۔ ریکارڈ کریں؟",
-  "meetingDetectedRecord": "ریکارڈ",
   "meetingDetectedDismiss": "برطرف کریں",
   "meetingAutoStopTitle": "یہ میٹنگ ختم لگتی ہے۔ ریکارڈنگ روکیں؟",
   "meetingAutoStopStop": "روکیں",
@@ -4883,7 +4871,7 @@
   "ideNewTab": "ایڈیٹر کھولیں",
   "ideNewTabMenu": "نیا ٹیب",
   "ideReviewCode": "کوڈ ریویو",
-  "ideReviewCodeInRepo": "کوڈ ریویو (\u2068{repo}\u2069)",
+  "ideReviewCodeInRepo": "کوڈ ریویو (⁨{repo}⁩)",
   "ideRevertConfirmTitle": "تبدیلیاں واپس کریں",
   "ideRevertUntracked": "ان ٹریکڈ فائلیں واپس نہیں ہو سکتیں",
   "ideRevertFailed": "فائلیں واپس نہیں ہو سکیں۔ گفتگو کا worktree دستیاب نہ ہو۔",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "کبھی منسلک نہیں",
+  "deviceAwaitingApproval": "منظوری کا انتظار",
   "profileSectionLabel": "پروفائل",
   "profileSectionDescription": "اس ورک اسپیس میں ٹیم اور git کمیٹ تصنیف میں آپ کیسے نظر آتے ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔",
   "displayNameLabel": "ڈسپلے نام",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "چل رہا ہے",
   "evalsStatusPassed": "پاس",
   "evalsStatusFailed": "ناکام",
-  "bannerMeetingJoin": "شامل ہوں",
-  "bannerMeetingRecordAndLink": "ریکارڈ اور لنک",
   "bannerCalendarReconnect": "دوبارہ منسلک کریں",
   "bannerView": "دیکھیں",
   "soundscapeTitle": "ساؤنڈ اسکیپس",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "تبصرہ پوسٹ نہیں ہو سکا: ⁨{error}⁩",
   "commentOnLine": "لائن {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "ماحولوں سے کاپی کرنے کی ہمیشہ اجازت دیں",
   "rigClipboardAlwaysCopyDescription": "کسی بھی ماحول سے کلپ بورڈ کا مواد پوچھے بغیر اس آلے پر رکھیں۔",
   "imageDiffBefore": "پہلے",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "بعد",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "دو کالم",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "سوائپ",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "فرق",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}٪ تبدیل",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "تصاویر",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "ماخذ",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "حذف شدہ",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} نہ دیکھا ہوا کے طور پر نشان زد",
   "prLineChangesSemantics": "شامل کی گئی لائنیں: {additions}، ہٹائی گئی لائنیں: {deletions}",
   "closeTabNamed": "{tab} بند کریں",
-  "threadCommentCount": "{count, plural, =1{1 تبصرہ} other{{count} تبصرے}}",
   "notificationAgentAwaitingInput": "ایجنٹ کو توجہ درکار ہے",
   "notifyAgentAwaitingInput": "جب ایجنٹ کو منظوری، جواب یا درست اسناد درکار ہوں، یا پالیسی کسی کارروائی کو روک دے",
   "notificationAgentNeedsApproval": "{agent} کو آپ کی منظوری درکار ہے",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "فیصلہ ایک ایڈمن کرتا ہے",
   "improvementNotFound": "یہ تجویز موجود نہیں، یا یہ کسی ایسے اسپیس میں ہے جسے آپ کھول نہیں سکتے۔",
   "dispatchSettingsTitle": "شیڈولز",
-  "dispatchSettingsSubtitle": "شیڈولز اور واچز کی حدیں، اور ان درخواستوں کا کیا ہوگا جن کا کوئی جواب نہ دے۔",
   "dispatchLimitsLabel": "شیڈول کی حدیں",
   "dispatchLimitsSubtitle": "ایجنٹ کتنے شیڈول اور واچز رکھ سکتے ہیں، اور ان کے ڈیفالٹ۔",
   "dispatchLimitRange": "1 سے {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "{zone} میں، جو اوپر کا ٹائم زون ہے۔",
   "dispatchDigestHourRange": "0 سے 23",
   "goalRecordCrumb": "ہدف",
-  "scheduleRecordCrumb": "شیڈول",
   "improvementRecordCrumb": "تجویز",
   "goalNodeNeedsAgent": "وہ ایجنٹ چنیں جو ہدف پر کام کرے۔",
   "goalNodeNeedsObjective": "مقصد لکھیں۔",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "یہ وہ کوڈ نہیں ہے جو آپ کے براؤزر نے دکھایا۔ {count, plural, one{1 کوشش باقی ہے۔} other{{count} کوششیں باقی ہیں۔}}",
   "mcpServerSignInEnded": "وقت زیادہ لگ گیا، مسترد ہوا، یا غلط کوڈ بہت زیادہ بار درج ہوئے۔ نیا سائن اِن صفحہ حاصل کرنے کے لیے دوبارہ شروع کریں۔",
   "mcpServerSignInStartAgain": "دوبارہ شروع کریں",
-  "mcpServerSignedIn": "{name} میں سائن اِن ہو گئے۔"
+  "mcpServerSignedIn": "{name} میں سائن اِن ہو گئے۔",
+  "ccLoading": "لوڈ ہو رہا ہے",
+  "ccProgress": "پیش رفت",
+  "ccBreadcrumb": "بریڈ کرمب",
+  "ccDialog": "ڈائیلاگ",
+  "ccResize": "سائز تبدیل کریں",
+  "ccUnverifiedLabel": "{label} (غیر تصدیق شدہ)",
+  "prRowSelect": "{title} منتخب کریں",
+  "prTableSelectAll": "تمام pull requests منتخب کریں",
+  "planVersionRewind": "ورژن {version} پر واپس جائیں"
 }

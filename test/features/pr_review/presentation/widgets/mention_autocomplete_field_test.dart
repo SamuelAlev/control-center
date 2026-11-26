@@ -106,6 +106,28 @@ void main() {
       expect(find.text('hubot'), findsNothing);
     });
 
+    testWidgets('menu opens under the token line, not under the field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pump();
+
+      await _enterText(tester, '@octo');
+      await tester.pumpAndSettle();
+      final field = tester.getRect(find.byType(CcTextField));
+      final firstLine = tester.getTopLeft(find.text('octocat')).dy;
+      // The field is eight lines tall; the menu hugs the first one.
+      expect(firstLine, lessThan(field.top + field.height / 2));
+
+      await _enterText(tester, 'one\ntwo\nthree\nfour @octo');
+      await tester.pumpAndSettle();
+      final fourthLine = tester.getTopLeft(find.text('octocat'));
+      expect(fourthLine.dy, greaterThan(firstLine));
+      expect(fourthLine.dy, lessThan(field.bottom));
+      // Its start edge follows the token, past the word before it.
+      expect(fourthLine.dx, greaterThan(field.left + 20));
+    });
+
     testWidgets('selecting user by tap replaces @ token', (tester) async {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
@@ -452,10 +474,56 @@ void main() {
       expect(find.text('hubot'), findsOne);
       expect(find.text('othercat'), findsOne);
       // When isUser is true, _MentionRow renders a user avatar widget.
-      expect(find.byType(InkWell), findsNWidgets(3));
+      expect(
+        find.byWidgetPredicate((w) => w is CcTappable && !w.canRequestFocus),
+        findsNWidgets(3),
+      );
       expect(find.text('octocat'), findsOne);
       expect(find.text('hubot'), findsOne);
       expect(find.text('othercat'), findsOne);
+    });
+  });
+
+  group('MentionAutocompleteField rows', () {
+    testWidgets('stay out of the Tab order and report the highlight', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final controller = TextEditingController();
+      final focusNode = FocusNode(debugLabel: 'testFocus');
+      addTearDown(controller.dispose);
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            assignableUsersProvider.overrideWith(
+              (ref) => Future.value(_testUsers),
+            ),
+          ],
+          child: testWrap(
+            MentionAutocompleteField(
+              controller: controller,
+              focusNode: focusNode,
+              owner: 'some-owner',
+              repo: 'some-repo',
+              hintText: 'Write a comment...',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await _enterText(tester, '@');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('octocat')),
+        isSemantics(isButton: true, isSelected: true, isFocusable: false),
+      );
+      await tester.tap(find.text('hubot'));
+      await tester.pump();
+      // The click inserts the mention without moving focus off the field.
+      expect(focusNode.hasFocus, isTrue);
+      handle.dispose();
     });
   });
 

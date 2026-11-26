@@ -22,6 +22,7 @@ class PrCodeReviewComment {
     this.threadId,
     this.isResolved = false,
     this.isFileLevel = false,
+    this.isOutdated = false,
   });
 
   /// Identifier.
@@ -82,12 +83,19 @@ class PrCodeReviewComment {
   /// that is not the same as an outdated one whose line is gone.
   final bool isFileLevel;
 
-  /// Anchor line for the comment.
-  int? get anchorLine => line ?? originalLine;
+  /// Whether the diff line this comment anchored to no longer exists (e.g.
+  /// because a later commit modified or removed the code).
+  final bool isOutdated;
+
+  /// Anchor line for the comment in the current diff, or null when outdated.
+  /// Never falls back to [originalLine] — an outdated comment's superseded
+  /// line number may match unrelated code in the updated diff.
+  int? get anchorLine => isOutdated ? null : line;
 
   /// First line of the comment's anchored range (a multi-line comment spans
   /// `startLine..anchorLine`), falling back to the anchor for a single line.
-  int? get anchorStartLine => startLine ?? anchorLine;
+  int? get anchorStartLine =>
+      anchorLine == null ? null : (startLine ?? anchorLine);
 
   /// Returns a copy with the enrichment-owned fields replaced.
   ///
@@ -100,6 +108,7 @@ class PrCodeReviewComment {
     List<ReactionGroup>? reactions,
     String? threadId,
     bool? isResolved,
+    bool? isOutdated,
     String? diffHunk,
   }) => PrCodeReviewComment(
     id: id,
@@ -119,6 +128,7 @@ class PrCodeReviewComment {
     threadId: threadId ?? this.threadId,
     isResolved: isResolved ?? this.isResolved,
     isFileLevel: isFileLevel,
+    isOutdated: isOutdated ?? this.isOutdated,
   );
 
   /// Equality comparison.

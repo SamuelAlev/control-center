@@ -167,9 +167,9 @@ void main() {
       expect(c.anchorLine, 20);
     });
 
-    test('anchorLine falls back to original_line when line missing', () {
+    test('anchorLine is null when line missing even with original_line', () {
       final c = GitHubReviewComment.fromJson({'original_line': 15});
-      expect(c.anchorLine, 15);
+      expect(c.anchorLine, isNull);
     });
 
     test('anchorLine is null when both missing', () {

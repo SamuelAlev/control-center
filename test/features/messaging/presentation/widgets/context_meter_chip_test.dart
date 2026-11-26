@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -17,6 +19,7 @@ import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -225,6 +228,30 @@ void main() {
     expect(find.text('150K / 1M tokens'), findsOneWidget);
   });
 
+  testWidgets('the keyboard opens the flyout, reported as expanded', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pumpChip(tester);
+    final chip = find.byType(CcTappable).first;
+    expect(
+      tester.getSemantics(chip).flagsCollection.isExpanded,
+      Tristate.isFalse,
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Context usage'), findsOneWidget);
+    expect(
+      tester.getSemantics(chip).flagsCollection.isExpanded,
+      Tristate.isTrue,
+    );
+    handle.dispose();
+  });
+
   testWidgets('tap opens the flyout with the breakdown and See more opens the '
       'explorer', (tester) async {
     await _pumpChip(tester);
@@ -392,16 +419,13 @@ void main() {
     expect(find.text('2k / 256k'), findsOneWidget);
     expect(
       tester
-          .widget<Semantics>(
-            find
-                .ancestor(
-                  of: find.text('2k / 256k'),
-                  matching: find.byType(Semantics),
-                )
-                .first,
+          .widget<CcTappable>(
+            find.ancestor(
+              of: find.text('2k / 256k'),
+              matching: find.byType(CcTappable),
+            ),
           )
-          .properties
-          .label,
+          .semanticLabel,
       'Context usage · Aria',
     );
 

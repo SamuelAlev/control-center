@@ -114,19 +114,18 @@ class _MeetingLiveStripState extends ConsumerState<MeetingLiveStrip> {
                 ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                (live ? l10n.meetingStatusRecording : l10n.meetingHudPaused)
-                    .toUpperCase(),
-                style: meetingMono(
-                  context,
+                live ? l10n.meetingStatusRecording : l10n.meetingStatusPaused,
+                style: TextStyle(
                   fontSize: 11,
+                  fontWeight: FontWeight.w600,
                   color: live ? ds.danger : ds.muted,
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               Text(
                 MeetingFormat.clock(recorder.elapsedAt(DateTime.now())),
-                style: meetingMono(
+                style: meetingMeta(
                   context,
                   fontSize: 22,
                   color: ds.fg,

@@ -33,29 +33,25 @@ class PrSidebarFilterToggle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 5),
       child: Align(
         alignment: AlignmentDirectional.centerStart,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: onToggle,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppIcons.slidersHorizontal,
-                  size: 13,
+        child: CcTappable(
+          onPressed: onToggle,
+          builder: (context, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                AppIcons.slidersHorizontal,
+                size: 13,
+                color: active ? tokens.fg : tokens.textTertiary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
                   color: active ? tokens.fg : tokens.textTertiary,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: active ? tokens.fg : tokens.textTertiary,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

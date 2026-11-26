@@ -76,9 +76,10 @@ class _AppDetailsViewState extends State<_AppDetailsView> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GestureDetector(
-          onTap: () => setState(() => _open = !_open),
-          child: Padding(
+        CcTappable(
+          onPressed: () => setState(() => _open = !_open),
+          semanticExpanded: _open,
+          builder: (context, _) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [

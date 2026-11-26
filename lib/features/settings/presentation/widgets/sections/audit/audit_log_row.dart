@@ -47,7 +47,7 @@ class AuditLogEntryRow extends StatelessWidget {
         : l10n.unknownUserLabel;
     final caption = CcTypography.caption.copyWith(color: t.textTertiary);
     final meta = CcFonts.code(
-      textStyle: CcTypography.monoNum.copyWith(
+      textStyle: CcTypography.numeric.copyWith(
         fontSize: 11,
         color: t.textTertiary,
       ),
@@ -70,6 +70,7 @@ class AuditLogEntryRow extends StatelessWidget {
           if (entry.outcome != AuditOutcome.ok) ...[
             ActivityCodeToken(
               label: auditOutcomeLabel(l10n, entry.outcome),
+              code: false,
               color: entry.outcome == AuditOutcome.denied
                   ? t.textWarningPrimary
                   : t.textErrorPrimary,
@@ -153,7 +154,7 @@ class _MetaChip extends StatelessWidget {
           // RTL carve-out: an address or country code reads left to right.
           textDirection: TextDirection.ltr,
           style: CcFonts.code(
-            textStyle: CcTypography.monoNum.copyWith(
+            textStyle: CcTypography.numeric.copyWith(
               fontSize: 11,
               color: highlighted ? t.textSecondary : t.textTertiary,
               decoration: highlighted ? TextDecoration.underline : null,

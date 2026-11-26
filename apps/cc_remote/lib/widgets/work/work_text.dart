@@ -54,7 +54,9 @@ class WorkCode extends StatelessWidget {
         inertText(text),
         maxLines: maxLines,
         overflow: maxLines == null ? null : TextOverflow.ellipsis,
-        style: CcTypography.monoNum.copyWith(color: t.textPrimary),
+        style: CcFonts.code(
+          textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
+        ),
       ),
     );
   }

@@ -34,9 +34,8 @@ class TrayAccountPager extends StatelessWidget {
         ),
         Text(
           '${index + 1}/$count',
-          style: CcFonts.code(
-            textStyle: CcTypography.monoNum,
-            family: context.ccTheme?.monoFontFamily,
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric,
           ).copyWith(color: t.textTertiary, fontSize: 11),
         ),
         _PagerArrow(

@@ -1085,13 +1085,13 @@ class AppLocalizationsNb extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Ingen hendelser i dette intervallet';
 
   @override
-  String get calendarStartRecording => 'Start opptak';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Start opptak og knytt';
-
-  @override
   String get calendarJoinMeet => 'Bli med i møte';
+
+  @override
+  String get calendarJoinAndRecord => 'Bli med og ta opp';
+
+  @override
+  String get calendarRecordFailed => 'Kunne ikke starte opptaket';
 
   @override
   String get calendarFromCalendar => 'Fra kalender';
@@ -1927,9 +1927,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get activity => 'Aktivitet';
-
-  @override
-  String get activityLabel => 'AKTIVITET';
 
   @override
   String get activitySearchHint => 'Søk i aktivitet';
@@ -2881,7 +2878,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get briefDescription => 'Kort beskrivelse';
 
   @override
-  String get bugLabel => 'FEIL';
+  String get bugLabel => 'Feil';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4461,7 +4458,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'SPØRSMÅL';
+  String get questionLabel => 'Spørsmål';
 
   @override
   String get queued => 'I kø';
@@ -4476,7 +4473,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get reasoningEffort => 'Resonneringsinnsats';
 
   @override
-  String get recommendLabel => 'ANBEFAL';
+  String get recommendLabel => 'Anbefal';
 
   @override
   String recordingFromDevice(String device) {
@@ -5143,7 +5140,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get suggestion => 'Forslag';
 
   @override
-  String get suggestLabel => 'FORESLÅ';
+  String get suggestLabel => 'Foreslå';
 
   @override
   String get superseded => 'Erstattet';
@@ -5188,7 +5185,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get thisCannotBeUndone => 'Dette kan ikke angres.';
 
   @override
-  String get ticketLabel => 'SAK';
+  String get ticketLabel => 'Sak';
 
   @override
   String get titleLabel => 'Tittel';
@@ -7486,6 +7483,14 @@ class AppLocalizationsNb extends AppLocalizations {
   String get addReviewers => 'Legg til reviewere';
 
   @override
+  String get reRequestReview => 'Be om ny gjennomgang';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Be om ny gjennomgang fra $label';
+  }
+
+  @override
   String get addAssignees => 'Legg til tildelte';
 
   @override
@@ -7652,6 +7657,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get meetingStatusRecording => 'Tar opp';
 
   @override
+  String get meetingStatusPaused => 'På pause';
+
+  @override
   String get meetingStatusProcessing => 'Behandler';
 
   @override
@@ -7679,34 +7687,10 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count møter',
-      one: '1 møte',
-      zero: 'Ingen møter',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Åpne tiltak';
-
-  @override
-  String get meetingsLedgerDecisions => 'Beslutninger';
-
-  @override
   String get meetingsLiveOpen => 'Åpne opptak';
 
   @override
   String get meetingTemplateShort => 'Mal';
-
-  @override
-  String get meetingsStatThisWeek => 'Denne uken';
-
-  @override
-  String get meetingsStatRecorded => 'Tatt opp';
 
   @override
   String get meetingsFilterAll => 'Alle';
@@ -7750,9 +7734,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total tiltak';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'forbedret';
 
   @override
   String get meetingsTranscribing => 'transkriberer og oppsummerer…';
@@ -7987,9 +7968,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Ser ut som et møte pågår. Ta det opp?';
-
-  @override
-  String get meetingDetectedRecord => 'Ta opp';
 
   @override
   String get meetingDetectedDismiss => 'Avvis';
@@ -9515,6 +9493,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get deviceNeverSeen => 'Aldri tilkoblet';
 
   @override
+  String get deviceAwaitingApproval => 'Venter på godkjenning';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10344,12 +10325,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Mislyktes';
-
-  @override
-  String get bannerMeetingJoin => 'Bli med';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Ta opp og knytt';
 
   @override
   String get bannerCalendarReconnect => 'Koble til på nytt';
@@ -13675,6 +13650,11 @@ class AppLocalizationsNb extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Kunne ikke legge inn kommentaren: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Linje $line';
   }
@@ -15157,17 +15137,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Lukk $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count kommentarer',
-      one: '1 kommentar',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21439,10 +21408,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get dispatchSettingsTitle => 'Tidsplaner';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Grenser for tidsplaner og overvåkinger, og hva som skjer med forespørsler ingen svarer på.';
-
-  @override
   String get dispatchLimitsLabel => 'Grenser for tidsplaner';
 
   @override
@@ -21521,9 +21486,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Mål';
-
-  @override
-  String get scheduleRecordCrumb => 'Tidsplan';
 
   @override
   String get improvementRecordCrumb => 'Forslag';
@@ -21924,5 +21886,38 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent av $cap, med alle tidsplaner i kjeden';
+  }
+
+  @override
+  String get ccLoading => 'Laster';
+
+  @override
+  String get ccProgress => 'Fremdrift';
+
+  @override
+  String get ccBreadcrumb => 'Brødsmulesti';
+
+  @override
+  String get ccDialog => 'Dialogboks';
+
+  @override
+  String get ccResize => 'Endre størrelse';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (ikke verifisert)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Velg $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Velg alle pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Gå tilbake til versjon $version';
   }
 }

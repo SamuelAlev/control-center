@@ -1138,7 +1138,7 @@ class ClaudeTerminalError {
       _usageLimit.hasMatch(message.toLowerCase());
 
   static final RegExp _usageLimit = RegExp(
-    r'usage limit reached|rate limit|quota exceeded|overloaded',
+    r'usage limit reached|hit your\b.*\blimit|rate limit|quota exceeded|overloaded',
   );
 
   /// Whether this is an AUTHENTICATION failure — this account's credential is

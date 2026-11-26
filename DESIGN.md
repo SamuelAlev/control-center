@@ -53,7 +53,7 @@ colors:
   bright-yellow: "#ffd900"
   block-edge: "#c03e0f" # burnt-orange terminus of the brand-mark gradient
 
-# Manrope UI/body, Fira Code machine values. Script companions load for active locale.
+# Manrope for all UI, labels and numerics; Fira Code for code only. Script companions load for active locale.
 # Web-only weight mapping compensates for lighter Flutter rasterization.
 typography:
   display-hero:
@@ -90,26 +90,25 @@ typography:
     lineHeight: 1.333 # 16/12
     letterSpacing: "0.32px"
   label:
-    fontFamily: '"Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace'
+    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.333 # 16/12
-    letterSpacing: "0.6px"
-    fontFeature: '"tnum" 1' # tabular numerals (mono lane only)
-    # rendered text-transform: uppercase (eyebrows, nav labels, status)
-  mono-num:
-    fontFamily: '"Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace'
+    letterSpacing: "0.2px"
+    # eyebrows and nav labels: UI font, sentence case, never uppercased or mono
+  numeric:
+    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.385 # 18/13
-    fontFeature: '"tnum" 1' # tabular numerals (mono lane only)
+    fontFeature: '"tnum" 1' # tabular numerals, UI font: counts, durations, costs, timestamps
 
 # ── ROUNDED ───────────────────────────────────────────────────────────────
 # Zero is the dominant radius. Squared geometry vs. warm color is the tension.
 rounded:
   sm: "0px" # all standard elements, buttons, inputs, chips, cards (xs/sm/md all = 0)
   md: "0px" # intentionally equal to sm; no mid rounding
-  pill: "999px" # pills + status capsules + live dots ONLY
+  pill: "999px" # live dots & progress tracks ONLY
 
 # AppSpacing productive scale: 2/4/8/12/16/24/32/48.
 spacing:
@@ -172,25 +171,25 @@ components:
     backgroundColor: "{colors.success-soft}"
     textColor: "{colors.success}"
     typography: "{typography.label}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.sm}"
     padding: "3px 8px"
   status-blocked:
     backgroundColor: "{colors.warn-soft}"
     textColor: "{colors.warn}"
     typography: "{typography.label}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.sm}"
     padding: "3px 8px"
   status-failed:
     backgroundColor: "{colors.danger-soft}"
     textColor: "{colors.danger}"
     typography: "{typography.label}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.sm}"
     padding: "3px 8px"
   status-idle:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.muted}"
     typography: "{typography.label}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.sm}"
     padding: "3px 8px"
   badge:
     backgroundColor: "{colors.surface}"
@@ -219,10 +218,10 @@ This is the visual contract for the client and site. [PRODUCT.md](PRODUCT.md) ow
 
 ## Typography and geometry
 
-- UI and prose use Manrope; machine values and labels use Fira Code with tabular figures. `CcFonts.ui`/`CcFonts.code` provide fonts; use `AppFonts.code*` when setting numerics. `tnum` belongs to the mono lane, **not** the ambient Material text theme; explicit `fontFeatures` replaces that lane's features, so carry `AppFonts.codeFontFeatures` when toggling ligatures.
-- Semibold 600 is for short headings/labels, regular 400 for running text. Use the productive sizes in the frontmatter (40/28/18 display/title; 14/13/12 body/caption; 12 label, 13 mono). Flutter web compensates for lighter rendering by mapping 400→500 and 500→600 without creating another perceived hierarchy.
+- Manrope carries everything that is not code: prose, labels, eyebrows, statuses, badges and numerics. Fira Code is for code only: source, diffs, terminals, code blocks, logs, paths, branches, SHAs, commands, env vars, URLs, technical identifiers, keyboard keys and codes typed verbatim. Use `CcFonts.code`/`AppFonts.code*` for those and nothing else. Numbers that must line up or tick (counts, durations, costs, timestamps) stay in Manrope with tabular figures through `CcFonts.numeric`/`AppFonts.numeric*`; `tnum` is opted into per call site, **not** set on the ambient Material text theme. Explicit `fontFeatures` replaces a helper's features, so carry `AppFonts.codeFontFeatures` when toggling ligatures.
+- Semibold 600 is for short headings/labels, regular 400 for running text. Use the productive sizes in the frontmatter (40/28/18 display/title; 14/13/12 body/caption; 12 label, 13 numeric). Flutter web compensates for lighter rendering by mapping 400→500 and 500→600 without creating another perceived hierarchy.
 - Script companions (Sarabun Thai, Rubik Hebrew, IBM Plex Sans Arabic for Arabic/Persian/Urdu) load only for the active locale as package assets, not `fonts:` entries that fetch at web startup. CJK uses platform UI fonts. Do not add a second display family or 700 weight.
-- Spacing follows `AppSpacing` (2 through 48px). Controls, fields, cards and panels have zero radius; pills and state capsules are the exceptions. On desktop, the global sidebar starts at 320px and resizes from 240–480px using the shared hairline splitter. Its title-bar toggle keeps the fixed 54px rail; expanding restores the locally persisted width. Content remains fluid and independently scrolling. Space and conversation titles reveal their full names after a 700ms hover dwell. Phone controls need ≥44px touch targets and no hover-only action; avoid horizontal overflow at 360/390/430/768/1024/1280/1440/1920px.
+- Spacing follows `AppSpacing` (2 through 48px). Controls, fields, cards, panels, badges and status tags have zero radius; live dots and circular avatars are the exceptions. On desktop, the global sidebar starts at 320px and resizes from 240–480px using the shared hairline splitter. Its title-bar toggle keeps the fixed 54px rail; expanding restores the locally persisted width. Content remains fluid and independently scrolling. Space and conversation titles reveal their full names after a 700ms hover dwell. Phone controls need ≥44px touch targets and no hover-only action; avoid horizontal overflow at 360/390/430/768/1024/1280/1440/1920px.
 - Use directional layout and glyph mirroring for RTL chrome. Code, diffs, terminals, paths and diagram canvases remain LTR.
 
 ## Surface, focus and motion

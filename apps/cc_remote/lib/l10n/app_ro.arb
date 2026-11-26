@@ -122,7 +122,6 @@
   "eventNotFound": "Evenimentul nu a fost găsit",
   "eventNotFoundDescription": "Poate fi în afara ferestrei agendei sau a fost eliminat la sursă.",
   "joinMeeting": "Intră în întâlnire",
-  "join": "Intră",
   "attendeesCount": "Participanți ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

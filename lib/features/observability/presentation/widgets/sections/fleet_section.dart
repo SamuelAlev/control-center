@@ -335,8 +335,10 @@ class _JobRowState extends State<_JobRow> {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       fmtMicros(job.costMicros),
-                      style: CcTypography.monoNum.copyWith(
-                        color: t.textPrimary,
+                      style: CcFonts.numeric(
+                        textStyle: CcTypography.numeric.copyWith(
+                          color: t.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),

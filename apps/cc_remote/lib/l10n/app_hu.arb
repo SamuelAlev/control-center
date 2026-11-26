@@ -122,7 +122,6 @@
   "eventNotFound": "Az esemény nem található",
   "eventNotFoundDescription": "Lehet, hogy a napirend ablakán kívül esik, vagy forrásoldalon törölték.",
   "joinMeeting": "Csatlakozás a megbeszéléshez",
-  "join": "Csatlakozás",
   "attendeesCount": "Résztvevők ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

@@ -204,12 +204,10 @@ class _AgentTranscriptState extends State<AgentTranscript> {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: CcFonts.code(
-                        textStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: t.textPrimary,
-                        ),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
                       ),
                     ),
                   ),

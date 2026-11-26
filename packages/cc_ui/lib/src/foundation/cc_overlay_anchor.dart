@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -311,6 +312,18 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
     if (widget.barrierTargetHole && targetRect != null) {
       // Taps landing on the target fall through the barrier to the field.
       barrier = _HitTestHole(hole: targetRect, child: barrier);
+    } else {
+      // A screen reader cannot tap outside the panel, so the barrier offers
+      // the same close as a dismiss action. The page behind is deliberately
+      // NOT blocked (BlockSemantics): OverlayPortal grafts the panel under
+      // its target's node for traversal, and on native platforms a panel
+      // whose target is dropped is dropped with it.
+      barrier = Semantics(
+        container: true,
+        label: overlayContext.ccStrings.dismiss,
+        onDismiss: widget.controller.hide,
+        child: barrier,
+      );
     }
     if (widget.interceptPointer) {
       barrier = PointerInterceptor(child: barrier);

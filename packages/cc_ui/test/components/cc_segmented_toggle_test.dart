@@ -417,7 +417,136 @@ void main() {
     expect(value, 'largest');
   });
 
-  testWidgets('only the selected segment is a tab stop', (tester) async {
+  testWidgets('the toggle is one Tab stop and Tab leaves it', (tester) async {
+    final before = FocusNode(debugLabel: 'before');
+    final after = FocusNode(debugLabel: 'after');
+    addTearDown(before.dispose);
+    addTearDown(after.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Focus(
+              focusNode: before,
+              child: const SizedBox(width: 20, height: 20),
+            ),
+            CcSegmentedToggle<String>(
+              segments: segments,
+              value: 'oldest',
+              onChanged: (_) {},
+            ),
+            Focus(
+              focusNode: after,
+              child: const SizedBox(width: 20, height: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+    before.requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_hasFocus(tester, 'Oldest'), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(after.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_hasFocus(tester, 'Oldest'), isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(before.hasPrimaryFocus, isTrue);
+  });
+
+  testWidgets('with nothing selected the first segment is the Tab stop', (
+    tester,
+  ) async {
+    final before = FocusNode(debugLabel: 'before');
+    addTearDown(before.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Focus(
+              focusNode: before,
+              child: const SizedBox(width: 20, height: 20),
+            ),
+            CcSegmentedToggle<String>(
+              segments: segments,
+              value: 'none',
+              onChanged: (_) {},
+            ),
+          ],
+        ),
+      ),
+    );
+    before.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(_hasFocus(tester, 'Recent'), isTrue);
+  });
+
+  testWidgets('arrow keys move focus with the selection, mirrored in RTL', (
+    tester,
+  ) async {
+    var value = 'oldest';
+    await tester.pumpWidget(
+      ccTestApp(
+        StatefulBuilder(
+          builder: (context, setState) => CcSegmentedToggle<String>(
+            segments: segments,
+            value: value,
+            onChanged: (v) => setState(() => value = v),
+          ),
+        ),
+        textDirection: TextDirection.rtl,
+      ),
+    );
+    await tester.tap(find.text('Oldest'));
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(value, 'largest');
+    expect(_hasFocus(tester, 'Largest'), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(value, 'oldest');
+  });
+
+  testWidgets('arrow up/down are left to directional focus', (tester) async {
+    var value = 'oldest';
+    await tester.pumpWidget(
+      ccTestApp(
+        StatefulBuilder(
+          builder: (context, setState) => CcSegmentedToggle<String>(
+            segments: segments,
+            value: value,
+            onChanged: (v) => setState(() => value = v),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Oldest'));
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(value, 'oldest');
+  });
+
+  testWidgets('the selected segment rings in its label colour', (tester) async {
     await tester.pumpWidget(
       ccTestApp(
         CcSegmentedToggle<String>(
@@ -427,12 +556,53 @@ void main() {
         ),
       ),
     );
+    final t = CcThemeData.light().tokens;
+    final selected = tester.widget<CcTappable>(
+      find.ancestor(of: find.text('Oldest'), matching: find.byType(CcTappable)),
+    );
+    final other = tester.widget<CcTappable>(
+      find.ancestor(of: find.text('Recent'), matching: find.byType(CcTappable)),
+    );
+    // The accent ring would vanish into the selected ink fill.
+    expect(selected.focusRingColor, CcButtonTokens.primary(t).fg);
+    expect(other.focusRingColor, t.focusRing);
+  });
 
-    final focusable = tester
-        .widgetList<CcTappable>(find.byType(CcTappable))
-        .where((t) => t.canRequestFocus)
-        .length;
-    expect(focusable, 1);
+  testWidgets('the track grows with the text size and keeps 32 at 1x', (
+    tester,
+  ) async {
+    final scale = ValueNotifier<double>(1);
+    addTearDown(scale.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<double>(
+          valueListenable: scale,
+          builder: (context, factor, _) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(factor)),
+            child: Center(
+              child: CcSegmentedToggle<String>(
+                key: const Key('toggle'),
+                segments: segments,
+                value: 'recent',
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byKey(const Key('toggle'))).height, 32);
+
+    scale.value = 2;
+    await tester.pumpAndSettle();
+    final track = tester.getRect(find.byKey(const Key('toggle')));
+    final label = tester.getRect(find.text('Recent'));
+    expect(track.height, greaterThan(32));
+    expect(track.top, lessThanOrEqualTo(label.top));
+    expect(track.bottom, greaterThanOrEqualTo(label.bottom));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('the selected segment is announced as selected', (tester) async {
@@ -465,33 +635,34 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('changing the segment count rebuilds the focus nodes', (
+  testWidgets('focus stays on its segment when the count changes', (
     tester,
   ) async {
-    var count = 2;
-    late void Function(void Function()) setStateOf;
+    final count = ValueNotifier(2);
+    addTearDown(count.dispose);
     await tester.pumpWidget(
       ccTestApp(
-        StatefulBuilder(
-          builder: (context, setState) {
-            setStateOf = setState;
-            return CcSegmentedToggle<String>(
-              segments: [
-                for (var i = 0; i < count; i++)
-                  CcSegment(value: 'v$i', label: 'Segment $i'),
-              ],
-              value: 'v0',
-              onChanged: (_) {},
-            );
-          },
+        ValueListenableBuilder<int>(
+          valueListenable: count,
+          builder: (context, n, _) => CcSegmentedToggle<String>(
+            segments: [
+              for (var i = 0; i < n; i++)
+                CcSegment(value: 'v$i', label: 'Segment $i'),
+            ],
+            value: 'v1',
+            onChanged: (_) {},
+          ),
         ),
       ),
     );
-    expect(find.text('Segment 1'), findsOneWidget);
+    await tester.tap(find.text('Segment 1'));
+    await tester.pump();
+    expect(_hasFocus(tester, 'Segment 1'), isTrue);
 
-    setStateOf(() => count = 4);
+    count.value = 4;
     await tester.pumpAndSettle();
     expect(find.text('Segment 3'), findsOneWidget);
+    expect(_hasFocus(tester, 'Segment 1'), isTrue);
     expect(tester.takeException(), isNull);
   });
 
@@ -511,3 +682,7 @@ void main() {
     expect(c, isNot(d));
   });
 }
+
+/// Whether the segment labelled [label] holds primary focus.
+bool _hasFocus(WidgetTester tester, String label) =>
+    Focus.of(tester.element(find.text(label))).hasPrimaryFocus;

@@ -104,7 +104,7 @@ class MeetingOverviewSpeakers extends StatelessWidget {
                 if (talk.length > _shown)
                   Text(
                     l10n.meetingOverviewMoreSpeakers(talk.length - _shown),
-                    style: meetingMono(context, fontSize: 11, color: ds.muted),
+                    style: meetingMeta(context, fontSize: 11, color: ds.muted),
                   ),
               ],
             ),
@@ -150,7 +150,7 @@ class _SpeakerBar extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 '$spoken · $shareLabel',
-                style: meetingMono(context, fontSize: 11, color: ds.muted),
+                style: meetingMeta(context, fontSize: 11, color: ds.muted),
               ),
             ],
           ),

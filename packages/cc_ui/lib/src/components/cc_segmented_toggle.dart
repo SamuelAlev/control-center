@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:cc_ui/src/components/cc_roving_focus.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
@@ -8,7 +11,6 @@ import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// A single option in a [CcSegmentedToggle].
@@ -70,8 +72,9 @@ enum CcSegmentedToggleSize {
 /// Selection must stay filled-vs-empty (not color alone); `Semantics.selected`
 /// in a mutually exclusive group.
 ///
-/// One tab stop (roving tabindex): Tab → selected; arrows / Home / End move and
-/// select; closed-loop wrap. [CcSegment.iconOnly] hides the label (tooltip +
+/// One tab stop (roving tabindex): Tab → selected, the next Tab leaves the
+/// control; `←`/`→` (mirrored under RTL) and Home / End move and select,
+/// wrapping at the ends; `↑`/`↓` are left to directional focus. [CcSegment.iconOnly] hides the label (tooltip +
 /// a11y name). Null [onChanged] disables the control but keeps the selected fill.
 class CcSegmentedToggle<T> extends StatefulWidget {
   /// Creates a [CcSegmentedToggle].
@@ -111,90 +114,49 @@ class CcSegmentedToggle<T> extends StatefulWidget {
 }
 
 class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
-  final FocusScopeNode _scopeNode = FocusScopeNode(
-    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  late final CcRovingFocusNodes _segmentNodes = CcRovingFocusNodes(
+    'CcSegment',
+    widget.segments.length,
   );
-  List<FocusNode> _segmentNodes = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _segmentNodes = _makeNodes(widget.segments.length);
-  }
 
   @override
   void didUpdateWidget(covariant CcSegmentedToggle<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.segments.length != widget.segments.length) {
-      for (final n in _segmentNodes) {
-        n.dispose();
-      }
-      _segmentNodes = _makeNodes(widget.segments.length);
-    }
+    _segmentNodes.sync(widget.segments.length);
   }
 
   @override
   void dispose() {
-    for (final n in _segmentNodes) {
-      n.dispose();
-    }
-    _scopeNode.dispose();
+    _segmentNodes.dispose();
     super.dispose();
   }
-
-  List<FocusNode> _makeNodes(int count) => [
-    for (var i = 0; i < count; i++) FocusNode(debugLabel: 'CcSegment $i'),
-  ];
 
   int get _selectedIndex =>
       widget.segments.indexWhere((s) => s.value == widget.value);
 
   void _select(int index) {
-    final onChanged = widget.onChanged;
-    if (onChanged == null || index < 0 || index >= widget.segments.length) {
-      return;
-    }
     final segment = widget.segments[index];
     if (segment.value != widget.value) {
-      onChanged(segment.value);
+      widget.onChanged?.call(segment.value);
     }
-    // Roving tabindex: keep focus on the newly-selected segment after the
-    // rebuild, so it stays the single tab stop.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && index < _segmentNodes.length) {
-        _segmentNodes[index].requestFocus();
-      }
-    });
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || widget.onChanged == null) {
+    if (widget.onChanged == null) {
       return KeyEventResult.ignored;
     }
-    final count = widget.segments.length;
-    if (count == 0) {
+    final target = ccRovingTarget(
+      event: event,
+      current: _segmentNodes.focusedIndex ?? _selectedIndex,
+      count: widget.segments.length,
+      rtl: Directionality.of(context) == TextDirection.rtl,
+    );
+    if (target == null) {
       return KeyEventResult.ignored;
     }
-    // An unmatched value has no cursor to move from; start at the first
-    // segment so the arrows still do something predictable.
-    final current = _selectedIndex < 0 ? 0 : _selectedIndex;
-    final key = event.logicalKey;
-    if (key == LogicalKeyboardKey.arrowRight ||
-        key == LogicalKeyboardKey.arrowDown) {
-      _select((current + 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.arrowLeft ||
-        key == LogicalKeyboardKey.arrowUp) {
-      _select((current - 1) % count);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.home) {
-      _select(0);
-      return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.end) {
-      _select(count - 1);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
+    _segmentNodes[target].requestFocus();
+    _select(target);
+    return KeyEventResult.handled;
   }
 
   @override
@@ -203,21 +165,30 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
     final disabled = widget.onChanged == null;
     final selectedIndex = _selectedIndex;
     final duration = CcMotion.resolveFade(context, CcMotion.moderate);
-    final height = switch (widget.size) {
+    final baseHeight = switch (widget.size) {
       CcSegmentedToggleSize.sm => 32.0,
       CcSegmentedToggleSize.md => 40.0,
     };
+    final textStyle = widget.size == CcSegmentedToggleSize.sm
+        ? CcTypography.bodySm
+        : CcTypography.body;
+    // The track keeps its exact height at the default text size and grows
+    // with a larger one, so an enlarged label is never cut off.
+    final fontSize = textStyle.fontSize!;
+    final lineHeight = fontSize * textStyle.height!;
+    final scaledLine =
+        MediaQuery.textScalerOf(context).scale(fontSize) * textStyle.height!;
+    final height = math.max(baseHeight, scaledLine + baseHeight - lineHeight);
     // The tab stop is the selected segment; with nothing selected it is the
     // first one, so the control is never unreachable by keyboard.
-    final tabStop = selectedIndex < 0 ? 0 : selectedIndex;
+    _segmentNodes.setStop(selectedIndex < 0 ? 0 : selectedIndex);
     final separator = disabled ? t.borderDisabled : t.borderSecondary;
 
     Widget buildSegment(int index) => _Segment<T>(
       segment: widget.segments[index],
       selected: index == selectedIndex,
       disabled: disabled,
-      focusable: index == tabStop,
-      focusNode: index < _segmentNodes.length ? _segmentNodes[index] : null,
+      focusNode: _segmentNodes[index],
       tokens: t,
       size: widget.size,
       duration: duration,
@@ -228,59 +199,57 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
     return Semantics(
       container: true,
       label: widget.semanticLabel,
-      child: FocusScope(
-        node: _scopeNode,
-        child: Focus(
-          canRequestFocus: false,
-          onKeyEvent: _onKey,
-          child: Container(
-            height: height,
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              color: disabled ? t.bgDisabled : t.surface,
-              borderRadius: AppRadii.brSm,
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: _onKey,
+        child: Container(
+          height: height,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            color: disabled ? t.bgDisabled : t.surface,
+            borderRadius: AppRadii.brSm,
+          ),
+          // Hairline is painted *behind* the segments (CustomPaint.painter,
+          // not a BoxDecoration border). A Container border would inset the
+          // children and leave a lighter ring around the choice — 1px on
+          // top and bottom, so the selected cell felt 2px taller than the
+          // fill. The selected fill (and its matching-color border) covers
+          // that stroke instead.
+          child: CustomPaint(
+            painter: _TrackHairlinePainter(
+              color: disabled ? t.borderDisabled : t.borderPrimary,
             ),
-            // Hairline is painted *behind* the segments (CustomPaint.painter,
-            // not a BoxDecoration border). A Container border would inset the
-            // children and leave a lighter ring around the choice — 1px on
-            // top and bottom, so the selected cell felt 2px taller than the
-            // fill. The selected fill (and its matching-color border) covers
-            // that stroke instead.
-            child: CustomPaint(
-              painter: _TrackHairlinePainter(
-                color: disabled ? t.borderDisabled : t.borderPrimary,
-              ),
-              child: CcFluidHover(
-                axis: CcFluidHoverAxis.x,
-                itemCount: widget.segments.length,
-                isItemDisabled: (_) => disabled,
-                itemBuilder: (context, index) => buildSegment(index),
-                layoutBuilder: (context, items) {
-                  final cells = <Widget>[];
-                  for (var i = 0; i < items.length; i++) {
-                    if (i > 0) {
-                      cells.add(
-                        _Separator(
-                          // The fill's own edge separates a selected segment.
-                          visible: selectedIndex != i && selectedIndex != i - 1,
-                          color: separator,
-                          duration: duration,
-                        ),
-                      );
-                    }
+            child: CcFluidHover(
+              axis: CcFluidHoverAxis.x,
+              itemCount: widget.segments.length,
+              isItemDisabled: (_) => disabled,
+              itemBuilder: (context, index) => buildSegment(index),
+              layoutBuilder: (context, items) {
+                final cells = <Widget>[];
+                for (var i = 0; i < items.length; i++) {
+                  if (i > 0) {
                     cells.add(
-                      widget.fullWidth ? Expanded(child: items[i]) : items[i],
+                      _Separator(
+                        // The fill's own edge separates a selected segment.
+                        visible: selectedIndex != i && selectedIndex != i - 1,
+                        color: separator,
+                        duration: duration,
+                      ),
                     );
                   }
-                  return Row(
-                    mainAxisSize: widget.fullWidth
-                        ? MainAxisSize.max
-                        : MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: cells,
+                  cells.add(
+                    widget.fullWidth ? Expanded(child: items[i]) : items[i],
                   );
-                },
-              ),
+                }
+                return Row(
+                  mainAxisSize: widget.fullWidth
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: cells,
+                );
+              },
             ),
           ),
         ),
@@ -350,7 +319,6 @@ class _Segment<T> extends StatelessWidget {
     required this.segment,
     required this.selected,
     required this.disabled,
-    required this.focusable,
     required this.focusNode,
     required this.tokens,
     required this.size,
@@ -362,10 +330,7 @@ class _Segment<T> extends StatelessWidget {
   final CcSegment<T> segment;
   final bool selected;
   final bool disabled;
-
-  /// True on the roving tab stop — the only segment Tab can reach.
-  final bool focusable;
-  final FocusNode? focusNode;
+  final FocusNode focusNode;
   final DesignSystemTokens tokens;
   final CcSegmentedToggleSize size;
   final Duration duration;
@@ -384,121 +349,114 @@ class _Segment<T> extends StatelessWidget {
         ? CcTypography.bodySm
         : CcTypography.body;
 
-    // MergeSemantics so "selected" lands on the same node as the button and its
-    // label: as two nested nodes a screen reader announces the state apart from
-    // the option it belongs to. A visible label is left to the child Text —
-    // passing it to CcTappable as well would have it read twice. Icon-only
-    // segments have no Text, so the name goes on CcTappable instead.
+    // A visible label is left to the child Text, which merges into the
+    // tappable's node; passing it to CcTappable as well would have it read
+    // twice. Icon-only segments have no Text, so the name goes on CcTappable.
     final iconOnly = segment.iconOnly;
-    Widget segmentButton = MergeSemantics(
-      child: Semantics(
-        selected: selected,
-        inMutuallyExclusiveGroup: true,
-        child: CcTappable(
-          // The selected segment stays live rather than being disabled by a null
-          // handler: a disabled segment cannot be tabbed to, and this is exactly
-          // the one the roving tab stop belongs on. Re-picking it is a no-op,
-          // handled upstream.
-          onPressed: onPressed,
-          focusNode: focusNode,
-          canRequestFocus: focusable,
-          borderRadius: AppRadii.brSm,
-          focusRingColor: t.focusRing,
-          semanticLabel: iconOnly ? segment.label : null,
-          builder: (context, states) {
-            final hovered = states.contains(WidgetState.hovered);
-            final pressed = states.contains(WidgetState.pressed);
-            final fluidActive = CcFluidHover.isItemActive(context);
+    Widget segmentButton = CcTappable(
+      // The selected segment stays live rather than being disabled by a null
+      // handler: a disabled segment cannot be tabbed to, and this is exactly
+      // the one the roving tab stop belongs on. Re-picking it is a no-op,
+      // handled upstream.
+      onPressed: onPressed,
+      focusNode: focusNode,
+      borderRadius: AppRadii.brSm,
+      // The selected fill is the ink/brand colour the ring would vanish
+      // into, and the track clips a ring drawn outside it, so on that
+      // segment the ring takes the fill's own label colour.
+      focusRingColor: selected && !disabled ? primary.fg : t.focusRing,
+      semanticLabel: iconOnly ? segment.label : null,
+      semanticSelected: selected,
+      semanticInMutuallyExclusiveGroup: true,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
 
-            // Two layers, never one lerped color. The hover wash is `fg` at a
-            // few percent and the selected fill is an opaque brand color; a
-            // single animated color between them runs through their straight
-            // RGB midpoint, which in dark mode (white-based wash) flashes a
-            // pale grey on both segments at every change. Each layer instead
-            // fades only its own alpha.
-            final Color fill;
-            final Color wash;
-            final Color foreground;
-            if (disabled) {
-              // Keep the chosen segment readable when the control is inert —
-              // "which one is on" is still information the user needs.
-              fill = Color.alphaBlend(t.hoverStrong, t.bgDisabled);
-              wash = t.hover.withValues(alpha: 0);
-              foreground = t.textDisabled;
-            } else {
-              fill = primary.bg;
-              wash = pressed
-                  ? t.hoverStrong
-                  : hovered && !fluidActive
-                  ? t.hover
-                  : t.hover.withValues(alpha: 0);
-              foreground = selected
-                  ? primary.fg
-                  : hovered || pressed
-                  ? t.textSecondary
-                  : t.textTertiary;
-            }
-            final shownFill = selected ? fill : fill.withValues(alpha: 0);
+        // Two layers, never one lerped color. The hover wash is `fg` at a
+        // few percent and the selected fill is an opaque brand color; a
+        // single animated color between them runs through their straight
+        // RGB midpoint, which in dark mode (white-based wash) flashes a
+        // pale grey on both segments at every change. Each layer instead
+        // fades only its own alpha.
+        final Color fill;
+        final Color wash;
+        final Color foreground;
+        if (disabled) {
+          // Keep the chosen segment readable when the control is inert —
+          // "which one is on" is still information the user needs.
+          fill = Color.alphaBlend(t.hoverStrong, t.bgDisabled);
+          wash = t.hover.withValues(alpha: 0);
+          foreground = t.textDisabled;
+        } else {
+          fill = primary.bg;
+          wash = pressed
+              ? t.hoverStrong
+              : hovered && !fluidActive
+              ? t.hover
+              : t.hover.withValues(alpha: 0);
+          foreground = selected
+              ? primary.fg
+              : hovered || pressed
+              ? t.textSecondary
+              : t.textTertiary;
+        }
+        final shownFill = selected ? fill : fill.withValues(alpha: 0);
 
-            final Widget? label = iconOnly
-                ? null
-                : Text(
-                    segment.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: baseStyle.copyWith(
-                      color: foreground,
-                      fontWeight: CcTypography.mediumWeight,
-                    ),
-                  );
-
-            // 1px border on every segment keeps label height stable. Selected
-            // uses the fill color so the edge matches the item; transparent
-            // on the rest so the track hairline still shows. Top+bottom is
-            // 2px, which is what keeps the selected cell from feeling taller
-            // than the unselected ones after the fill covers the track.
-            return TweenAnimationBuilder<Color?>(
-              tween: ColorTween(end: wash),
-              duration: duration,
-              curve: CcMotion.standard,
-              builder: (context, washColor, fillLayer) => DecoratedBox(
-                decoration: BoxDecoration(
-                  color: washColor,
-                  borderRadius: AppRadii.brSm,
+        final Widget? label = iconOnly
+            ? null
+            : Text(
+                segment.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: baseStyle.copyWith(
+                  color: foreground,
+                  fontWeight: CcTypography.mediumWeight,
                 ),
-                child: fillLayer,
+              );
+
+        // 1px border on every segment keeps label height stable. Selected
+        // uses the fill color so the edge matches the item; transparent
+        // on the rest so the track hairline still shows. Top+bottom is
+        // 2px, which is what keeps the selected cell from feeling taller
+        // than the unselected ones after the fill covers the track.
+        return TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: wash),
+          duration: duration,
+          curve: CcMotion.standard,
+          builder: (context, washColor, fillLayer) => DecoratedBox(
+            decoration: BoxDecoration(
+              color: washColor,
+              borderRadius: AppRadii.brSm,
+            ),
+            child: fillLayer,
+          ),
+          child: AnimatedContainer(
+            duration: duration,
+            curve: CcMotion.standard,
+            padding: EdgeInsets.symmetric(horizontal: horizontal),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: shownFill,
+              borderRadius: AppRadii.brSm,
+              border: Border.all(color: shownFill),
+            ),
+            child: SelectionContainer.disabled(
+              child: Row(
+                mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (segment.icon != null) ...[
+                    Icon(segment.icon, size: iconSize, color: foreground),
+                    if (label != null) const SizedBox(width: AppSpacing.xs),
+                  ],
+                  if (label != null) fullWidth ? Flexible(child: label) : label,
+                ],
               ),
-              child: AnimatedContainer(
-                duration: duration,
-                curve: CcMotion.standard,
-                padding: EdgeInsets.symmetric(horizontal: horizontal),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: shownFill,
-                  borderRadius: AppRadii.brSm,
-                  border: Border.all(color: shownFill),
-                ),
-                child: SelectionContainer.disabled(
-                  child: Row(
-                    mainAxisSize: fullWidth
-                        ? MainAxisSize.max
-                        : MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (segment.icon != null) ...[
-                        Icon(segment.icon, size: iconSize, color: foreground),
-                        if (label != null) const SizedBox(width: AppSpacing.xs),
-                      ],
-                      if (label != null)
-                        fullWidth ? Flexible(child: label) : label,
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
     if (iconOnly) {
       segmentButton = CcTooltip(message: segment.label, child: segmentButton);

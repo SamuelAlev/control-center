@@ -51,7 +51,7 @@ class _FakeRecorder extends MeetingRecorderController {
   }
 }
 
-CalendarEvent _event() => CalendarEvent(
+CalendarEvent _event({String? meetingUrl}) => CalendarEvent(
   id: 'evt-1',
   workspaceId: 'ws-A',
   accountId: 'acc',
@@ -61,15 +61,21 @@ CalendarEvent _event() => CalendarEvent(
   startTime: DateTime(2026, 6, 11, 10),
   endTime: DateTime(2026, 6, 11, 10, 30),
   updatedAt: DateTime(2026, 6, 11),
+  meetingUrl: meetingUrl,
 );
 
 ProviderContainer _container(
   FakeCalendarRepository repo, {
   required bool succeed,
   _FakeMeetingRepo? meetingRepo,
+  List<String>? joined,
 }) {
   return ProviderContainer(
     overrides: [
+      meetingLinkOpenerProvider.overrideWithValue((url) {
+        joined?.add(url);
+        return true;
+      }),
       calendarRepositoryProvider.overrideWithValue(repo),
       meetingRepositoryProvider.overrideWithValue(
         meetingRepo ?? _FakeMeetingRepo(),
@@ -137,5 +143,54 @@ void main() {
         expect(repo.links, isEmpty);
       },
     );
+
+    test('joins the call even when the recorder does not start', () async {
+      final joined = <String>[];
+      final container = _container(
+        FakeCalendarRepository(),
+        succeed: false,
+        joined: joined,
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(calendarRecordAndLinkProvider)
+          .startRecordingForEvent(
+            _event(meetingUrl: 'https://meet.example/abc'),
+          );
+
+      expect(joined, ['https://meet.example/abc']);
+    });
+
+    test('an event without a call link is recorded without joining', () async {
+      final joined = <String>[];
+      final container = _container(
+        FakeCalendarRepository(),
+        succeed: true,
+        joined: joined,
+      );
+      addTearDown(container.dispose);
+
+      final result = await container
+          .read(calendarRecordAndLinkProvider)
+          .startRecordingForEvent(_event());
+
+      expect(result.meetingId, 'meeting-123');
+      expect(joined, isEmpty);
+    });
+
+    test('an unknown event id starts nothing', () async {
+      final repo = FakeCalendarRepository();
+      final container = _container(repo, succeed: true);
+      addTearDown(container.dispose);
+
+      final result = await container
+          .read(calendarRecordAndLinkProvider)
+          .startRecordingForEventId(workspaceId: 'ws-A', eventId: 'gone');
+
+      expect(result.meetingId, isNull);
+      expect(result.error, isNull);
+      expect(repo.links, isEmpty);
+    });
   });
 }

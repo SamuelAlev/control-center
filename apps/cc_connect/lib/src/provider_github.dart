@@ -727,6 +727,72 @@ final class GitHubApi {
     }
   }
 
+  /// Posts a single inline pull-request review comment with an installation
+  /// token (`POST /repos/{owner}/{name}/pulls/{prNumber}/comments`).
+  ///
+  /// Classifies out-of-diff 422 rejections separately from other failures and
+  /// throws [ConnectErrorCode.rateLimited] on GitHub rate-limit answers.
+  Future<({GitHubReviewCommentStatus status, int? commentId})>
+  postPullRequestReviewComment({
+    required String installationToken,
+    required String owner,
+    required String name,
+    required int prNumber,
+    required String commitSha,
+    required String path,
+    required int line,
+    required String side,
+    required String body,
+    int? startLine,
+    String? startSide,
+  }) async {
+    final payload = <String, Object?>{
+      'commit_id': commitSha,
+      'path': path,
+      'body': body,
+      'line': line,
+      'side': side,
+      'start_line': ?startLine,
+      if (startLine != null) 'start_side': startSide ?? side,
+    };
+    final UpstreamResponse response;
+    try {
+      response = await _http.send(
+        UpstreamRequest.json(
+          'POST',
+          Uri.https(
+            'api.github.com',
+            '/repos/$owner/$name/pulls/$prNumber/comments',
+          ),
+          payload,
+          headers: _apiHeaders(installationToken),
+        ),
+      );
+    } on UpstreamUnavailable {
+      throw const ConnectException(ConnectErrorCode.providerUnavailable);
+    }
+    if (response.status == 200 || response.status == 201) {
+      final id = response.jsonObject?['id'];
+      return (
+        status: GitHubReviewCommentStatus.posted,
+        commentId: id is int ? id : null,
+      );
+    }
+    if ((response.status == 403 &&
+            response.headers['x-ratelimit-remaining'] == '0') ||
+        response.status == 429) {
+      throw const ConnectException(ConnectErrorCode.rateLimited);
+    }
+    if (response.status >= 500) {
+      throw const ConnectException(ConnectErrorCode.providerUnavailable);
+    }
+    if (response.status == 422 &&
+        response.text.contains('pull_request_review_thread.')) {
+      return (status: GitHubReviewCommentStatus.outOfDiff, commentId: null);
+    }
+    return (status: GitHubReviewCommentStatus.failed, commentId: null);
+  }
+
   /// Revokes one token (`DELETE /applications/{client_id}/token`). Never the
   /// whole authorization: on a shared App that would sign the person out of
   /// every other server too.

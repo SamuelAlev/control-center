@@ -99,7 +99,7 @@ class UpNextCard extends ConsumerWidget {
               size: CcButtonSize.sm,
               icon: AppIcons.video,
               onPressed: () => joinCalendarMeeting(ref, event),
-              child: Text(l10n.join),
+              child: Text(l10n.joinMeeting),
             ),
           ],
         ],

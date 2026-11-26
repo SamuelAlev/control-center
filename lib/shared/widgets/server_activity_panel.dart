@@ -140,7 +140,7 @@ class _ServerActivityPanelState extends State<ServerActivityPanel> {
                             NumberFormat.decimalPattern(
                               Localizations.localeOf(context).toLanguageTag(),
                             ).format(widget.entries.length),
-                            style: CcFonts.code(
+                            style: CcFonts.numeric(
                               textStyle: CcTypography.caption,
                             ),
                           ),

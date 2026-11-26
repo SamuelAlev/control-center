@@ -47,9 +47,16 @@ void main() {
       expect(r.state, PrReviewSubmissionState.pending);
     });
 
-    test('merges an on-behalf review into the team row', () {
+    test('a pending team request overrides a prior on-behalf team review', () {
       final result = prReviewersFromReviewState(
         const GitHubPrReviewState(
+          pendingTeams: [
+            GitHubPendingTeamRequest(
+              name: 'Platform',
+              slug: 'platform',
+              asCodeOwner: true,
+            ),
+          ],
           completedReviews: [
             GitHubCompletedReview(
               authorLogin: 'kim',
@@ -64,11 +71,35 @@ void main() {
       );
       final r = result.single as PrTeamReviewer;
       expect(r.slug, 'platform');
+      expect(r.reviewedBy, isNull);
+      expect(r.isCodeOwner, isTrue);
+      expect(r.state, PrReviewSubmissionState.pending);
+    });
+
+    test('completed on-behalf review populates team row when none is pending', () {
+      final result = prReviewersFromReviewState(
+        const GitHubPrReviewState(
+          completedReviews: [
+            GitHubCompletedReview(
+              authorLogin: 'kim',
+              authorAvatarUrl: 'k',
+              state: 'APPROVED',
+              onBehalfOf: [
+                GitHubReviewTeamRef(name: 'Platform', slug: 'platform'),
+              ],
+            ),
+          ],
+        ),
+        knownCodeOwnerIds: const {'team:platform'},
+      );
+      final r = result.single as PrTeamReviewer;
+      expect(r.slug, 'platform');
       expect(r.reviewedBy?.login, 'kim');
+      expect(r.isCodeOwner, isTrue);
       expect(r.state, PrReviewSubmissionState.approved);
     });
 
-    test('individual review overrides a pending request for the same user', () {
+    test('pending request overrides a prior completed review for the same user', () {
       final result = prReviewersFromReviewState(
         const GitHubPrReviewState(
           pendingUsers: [
@@ -89,7 +120,7 @@ void main() {
       );
       expect(result, hasLength(1));
       final r = result.single as PrUserReviewer;
-      expect(r.state, PrReviewSubmissionState.changesRequested);
+      expect(r.state, PrReviewSubmissionState.pending);
     });
 
     test('maps a dismissed review to pending', () {

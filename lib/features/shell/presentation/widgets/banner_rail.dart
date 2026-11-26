@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/notifications/live_notification_lane.dart';
+import 'package:control_center/features/calendar/presentation/providers/meeting_alert_actions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -207,23 +208,74 @@ class BannerRail extends ConsumerWidget {
 }
 
 /// Maps one [ActiveBanner] to a [CcBanner], choosing the variant, glyph and
-/// route-navigating actions per category. Every action navigates via the
-/// existing router to the notification's own deep link, then dismisses.
-class _BannerCard extends StatelessWidget {
+/// actions per category. A meeting's actions join the call or join and record
+/// it; every other action navigates via the existing router to the
+/// notification's own deep link. Each dismisses the banner.
+class _BannerCard extends ConsumerWidget {
   const _BannerCard({super.key, required this.banner, required this.onDismiss});
 
   final ActiveBanner banner;
   final VoidCallback onDismiss;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final notification = banner.notification;
+    final meeting = notification.meeting;
 
     void goThenDismiss() {
       context.go(notification.route);
       onDismiss();
     }
+
+    void join(NotificationMeeting meeting) {
+      ref.read(meetingAlertActionsProvider).join(meeting);
+      onDismiss();
+    }
+
+    // The banner is gone before the recorder answers, so everything the
+    // outcome needs is taken from the context first.
+    Future<void> joinAndRecord(NotificationMeeting meeting) async {
+      final router = GoRouter.of(context);
+      final toaster = CcToastScope.of(context);
+      final actions = ref.read(meetingAlertActionsProvider);
+      onDismiss();
+      final result = await actions.joinAndRecord(meeting);
+      router.go(result.route);
+      if (!result.started) {
+        toaster.show(
+          result.error ?? l10n.calendarRecordFailed,
+          variant: CcToastVariant.danger,
+        );
+      }
+    }
+
+    // Same buttons as the OS notification: Join and Join and record for a
+    // call, Record alone for a meeting without a link.
+    final meetingActions = [
+      if (meeting == null)
+        CcBannerAction(
+          label: l10n.bannerView,
+          onPressed: goThenDismiss,
+          primary: true,
+        )
+      else if (meeting.joinable) ...[
+        CcBannerAction(
+          label: l10n.calendarJoinMeet,
+          onPressed: () => join(meeting),
+          primary: true,
+        ),
+        CcBannerAction(
+          label: l10n.calendarJoinAndRecord,
+          onPressed: () => joinAndRecord(meeting),
+        ),
+      ] else
+        CcBannerAction(
+          label: l10n.meetingsRecordMeeting,
+          onPressed: () => joinAndRecord(meeting),
+          primary: true,
+        ),
+    ];
 
     final (
       CcBannerVariant variant,
@@ -233,17 +285,7 @@ class _BannerCard extends StatelessWidget {
       NotificationCategory.meetingStartsSoon => (
         CcBannerVariant.info,
         AppIcons.calendarClock,
-        [
-          CcBannerAction(
-            label: l10n.bannerMeetingJoin,
-            onPressed: goThenDismiss,
-            primary: true,
-          ),
-          CcBannerAction(
-            label: l10n.bannerMeetingRecordAndLink,
-            onPressed: goThenDismiss,
-          ),
-        ],
+        meetingActions,
       ),
       NotificationCategory.calendarAuthExpired => (
         CcBannerVariant.warning,

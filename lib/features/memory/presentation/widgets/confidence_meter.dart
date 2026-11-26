@@ -73,14 +73,14 @@ class ConfidenceMeter extends StatelessWidget {
           ),
         ),
         SizedBox(width: compact ? 5 : 6),
-        // A fixed slot in the code face: the tracks of a list line up whether
-        // a row says 8% or 100%.
+        // A fixed slot in tabular figures: the tracks of a list line up
+        // whether a row says 8% or 100%.
         SizedBox(
           width: compact ? null : 34,
           child: Text(
             '${(clamped * 100).round()}%',
             textAlign: TextAlign.end,
-            style: CcFonts.code(
+            style: CcFonts.numeric(
               textStyle: CcTypography.caption.copyWith(
                 color: (tokens ?? DesignSystemTokens.light()).textTertiary,
               ),

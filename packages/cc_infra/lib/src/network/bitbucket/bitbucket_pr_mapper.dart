@@ -158,6 +158,7 @@ PrCodeReviewComment prCodeReviewCommentFromBitbucket(BitbucketComment comment) {
     originalLine: comment.inlineFrom,
     isFileLevel:
         comment.inlinePath != null && line == null && !comment.inlineOutdated,
+    isOutdated: comment.inlineOutdated,
   );
 }
 

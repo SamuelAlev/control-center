@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icon.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
@@ -58,7 +60,8 @@ class CcIconButton extends StatelessWidget {
   /// keeps spinning in place (rather than being swapped for a spinner) so the
   /// action stays identifiable; best suited to cyclic glyphs like refresh/sync
   /// arrows. Under reduced motion the rotation stops and the disabled
-  /// treatment alone signals the in-flight state.
+  /// treatment alone signals the in-flight state. The button stays focusable
+  /// while busy.
   final bool loading;
 
   /// Optional tooltip text. When set, the button is wrapped in a [CcTooltip]
@@ -99,19 +102,30 @@ class CcIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ds;
     final tokens = _tokens(t);
-    final box = switch (size) {
+    final baseBox = switch (size) {
       CcButtonSize.sm => 32.0,
       CcButtonSize.md => 40.0,
       CcButtonSize.lg => 48.0,
     };
+    // The glyph follows the text size only where the icon theme says so (see
+    // [CcIcon]); the box then grows with it and keeps its ramp size at 1x.
+    const glyphSize = 16.0;
+    final glyph = (IconTheme.of(context).applyTextScaling ?? false)
+        ? MediaQuery.textScalerOf(context).scale(glyphSize)
+        : glyphSize;
+    final box = math.max(baseBox, baseBox - glyphSize + glyph);
     final disabled = onPressed == null || loading;
 
     final Widget button = CcTappable(
       onPressed: disabled ? null : onPressed,
       focusNode: focusNode,
       autofocus: autofocus,
+      // Busy keeps focus, as on [CcButton].
+      focusableWhenDisabled: loading,
       borderRadius: AppRadii.brSm,
       focusRingColor: t.focusRing,
+      // Clear of the fill, which can be the ring's own accent colour.
+      focusRingOffset: 2,
       // An icon-only button's accessible name is its tooltip when no explicit
       // label is given (the glyph alone is not a name to assistive tech).
       semanticLabel: semanticLabel ?? tooltip,
@@ -141,11 +155,11 @@ class CcIconButton extends StatelessWidget {
         }
 
         final iconColor = disabled ? fg : (color ?? fg);
-        Widget glyph = CcIcon(icon, size: 16, color: iconColor);
+        Widget icon = CcIcon(this.icon, size: glyphSize, color: iconColor);
         if (loading) {
-          glyph = _SpinningIcon(child: glyph);
+          icon = _SpinningIcon(child: icon);
         }
-        Widget content = Center(child: glyph);
+        Widget content = Center(child: icon);
         content = AnimatedContainer(
           duration: CcMotion.resolveFade(context, CcMotion.fast),
           curve: CcMotion.standard,

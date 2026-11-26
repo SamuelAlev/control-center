@@ -11,6 +11,7 @@ import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/server_startup_status.dart';
 import 'package:control_center/core/server/sso_login.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
+import 'package:control_center/core/theme/cc_strings_l10n.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -405,9 +406,11 @@ class _ServerSetupAppState extends State<ServerSetupApp> {
                   color: t.textPrimary,
                   decoration: TextDecoration.none,
                 ),
-                builder: (context, child) => ServerStartupIndicator(
-                  showFailures: false,
-                  child: child ?? const SizedBox.shrink(),
+                builder: (context, child) => LocalizedCcStrings(
+                  child: ServerStartupIndicator(
+                    showFailures: false,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
                 pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
                   settings: settings,

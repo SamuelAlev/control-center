@@ -1075,13 +1075,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get calendarEmptyNoEvents => 'אין אירועים בטווח זה';
 
   @override
-  String get calendarStartRecording => 'התחל הקלטה';
-
-  @override
-  String get calendarStartRecordingAndLink => 'התחל הקלטה וקישור';
-
-  @override
   String get calendarJoinMeet => 'הצטרף לפגישה';
+
+  @override
+  String get calendarJoinAndRecord => 'הצטרפות והקלטה';
+
+  @override
+  String get calendarRecordFailed => 'לא ניתן להתחיל את ההקלטה';
 
   @override
   String get calendarFromCalendar => 'מלוח השנה';
@@ -1916,9 +1916,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get activity => 'פעילות';
-
-  @override
-  String get activityLabel => 'פעילות';
 
   @override
   String get activitySearchHint => 'חיפוש בפעילות';
@@ -7479,6 +7476,14 @@ class AppLocalizationsHe extends AppLocalizations {
   String get addReviewers => 'הוספת סוקרים';
 
   @override
+  String get reRequestReview => 'בקש ביקורת מחדש';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'בקש ביקורת מחדש מ-$label';
+  }
+
+  @override
   String get addAssignees => 'הוספת אחראים';
 
   @override
@@ -7643,6 +7648,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get meetingStatusRecording => 'מקליט';
 
   @override
+  String get meetingStatusPaused => 'מושהה';
+
+  @override
   String get meetingStatusProcessing => 'בעיבוד';
 
   @override
@@ -7672,36 +7680,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count פגישות',
-      many: '$count פגישות',
-      two: 'שתי פגישות',
-      one: 'פגישה אחת',
-      zero: 'אין פגישות',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'משימות פתוחות';
-
-  @override
-  String get meetingsLedgerDecisions => 'החלטות';
-
-  @override
   String get meetingsLiveOpen => 'פתיחת ההקלטה';
 
   @override
   String get meetingTemplateShort => 'תבנית';
-
-  @override
-  String get meetingsStatThisWeek => 'השבוע';
-
-  @override
-  String get meetingsStatRecorded => 'הוקלטו';
 
   @override
   String get meetingsFilterAll => 'הכול';
@@ -7747,9 +7729,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total משימות לביצוע';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'משופר';
 
   @override
   String get meetingsTranscribing => 'מתמלל ומסכם…';
@@ -7979,9 +7958,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'נראה שמתקיימת פגישה כעת. להקליט?';
-
-  @override
-  String get meetingDetectedRecord => 'הקלטה';
 
   @override
   String get meetingDetectedDismiss => 'התעלמות';
@@ -9495,6 +9471,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get deviceNeverSeen => 'מעולם לא התחבר';
 
   @override
+  String get deviceAwaitingApproval => 'ממתין לאישור';
+
+  @override
   String get profileSectionLabel => 'פרופיל';
 
   @override
@@ -10325,12 +10304,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'נכשל';
-
-  @override
-  String get bannerMeetingJoin => 'הצטרפות';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'הקלטה וקישור';
 
   @override
   String get bannerCalendarReconnect => 'התחברות מחדש';
@@ -13683,6 +13656,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'לא ניתן היה לפרסם את התגובה: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'שורה $line';
   }
@@ -15164,17 +15142,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'סגירת $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count תגובות',
-      one: 'תגובה אחת',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21383,10 +21350,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dispatchSettingsTitle => 'לוחות זמנים';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'מגבלות על לוחות זמנים ומעקבים, ומה קורה לבקשות שאף אחד לא עונה עליהן.';
-
-  @override
   String get dispatchLimitsLabel => 'מגבלות לוחות זמנים';
 
   @override
@@ -21465,9 +21428,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'מטרה';
-
-  @override
-  String get scheduleRecordCrumb => 'לוח זמנים';
 
   @override
   String get improvementRecordCrumb => 'הצעה';
@@ -21870,5 +21830,38 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent מתוך $cap, כולל כל לוח זמנים בשרשרת';
+  }
+
+  @override
+  String get ccLoading => 'טוען';
+
+  @override
+  String get ccProgress => 'התקדמות';
+
+  @override
+  String get ccBreadcrumb => 'נתיב ניווט';
+
+  @override
+  String get ccDialog => 'תיבת דו-שיח';
+
+  @override
+  String get ccResize => 'שינוי גודל';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (לא אומת)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'בחר $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'בחר את כל בקשות המשיכה';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'חזרה לגרסה $version';
   }
 }

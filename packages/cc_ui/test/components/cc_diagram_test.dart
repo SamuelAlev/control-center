@@ -178,7 +178,7 @@ void main() {
         ),
       );
 
-      expect(find.text('a  →  b : guess  (unverified)'), findsOneWidget);
+      expect(find.text('a  →  b : guess (unverified)'), findsOneWidget);
     });
   });
 

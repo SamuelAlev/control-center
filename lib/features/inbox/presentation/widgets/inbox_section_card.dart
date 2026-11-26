@@ -337,7 +337,8 @@ class _CountChip extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: tokens.hoverStrong,
-        borderRadius: const BorderRadius.all(Radius.circular(AppRadii.pill)),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: tokens.borderSecondary),
       ),
       child: Text(
         '$count',

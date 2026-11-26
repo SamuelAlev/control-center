@@ -59,7 +59,13 @@ class GoalsNeedingPersonSource implements InboxAttentionSource {
             icon: AppIcons.target,
             actionLabel: l10n.inboxReview,
             waitingSince: v.goal.updatedAt,
-            onAction: () => router.go(goalRoute(workspaceId, v.goal.id)),
+            onAction: () => router.go(
+              spaceRoute(
+                workspaceId,
+                v.goal.spaceId,
+                tab: goalTabKey(v.goal.id),
+              ),
+            ),
           ),
     ];
   }
@@ -92,7 +98,7 @@ class ImprovementsProposedSource implements InboxAttentionSource {
           icon: AppIcons.lightbulb,
           actionLabel: l10n.inboxReview,
           waitingSince: p.createdAt,
-          onAction: () => router.go(improvementRoute(workspaceId, p.id)),
+          onAction: () => router.go(memoryImprovementRoute(workspaceId, p.id)),
         ),
     ];
   }

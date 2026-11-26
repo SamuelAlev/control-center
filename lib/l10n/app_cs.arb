@@ -474,9 +474,9 @@
   "calendarDisconnect": "Odpojit",
   "calendarReconnect": "Znovu připojit",
   "calendarEmptyNoEvents": "V tomto rozsahu nejsou žádné události",
-  "calendarStartRecording": "Spustit nahrávání",
-  "calendarStartRecordingAndLink": "Spustit nahrávání a propojit",
   "calendarJoinMeet": "Připojit se ke schůzce",
+  "calendarJoinAndRecord": "Připojit a nahrát",
+  "calendarRecordFailed": "Nahrávání se nepodařilo spustit",
   "calendarFromCalendar": "Z kalendáře",
   "calendarLinkedMeeting": "Propojená schůzka",
   "calendarToday": "Dnes",
@@ -899,7 +899,6 @@
   "actions": "Akce",
   "activate": "Aktivovat",
   "activity": "Aktivita",
-  "activityLabel": "AKTIVITA",
   "activitySearchHint": "Hledat v aktivitě",
   "activityNoMatches": "Žádná aktivita neodpovídá filtrům",
   "activityPageRange": "{start}–{end} z {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Blokování",
   "bookmarkLabel": "Záložka",
   "briefDescription": "Stručný popis",
-  "bugLabel": "CHYBA",
+  "bugLabel": "Chyba",
   "bundledDefaultsNeverUpdated": "Balené výchozí — nikdy neaktualizováno",
   "cancel": "Zrušit",
   "cancelEdit": "Zrušit úpravy",
@@ -2612,12 +2611,12 @@
   "published": "Zveřejněno",
   "pullRequestApproved": "Pull request schválen",
   "pullRequests": "Pull requesty",
-  "questionLabel": "OTÁZKA",
+  "questionLabel": "Otázka",
   "queued": "Ve frontě",
   "react": "Reagovat",
   "readerPreferences": "Předvolby čtečky",
   "reasoningEffort": "Úsilí uvažování",
-  "recommendLabel": "DOPORUČIT",
+  "recommendLabel": "Doporučit",
   "recordingFromDevice": "Nahrávání z {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Úspěch",
   "successLabel": "Úspěch",
   "suggestion": "Návrh",
-  "suggestLabel": "NAVRHNOUT",
+  "suggestLabel": "Navrhnout",
   "superseded": "Nahrazeno",
   "synced": "Synchronizováno",
   "systemDefault": "Systémové výchozí",
@@ -3025,7 +3024,7 @@
   "themeLight": "Světlý",
   "themeSystem": "Systém",
   "thisCannotBeUndone": "Tuto akci nelze vrátit zpět.",
-  "ticketLabel": "TICKET",
+  "ticketLabel": "Ticket",
   "titleLabel": "Název",
   "todayLabel": "Dnes",
   "toggleTheme": "Přepnout motiv",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Šablona",
   "prTemplateDefault": "Výchozí",
   "addReviewers": "Přidat recenzenty",
-  "addAssignees": "Přidat přiřazené",
+
+  "reRequestReview": "Znovu požádat o kontrolu",
+  "reRequestReviewFor": "Znovu požádat o kontrolu od {label}",  "addAssignees": "Přidat přiřazené",
   "addLabels": "Přidat štítky",
   "searchLabels": "Hledat štítky…",
   "noMatchingLabels": "Žádné odpovídající štítky",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Pište rychlé poznámky — agent je po schůzce rozvede.",
   "meetingSpeakerMe": "Vy",
   "meetingStatusRecording": "Nahrávání",
+  "meetingStatusPaused": "Pozastaveno",
   "meetingStatusProcessing": "Zpracování",
   "meetingStatusDone": "Hotovo",
   "meetingStatusFailed": "Selhalo",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Žádné schůzky} one{1 schůzka} few{{count} schůzky} many{{count} schůzek} other{{count} schůzek}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Otevřené akce",
-  "meetingsLedgerDecisions": "Rozhodnutí",
   "meetingsLiveOpen": "Otevřít nahrávání",
   "meetingTemplateShort": "Šablona",
-  "meetingsStatThisWeek": "Tento týden",
-  "meetingsStatRecorded": "Nahráno",
   "meetingsFilterAll": "Vše",
   "meetingsFilterDone": "Hotovo",
   "meetingsFilterProcessing": "Zpracování",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "vylepšeno",
   "meetingsTranscribing": "přepis a shrnutí…",
   "meetingsOpenAction": "Otevřít",
   "meetingsStopProcessing": "Zastavit",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Vypadá to, že probíhá schůzka. Nahrát?",
-  "meetingDetectedRecord": "Nahrát",
   "meetingDetectedDismiss": "Zavřít",
   "meetingAutoStopTitle": "Tato schůzka vypadá, že skončila. Zastavit nahrávání?",
   "meetingAutoStopStop": "Zastavit",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Nikdy nepřipojeno",
+  "deviceAwaitingApproval": "Čeká na schválení",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Jak vás vidí tým a autorství git commitů v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu.",
   "displayNameLabel": "Zobrazované jméno",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Běží",
   "evalsStatusPassed": "Prošlo",
   "evalsStatusFailed": "Selhalo",
-  "bannerMeetingJoin": "Připojit se",
-  "bannerMeetingRecordAndLink": "Nahrát a propojit",
   "bannerCalendarReconnect": "Znovu připojit",
   "bannerView": "Zobrazit",
   "soundscapeTitle": "Soundscapes",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Komentář se nepodařilo odeslat: {error}",
   "commentOnLine": "Řádek {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Vždy povolit kopírování z kontejnerů",
   "rigClipboardAlwaysCopyDescription": "Vložit obsah schránky z libovolného kontejneru do tohoto zařízení bez dotazu.",
   "imageDiffBefore": "Předtím",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Potom",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Vedle sebe",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Potáhnout",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Rozdíl",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "Změněno {percent} %",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Obrázky",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Zdroj",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Odstraněno",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} označeno jako nezobrazené",
   "prLineChangesSemantics": "Přidané řádky: {additions}, odebrané řádky: {deletions}",
   "closeTabNamed": "Zavřít {tab}",
-  "threadCommentCount": "{count, plural, one{1 komentář} few{{count} komentáře} many{{count} komentáře} other{{count} komentářů}}",
   "notificationAgentAwaitingInput": "Agent potřebuje vaši pozornost",
   "notifyAgentAwaitingInput": "Když agent potřebuje vaše schválení, odpověď či funkční přihlašovací údaje nebo zásady zablokují akci",
   "notificationAgentNeedsApproval": "{agent} potřebuje vaše schválení",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Rozhoduje správce",
   "improvementNotFound": "Tento návrh neexistuje, nebo je v prostoru, který nemůžete otevřít.",
   "dispatchSettingsTitle": "Plány",
-  "dispatchSettingsSubtitle": "Limity plánů a sledování a co se stane s žádostmi, na které nikdo neodpoví.",
   "dispatchLimitsLabel": "Limity plánů",
   "dispatchLimitsSubtitle": "Horní hranice počtu plánů a sledování, které mohou agenti mít, a jejich výchozí hodnoty.",
   "dispatchLimitRange": "1 až {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "V {zone}, výše zvoleném časovém pásmu.",
   "dispatchDigestHourRange": "0 až 23",
   "goalRecordCrumb": "Cíl",
-  "scheduleRecordCrumb": "Plán",
   "improvementRecordCrumb": "Návrh",
   "goalNodeNeedsAgent": "Vyberte agenta, který cíl sleduje.",
   "goalNodeNeedsObjective": "Napište cíl.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "To není kód, který prohlížeč zobrazil. {count, plural, one{Zbývá 1 pokus.} few{Zbývají {count} pokusy.} many{Zbývá {count} pokusu.} other{Zbývá {count} pokusů.}}",
   "mcpServerSignInEnded": "Vypršel čas, přihlášení bylo zamítnuto nebo jste zadali příliš mnoho špatných kódů. Spusťte přihlášení znovu a získáte novou přihlašovací stránku.",
   "mcpServerSignInStartAgain": "Spustit znovu",
-  "mcpServerSignedIn": "Přihlášeno k {name}."
+  "mcpServerSignedIn": "Přihlášeno k {name}.",
+  "ccLoading": "Načítání",
+  "ccProgress": "Průběh",
+  "ccBreadcrumb": "Drobečková navigace",
+  "ccDialog": "Dialogové okno",
+  "ccResize": "Změnit velikost",
+  "ccUnverifiedLabel": "{label} (neověřeno)",
+  "prRowSelect": "Vybrat {title}",
+  "prTableSelectAll": "Vybrat všechny pull requesty",
+  "planVersionRewind": "Vrátit na verzi {version}"
 }

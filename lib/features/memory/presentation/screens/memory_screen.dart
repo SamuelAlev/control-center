@@ -1,4 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/improvements/improvement_page.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/improvements/improvements_list.dart';
 import 'package:control_center/features/memory/presentation/screens/memory_fact_page.dart';
 import 'package:control_center/features/memory/presentation/screens/memory_policy_page.dart';
 import 'package:control_center/features/memory/presentation/widgets/facts_tab.dart';
@@ -7,28 +9,48 @@ import 'package:control_center/features/memory/presentation/widgets/policies_tab
 import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Workspace-scoped knowledge browser: facts, policies and the knowledge
-/// graph for the active workspace. Surfaces the previously UI-less memory
-/// subdomain. All data is read through workspace-scoped providers keyed by the
-/// active workspace id, preserving tenant isolation.
+/// Workspace-scoped knowledge browser: facts, policies, improvements and the
+/// knowledge graph for the active workspace. Surfaces the previously UI-less
+/// memory subdomain. All data is read through workspace-scoped providers keyed
+/// by the active workspace id, preserving tenant isolation.
 class MemoryScreen extends ConsumerStatefulWidget {
   /// Creates a [MemoryScreen].
-  const MemoryScreen({super.key, this.record});
+  const MemoryScreen({super.key, this.record, this.requestedTab});
 
   /// The record the URL has open, or null for the list.
   final MemoryRecordRef? record;
+
+  /// Optional initial tab key from `?tab=` (e.g. [memoryImprovementsTabKey]).
+  final String? requestedTab;
 
   @override
   ConsumerState<MemoryScreen> createState() => _MemoryScreenState();
 }
 
 class _MemoryScreenState extends ConsumerState<MemoryScreen> {
-  int _tab = 0;
+  late int _tab = _tabIndexFor(widget.requestedTab);
+
+  static int _tabIndexFor(String? tab) => switch (tab) {
+    'policies' => 1,
+    memoryImprovementsTabKey => 2,
+    'graph' => 3,
+    _ => 0,
+  };
+
+  @override
+  void didUpdateWidget(covariant MemoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.requestedTab != null &&
+        widget.requestedTab != oldWidget.requestedTab) {
+      _tab = _tabIndexFor(widget.requestedTab);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +104,10 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
                       tabs: [
                         CcTab(l10n.memoryTabFacts, icon: AppIcons.notebookText),
                         CcTab(l10n.memoryTabPolicies, icon: AppIcons.scale),
+                        CcTab(
+                          l10n.improvementsTitle,
+                          icon: AppIcons.lightbulb,
+                        ),
                         CcTab(l10n.memoryTabGraph, icon: AppIcons.workflow),
                       ],
                       selectedIndex: _tab,
@@ -94,6 +120,7 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
                 child: switch (_tab) {
                   0 => FactsTab(workspaceId: workspaceId),
                   1 => PoliciesTab(workspaceId: workspaceId),
+                  2 => ImprovementsList(workspaceId: workspaceId),
                   _ => KnowledgeGraph(workspaceId: workspaceId),
                 },
               ),
@@ -113,6 +140,16 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
               key: ValueKey('policy:$id'),
               workspaceId: workspaceId,
               policyId: id,
+            ),
+          (kind: MemoryRecordKind.improvement, :final id, workspaceId: _) =>
+            PageWrapper(
+              title: l10n.improvementsTitle,
+              subtitle: l10n.improvementsSubtitle,
+              child: ImprovementPage(
+                key: ValueKey('improvement:$id'),
+                workspaceId: workspaceId,
+                proposalId: id,
+              ),
             ),
         },
       ],

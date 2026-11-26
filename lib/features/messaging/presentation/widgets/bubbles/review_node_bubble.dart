@@ -236,7 +236,7 @@ class _ExpandedBody extends StatelessWidget {
           if (payload.confirmedBy.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
-              l10n.confirmedBy.toUpperCase(),
+              l10n.confirmedBy,
               style: CcTypography.label.copyWith(color: tokens.textTertiary),
             ),
             const SizedBox(height: AppSpacing.xs),

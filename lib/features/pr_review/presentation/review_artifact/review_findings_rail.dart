@@ -293,10 +293,12 @@ class _FindingRow extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       '${(payload.confidence * 100).round()}%',
-                      style: CcTypography.monoNum.copyWith(
-                        fontSize: 11,
-                        color: tokens.textTertiary,
-                        height: 1,
+                      style: CcFonts.numeric(
+                        textStyle: CcTypography.numeric.copyWith(
+                          fontSize: 11,
+                          color: tokens.textTertiary,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ],
@@ -431,7 +433,7 @@ class _FilterLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    text.toUpperCase(),
+    text,
     style: CcTypography.label.copyWith(color: tokens.textTertiary),
   );
 }

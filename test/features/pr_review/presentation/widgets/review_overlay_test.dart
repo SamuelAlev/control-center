@@ -55,6 +55,8 @@ const _prRef = (
 class _ReviewRepository extends EmptyPrReviewRepository {
   String? saved;
   String? submittedBody;
+  String? submittedEvent;
+  String? postedIssueCommentBody;
   Future<void> Function()? submitAction;
 
   @override
@@ -71,12 +73,22 @@ class _ReviewRepository extends EmptyPrReviewRepository {
   }
 
   @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
+  }) async {
+    postedIssueCommentBody = body;
+    await submitAction?.call();
+  }
+
+  @override
   Future<void> submitReview({
     required int prNumber,
     required String event,
     String? body,
     List<PendingReviewComment> comments = const [],
   }) async {
+    submittedEvent = event;
     submittedBody = body;
     await submitAction?.call();
   }
@@ -289,7 +301,8 @@ void main() {
         draft.text = 'newer edit';
         pending.complete();
         await tester.pump();
-        expect(repository.submittedBody, 'first verdict');
+        expect(repository.postedIssueCommentBody, 'first verdict');
+        expect(repository.submittedEvent, isNull);
         expect(draft.text, 'newer edit');
         await tester.tap(find.text('Review'));
         await tester.pump();
@@ -303,6 +316,14 @@ void main() {
         await tester.tap(find.text('Comment'));
         await tester.pump();
         expect(draft.text, isEmpty);
+        expect(repository.postedIssueCommentBody, 'newer edit');
+
+        // Formal verdicts still go through submitReview.
+        await tester.tap(find.text('Review'));
+        await tester.pump();
+        await tester.tap(find.text('Approve'));
+        await tester.pump();
+        expect(repository.submittedEvent, 'APPROVE');
       },
     );
   });

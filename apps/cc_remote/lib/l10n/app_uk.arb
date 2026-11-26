@@ -95,7 +95,6 @@
   "eventNotFound": "Подію не знайдено",
   "eventNotFoundDescription": "Можливо, вона поза вікном розкладу або її видалили вище за потоком.",
   "joinMeeting": "Приєднатися до зустрічі",
-  "join": "Приєднатися",
   "attendeesCount": "Учасники ({count})",
   "details": "Деталі",
   "allDay": "Весь день",

@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_key_value_editor.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/widgets.dart';
 
 /// The write-only values of an MCP server (environment variables or headers).
@@ -146,13 +147,17 @@ class _StoredRow extends StatelessWidget {
     );
     final Widget middle;
     if (replacing) {
-      middle = CcTextField(
-        hintText: l10n.mcpServerSecretNewValueHint,
-        size: CcTextFieldSize.sm,
-        obscureText: true,
-        autofocus: true,
-        enabled: enabled,
-        onChanged: (value) => edits.setReplacement(name, value),
+      // Replace becomes Undo in the same slot and keeps focus, so the field
+      // asks for focus itself.
+      middle = FocusOnMount(
+        builder: (context, focusNode) => CcTextField(
+          hintText: l10n.mcpServerSecretNewValueHint,
+          size: CcTextFieldSize.sm,
+          obscureText: true,
+          focusNode: focusNode,
+          enabled: enabled,
+          onChanged: (value) => edits.setReplacement(name, value),
+        ),
       );
     } else if (removed) {
       middle = Text(

@@ -305,19 +305,19 @@ class _CaptureLine extends StatelessWidget {
                 child: demo
                     ? Text(
                         l10n.demoBadgeTooltip,
-                        style: meetingMono(context, fontSize: 12),
+                        style: meetingMeta(context, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       )
                     : Text.rich(
                         TextSpan(
-                          style: meetingMono(context, fontSize: 12),
+                          style: meetingMeta(context, fontSize: 12),
                           children: [
                             TextSpan(
                               text: '${l10n.meetingRecordTappingLabel} ',
                             ),
                             TextSpan(
                               text: source,
-                              style: meetingMono(
+                              style: meetingMeta(
                                 context,
                                 fontSize: 12,
                                 color: ds.fg,
@@ -326,7 +326,7 @@ class _CaptureLine extends StatelessWidget {
                             const TextSpan(text: ' + '),
                             TextSpan(
                               text: l10n.meetingRecordMic,
-                              style: meetingMono(
+                              style: meetingMeta(
                                 context,
                                 fontSize: 12,
                                 color: ds.fg,
@@ -403,7 +403,7 @@ class _RecordTitle extends StatelessWidget {
             maxLines: 1,
             softWrap: false,
             overflow: TextOverflow.ellipsis,
-            style: meetingMono(
+            style: meetingMeta(
               context,
               fontSize: 30,
               color: ds.fg,
@@ -716,7 +716,7 @@ class _TemplateSelect extends ConsumerWidget {
         const SizedBox(width: 6),
         Text(
           l10n.meetingTemplateShort,
-          style: meetingMono(context, fontSize: 11),
+          style: meetingMeta(context, fontSize: 11),
         ),
         const SizedBox(width: AppSpacing.sm),
         Flexible(

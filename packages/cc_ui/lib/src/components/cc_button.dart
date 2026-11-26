@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cc_ui/src/components/cc_icon.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
@@ -100,6 +102,7 @@ class CcButton extends StatelessWidget {
   final Widget? trailing;
 
   /// When true the button shows an inline spinner and stops responding to taps.
+  /// It stays focusable, so focus is not lost while it is busy.
   final bool loading;
 
   /// Optional external focus node.
@@ -140,11 +143,19 @@ class CcButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ds;
     final tokens = _tokens(t);
-    final height = switch (size) {
+    final baseHeight = switch (size) {
       CcButtonSize.sm => 32.0,
       CcButtonSize.md => 40.0,
       CcButtonSize.lg => 48.0,
     };
+    // Exactly the ramp height at the default text size; a larger text size
+    // grows the button by as much as the label's line grows, so the label is
+    // never cut off.
+    const label = CcTypography.body;
+    final line = label.fontSize! * label.height!;
+    final scaledLine =
+        MediaQuery.textScalerOf(context).scale(label.fontSize!) * label.height!;
+    final height = math.max(baseHeight, baseHeight - line + scaledLine);
     final horizontal = size == CcButtonSize.sm ? 12.0 : 16.0;
     final disabled = onPressed == null || loading;
 
@@ -152,8 +163,14 @@ class CcButton extends StatelessWidget {
       onPressed: disabled ? null : onPressed,
       focusNode: focusNode,
       autofocus: autofocus,
+      // A button that turns busy under the keyboard keeps focus, so the next
+      // Tab continues from it rather than from the top of the page.
+      focusableWhenDisabled: loading,
       borderRadius: AppRadii.brSm,
       focusRingColor: t.focusRing,
+      // The ring colour is the accent fill (and close to the green and red
+      // ones), so it sits 2px clear of the button, on the page around it.
+      focusRingOffset: 2,
       semanticLabel: semanticLabel,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);

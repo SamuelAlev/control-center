@@ -133,10 +133,7 @@ class TrayWindowMeter extends StatelessWidget {
       locale,
     ).format(window.usedFraction.clamp(0, 1));
     final reset = window.resetsAt;
-    final numeric = CcFonts.code(
-      textStyle: CcTypography.monoNum,
-      family: context.ccTheme?.monoFontFamily,
-    );
+    final numeric = CcFonts.numeric(textStyle: CcTypography.numeric);
     // The provider's own label, not ours ("5-hour"): isolated so an RTL
     // panel keeps its order instead of reading "hour-5".
     final label = '\u2068${window.label}\u2069';

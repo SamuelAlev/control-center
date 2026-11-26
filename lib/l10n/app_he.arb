@@ -474,9 +474,9 @@
   "calendarDisconnect": "נתק",
   "calendarReconnect": "חבר מחדש",
   "calendarEmptyNoEvents": "אין אירועים בטווח זה",
-  "calendarStartRecording": "התחל הקלטה",
-  "calendarStartRecordingAndLink": "התחל הקלטה וקישור",
   "calendarJoinMeet": "הצטרף לפגישה",
+  "calendarJoinAndRecord": "הצטרפות והקלטה",
+  "calendarRecordFailed": "לא ניתן להתחיל את ההקלטה",
   "calendarFromCalendar": "מלוח השנה",
   "calendarLinkedMeeting": "פגישה מקושרת",
   "calendarToday": "היום",
@@ -899,7 +899,6 @@
   "actions": "פעולות",
   "activate": "הפעלה",
   "activity": "פעילות",
-  "activityLabel": "פעילות",
   "activitySearchHint": "חיפוש בפעילות",
   "activityNoMatches": "אין פעילות שתואמת את הסינון",
   "activityPageRange": "{start}–{end} מתוך {total}",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "תבנית",
   "prTemplateDefault": "ברירת מחדל",
   "addReviewers": "הוספת סוקרים",
-  "addAssignees": "הוספת אחראים",
+
+  "reRequestReview": "בקש ביקורת מחדש",
+  "reRequestReviewFor": "בקש ביקורת מחדש מ-{label}",  "addAssignees": "הוספת אחראים",
   "addLabels": "הוספת תוויות",
   "searchLabels": "חיפוש תוויות…",
   "noMatchingLabels": "אין תוויות תואמות",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "רשמו הערות מהירות — הסוכן ירחיב אותן אחרי הפגישה.",
   "meetingSpeakerMe": "אתם",
   "meetingStatusRecording": "מקליט",
+  "meetingStatusPaused": "מושהה",
   "meetingStatusProcessing": "בעיבוד",
   "meetingStatusDone": "הושלם",
   "meetingStatusFailed": "נכשל",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{אין פגישות} one{פגישה אחת} two{שתי פגישות} many{{count} פגישות} other{{count} פגישות}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "משימות פתוחות",
-  "meetingsLedgerDecisions": "החלטות",
   "meetingsLiveOpen": "פתיחת ההקלטה",
   "meetingTemplateShort": "תבנית",
-  "meetingsStatThisWeek": "השבוע",
-  "meetingsStatRecorded": "הוקלטו",
   "meetingsFilterAll": "הכול",
   "meetingsFilterDone": "הושלמו",
   "meetingsFilterProcessing": "בעיבוד",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "משופר",
   "meetingsTranscribing": "מתמלל ומסכם…",
   "meetingsOpenAction": "פתיחה",
   "meetingsStopProcessing": "עצירה",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "נראה שמתקיימת פגישה כעת. להקליט?",
-  "meetingDetectedRecord": "הקלטה",
   "meetingDetectedDismiss": "התעלמות",
   "meetingAutoStopTitle": "נראה שהפגישה הסתיימה. לעצור את ההקלטה?",
   "meetingAutoStopStop": "עצירה",
@@ -4883,7 +4871,7 @@
   "ideNewTab": "פתיחת עורך",
   "ideNewTabMenu": "כרטיסייה חדשה",
   "ideReviewCode": "סקירת קוד",
-  "ideReviewCodeInRepo": "סקירת קוד (\u2068{repo}\u2069)",
+  "ideReviewCodeInRepo": "סקירת קוד (⁨{repo}⁩)",
   "ideRevertConfirmTitle": "שחזור שינויים",
   "ideRevertUntracked": "לא ניתן לשחזר קבצים שאינם במעקב",
   "ideRevertFailed": "לא ניתן לשחזר את הקבצים. ייתכן שעץ העבודה של השיחה אינו זמין.",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "מעולם לא התחבר",
+  "deviceAwaitingApproval": "ממתין לאישור",
   "profileSectionLabel": "פרופיל",
   "profileSectionDescription": "איך אתה מופיע לצוות ובמחבר commit של git במרחב הזה. שדות ריקים יורשים שם ואימייל מהחשבון.",
   "displayNameLabel": "שם תצוגה",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "בביצוע",
   "evalsStatusPassed": "עבר",
   "evalsStatusFailed": "נכשל",
-  "bannerMeetingJoin": "הצטרפות",
-  "bannerMeetingRecordAndLink": "הקלטה וקישור",
   "bannerCalendarReconnect": "התחברות מחדש",
   "bannerView": "צפייה",
   "soundscapeTitle": "נופי צליל",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "לא ניתן היה לפרסם את התגובה: {error}",
   "commentOnLine": "שורה {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "לאפשר תמיד העתקה מסביבות",
   "rigClipboardAlwaysCopyDescription": "הצבת תוכן לוח מכל סביבה במכשיר הזה ללא בקשה.",
   "imageDiffBefore": "לפני",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "אחרי",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "זה לצד זה",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "החלקה",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "הפרש",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% השתנה",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "תמונות",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "מקור",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "נמחק",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} סומן כלא נצפה",
   "prLineChangesSemantics": "שורות שנוספו: {additions}, שורות שהוסרו: {deletions}",
   "closeTabNamed": "סגירת {tab}",
-  "threadCommentCount": "{count, plural, =1{תגובה אחת} other{{count} תגובות}}",
   "notificationAgentAwaitingInput": "סוכן זקוק לתשומת לבך",
   "notifyAgentAwaitingInput": "כשסוכן צריך אישור, תשובה או פרטי גישה תקינים, או כשהמדיניות חוסמת פעולה",
   "notificationAgentNeedsApproval": "{agent} צריך את האישור שלך",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "מנהל מחליט",
   "improvementNotFound": "ההצעה הזו לא קיימת, או שהיא נמצאת במרחב שאין לכם הרשאה לפתוח.",
   "dispatchSettingsTitle": "לוחות זמנים",
-  "dispatchSettingsSubtitle": "מגבלות על לוחות זמנים ומעקבים, ומה קורה לבקשות שאף אחד לא עונה עליהן.",
   "dispatchLimitsLabel": "מגבלות לוחות זמנים",
   "dispatchLimitsSubtitle": "תקרות על כמות לוחות הזמנים והמעקבים שסוכנים רשאים להחזיק, וברירות המחדל שלהם.",
   "dispatchLimitRange": "1 עד {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "ב-{zone}, אזור הזמן שלמעלה.",
   "dispatchDigestHourRange": "0 עד 23",
   "goalRecordCrumb": "מטרה",
-  "scheduleRecordCrumb": "לוח זמנים",
   "improvementRecordCrumb": "הצעה",
   "goalNodeNeedsAgent": "בחרו את הסוכן שמקדם את המטרה.",
   "goalNodeNeedsObjective": "כתבו את היעד.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "זה לא הקוד שהדפדפן הציג. {count, plural, one{נותר ניסיון אחד.} other{נותרו {count} ניסיונות.}}",
   "mcpServerSignInEnded": "הכניסה נמשכה זמן רב מדי, נדחתה, או שהוזנו יותר מדי קודים שגויים. התחילו מחדש כדי לקבל דף כניסה חדש.",
   "mcpServerSignInStartAgain": "התחלה מחדש",
-  "mcpServerSignedIn": "נכנסתם ל-{name}."
+  "mcpServerSignedIn": "נכנסתם ל-{name}.",
+  "ccLoading": "טוען",
+  "ccProgress": "התקדמות",
+  "ccBreadcrumb": "נתיב ניווט",
+  "ccDialog": "תיבת דו-שיח",
+  "ccResize": "שינוי גודל",
+  "ccUnverifiedLabel": "{label} (לא אומת)",
+  "prRowSelect": "בחר {title}",
+  "prTableSelectAll": "בחר את כל בקשות המשיכה",
+  "planVersionRewind": "חזרה לגרסה {version}"
 }

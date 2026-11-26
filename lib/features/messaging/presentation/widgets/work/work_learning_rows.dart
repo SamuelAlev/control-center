@@ -85,7 +85,7 @@ class ApplyIncompleteRow extends StatelessWidget {
               size: CcButtonSize.sm,
               tooltip: l10n.workFeedOpenImprovement,
               onPressed: () =>
-                  context.go(improvementRoute(workspaceId, proposalId)),
+                  context.go(memoryImprovementRoute(workspaceId, proposalId)),
             )
           : null,
     );

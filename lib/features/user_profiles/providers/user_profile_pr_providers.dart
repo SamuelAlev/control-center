@@ -30,6 +30,46 @@ final userProfileSearchProvider =
       UserProfileSearchNotifier.new,
     );
 
+final Set<String> _pendingForceProfileActivityKeys = <String>{};
+
+/// Forces a fresh server fetch of [login]'s workspace PR activity.
+Future<GitHubProfileActivity> refreshUserProfileActivity(
+  WidgetRef ref,
+  String login,
+) {
+  final normalized = login.trim().toLowerCase();
+  if (normalized.isNotEmpty) {
+    _pendingForceProfileActivityKeys.add('user:$normalized');
+  }
+  return ref.refresh(userProfileActivityProvider(login).future);
+}
+
+/// Forces a fresh server fetch of [team]'s workspace PR activity.
+Future<GitHubProfileActivity> refreshTeamProfileActivity(
+  WidgetRef ref,
+  ({String organization, String slug}) team,
+) {
+  final org = team.organization.trim().toLowerCase();
+  final slug = team.slug.trim().toLowerCase();
+  if (org.isNotEmpty && slug.isNotEmpty) {
+    _pendingForceProfileActivityKeys.add('team:$org/$slug');
+  }
+  return ref.refresh(teamProfileActivityProvider(team).future);
+}
+
+/// Invalidates the profile activity provider for [profileKey] and requests a
+/// fresh fetch bypassing the server cache.
+void invalidateProfileActivityForced(WidgetRef ref, String profileKey) {
+  final normalized = profileKey.trim().toLowerCase();
+  if (normalized.startsWith('user:')) {
+    _pendingForceProfileActivityKeys.add(normalized);
+    ref.invalidate(userProfileActivityProvider);
+  } else if (normalized.startsWith('team:')) {
+    _pendingForceProfileActivityKeys.add(normalized);
+    ref.invalidate(teamProfileActivityProvider);
+  }
+}
+
 /// Fetches all-state workspace PR activity and delivery metrics for a user.
 final userProfileActivityProvider = FutureProvider.autoDispose
     .family<GitHubProfileActivity, String>((ref, login) async {
@@ -39,9 +79,12 @@ final userProfileActivityProvider = FutureProvider.autoDispose
           ref.watch(isDemoServerProvider)) {
         return GitHubProfileActivity.empty;
       }
+      final force = _pendingForceProfileActivityKeys.remove(
+        'user:${login.trim().toLowerCase()}',
+      );
       return ref
           .watch(openPrListRepositoryProvider)
-          .profileActivityForUser(workspaceId, login);
+          .profileActivityForUser(workspaceId, login, force: force);
     });
 
 /// Fetches all-state workspace PR activity and delivery metrics for a team.
@@ -57,9 +100,18 @@ final teamProfileActivityProvider = FutureProvider.autoDispose
           ref.watch(isDemoServerProvider)) {
         return GitHubProfileActivity.empty;
       }
+      final force = _pendingForceProfileActivityKeys.remove(
+        'team:${team.organization.trim().toLowerCase()}/'
+        '${team.slug.trim().toLowerCase()}',
+      );
       return ref
           .watch(openPrListRepositoryProvider)
-          .profileActivityForTeam(workspaceId, team.organization, team.slug);
+          .profileActivityForTeam(
+            workspaceId,
+            team.organization,
+            team.slug,
+            force: force,
+          );
     });
 
 /// State rail for a GitHub profile's all-state PR browser.

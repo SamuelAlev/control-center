@@ -1,6 +1,8 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
+import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -11,22 +13,29 @@ PrCodeReviewComment _comment({
   required String path,
   int? line,
   int? originalLine,
+  int? inReplyToId,
   String side = 'RIGHT',
   String body = 'body',
   String diffHunk = '',
   bool isFileLevel = false,
+  bool isOutdated = false,
+  bool isResolved = false,
+  String login = 'octocat',
 }) => PrCodeReviewComment(
   id: id,
   body: body,
-  user: const PrUser(login: 'octocat', avatarUrl: ''),
+  user: PrUser(login: login, avatarUrl: ''),
   path: path,
   position: null,
-  createdAt: DateTime(2024, 1, 1),
+  createdAt: DateTime(2024, 1, id),
   side: side,
+  inReplyToId: inReplyToId,
   line: line,
   originalLine: originalLine,
   diffHunk: diffHunk,
   isFileLevel: isFileLevel,
+  isOutdated: isOutdated,
+  isResolved: isResolved,
 );
 
 void main() {
@@ -83,20 +92,72 @@ void main() {
       expect(result.anchored['RIGHT-42'], hasLength(1));
     });
 
-    test('falls back to originalLine for the anchor when line is null', () {
-      final anchored = _comment(
-        id: 3,
+    test(
+      'null line with originalLine is outdated, not anchored to the new diff',
+      () {
+        final outdated = _comment(
+          id: 3,
+          path: 'lib/main.dart',
+          originalLine: 7,
+          side: 'LEFT',
+        );
+
+        final result = partitionServerCommentsForFile([
+          outdated,
+        ], 'lib/main.dart');
+
+        expect(result.anchored, isEmpty);
+        expect(result.outdated.map((c) => c.id), [3]);
+      },
+    );
+
+    test(
+      'isOutdated true with non-null line and its reply are both outdated',
+      () {
+        final root = _comment(
+          id: 10,
+          path: 'lib/main.dart',
+          line: 27,
+          originalLine: 27,
+          isOutdated: true,
+        );
+        final reply = _comment(
+          id: 11,
+          path: 'lib/main.dart',
+          line: 27,
+          inReplyToId: 10,
+        );
+
+        final result = partitionServerCommentsForFile([
+          root,
+          reply,
+        ], 'lib/main.dart');
+
+        expect(result.anchored, isEmpty);
+        expect(result.outdated.map((c) => c.id), [10, 11]);
+      },
+    );
+
+    test('reply to an outdated root without line is routed to outdated', () {
+      final root = _comment(
+        id: 20,
         path: 'lib/main.dart',
-        originalLine: 7,
-        side: 'LEFT',
+        originalLine: 27,
+      );
+      final reply = _comment(
+        id: 21,
+        path: 'lib/main.dart',
+        line: 27,
+        inReplyToId: 20,
       );
 
       final result = partitionServerCommentsForFile([
-        anchored,
+        root,
+        reply,
       ], 'lib/main.dart');
 
-      expect(result.outdated, isEmpty);
-      expect(result.anchored.keys, contains('LEFT-7'));
+      expect(result.anchored, isEmpty);
+      expect(result.outdated.map((c) => c.id), [20, 21]);
     });
 
     test('splits a mixed list and ignores other files', () {
@@ -179,5 +240,55 @@ void main() {
         reason: 'every code line is exactly one row tall',
       );
     });
+  });
+
+  group('OutdatedCommentsGroup', () {
+    testWidgets(
+      'groups root and reply into one outdated thread and shows Resolved badge',
+      (tester) async {
+        final root = _comment(
+          id: 1,
+          path: 'lib/main.dart',
+          originalLine: 27,
+          login: 'SamuelAlev',
+          body: 'Please migrate.',
+          diffHunk: '@@ -25,2 +25,2 @@\n-old\n+new',
+          isOutdated: true,
+          isResolved: true,
+        );
+        final reply = _comment(
+          id: 2,
+          path: 'lib/main.dart',
+          inReplyToId: 1,
+          login: 'akuma91-frontify',
+          body: 'Done in abf8196.',
+          isOutdated: true,
+          isResolved: true,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [codeFontFamilyProvider.overrideWithValue('Fira Code')],
+            child: testWrap(
+              Align(
+                alignment: Alignment.topRight,
+                child: OutdatedCommentsGroup(comments: [root, reply]),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('1 outdated'), findsOneWidget);
+
+        await tester.tap(find.text('1 outdated'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('SamuelAlev'), findsOneWidget);
+        expect(find.text('akuma91-frontify'), findsOneWidget);
+        expect(find.text('Resolved'), findsOneWidget);
+        expect(find.textContaining('Please migrate.'), findsOneWidget);
+        expect(find.textContaining('Done in abf8196.'), findsOneWidget);
+      },
+    );
   });
 }

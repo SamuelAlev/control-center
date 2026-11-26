@@ -74,7 +74,7 @@ class GraphNode extends StatelessWidget {
 ///
 /// Selection is painted over the card rather than on its border, so choosing a
 /// node never moves what is inside it.
-class GraphNodeSurface extends StatefulWidget {
+class GraphNodeSurface extends StatelessWidget {
   /// Creates a [GraphNodeSurface].
   const GraphNodeSurface({
     super.key,
@@ -109,44 +109,35 @@ class GraphNodeSurface extends StatefulWidget {
   final Widget child;
 
   @override
-  State<GraphNodeSurface> createState() => _GraphNodeSurfaceState();
-}
-
-class _GraphNodeSurfaceState extends State<GraphNodeSurface> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
+    return CcTappable(
+      onPressed: onTap,
+      borderRadius: borderRadius,
+      semanticSelected: selected,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        return AnimatedContainer(
           duration: CcMotion.resolve(context, CcMotion.fast),
           curve: CcMotion.standard,
           width: double.infinity,
           height: double.infinity,
-          padding: widget.padding,
+          padding: padding,
           decoration: BoxDecoration(
-            color: widget.color,
-            borderRadius: widget.borderRadius,
-            border: Border.all(
-              color: _hovered ? t.fgQuaternary : widget.borderColor,
-            ),
-            boxShadow: _hovered ? AppShadows.soft : const [],
+            color: color,
+            borderRadius: borderRadius,
+            border: Border.all(color: hovered ? t.fgQuaternary : borderColor),
+            boxShadow: hovered ? AppShadows.soft : const [],
           ),
-          foregroundDecoration: widget.selected
+          foregroundDecoration: selected
               ? BoxDecoration(
-                  borderRadius: widget.borderRadius,
+                  borderRadius: borderRadius,
                   border: Border.all(color: t.accent, width: 2),
                 )
               : null,
-          child: widget.child,
-        ),
-      ),
+          child: child,
+        );
+      },
     );
   }
 }

@@ -201,8 +201,32 @@ class MeetingPlaybackState {
 class MeetingPlaybackController extends Notifier<MeetingPlaybackState> {
   Future<void> Function(Duration position)? _seek;
 
+  /// Where the person last moved the playhead by hand, or null before any
+  /// seek. See [wasSeekedInto].
+  int? _lastSeekMs;
+
   @override
   MeetingPlaybackState build() => const MeetingPlaybackState();
+
+  /// Whether the playhead was last placed by hand inside `[startMs, endMs)`
+  /// (open-ended when [endMs] is null).
+  ///
+  /// The transcript follows the audio as it plays, but a line the person just
+  /// jumped to (a tap on the line, a click on the waveform) must not move the
+  /// page under their pointer. A line that becomes active asks this to tell
+  /// the two apart.
+  bool wasSeekedInto(int startMs, int? endMs) {
+    final at = _lastSeekMs;
+    return at != null && at >= startMs && (endMs == null || at < endMs);
+  }
+
+  /// Records a seek the person made to [positionMs] and moves the shared
+  /// position there. The playback bar calls this when its waveform is clicked
+  /// or scrubbed; [seekToMs] calls it for a transcript line.
+  void reportSeek(int positionMs) {
+    _lastSeekMs = positionMs;
+    state = state.copyWith(positionMs: positionMs);
+  }
 
   /// Registers the active player's seek handler (called by the playback bar on
   /// init).
@@ -222,6 +246,7 @@ class MeetingPlaybackController extends Notifier<MeetingPlaybackState> {
       return;
     }
     _seek = null;
+    _lastSeekMs = null;
     Future(() {
       if (_seek == null) {
         state = const MeetingPlaybackState();
@@ -247,7 +272,7 @@ class MeetingPlaybackController extends Notifier<MeetingPlaybackState> {
       return;
     }
     final clamped = ms < 0 ? 0 : ms;
-    state = state.copyWith(positionMs: clamped);
+    reportSeek(clamped);
     await seek(Duration(milliseconds: clamped));
   }
 }

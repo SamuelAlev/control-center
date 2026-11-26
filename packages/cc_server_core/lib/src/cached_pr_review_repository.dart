@@ -39,6 +39,7 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_server_core/src/pr_review/pr_cache_codec.dart';
 import 'package:rhttp/rhttp.dart';
 
+part 'pr_review/cached_pr_review_helpers.dart';
 part 'pr_review/pr_cache_state.dart';
 part 'pr_review/withheld_patches.dart';
 
@@ -182,6 +183,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
     Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
+    Future<void> Function(T? previous, T fresh)? onBeforeStore,
     int? reactToPr,
     bool reactToChecks = false,
   }) {
@@ -194,6 +196,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
         fetch: fetch,
         encode: encode,
         skipRevalidate: skipRevalidate,
+        onBeforeStore: onBeforeStore,
         reactToPr: reactToPr,
         reactToChecks: reactToChecks,
       ),
@@ -208,6 +211,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
     Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
+    Future<void> Function(T? previous, T fresh)? onBeforeStore,
     int? reactToPr,
     bool reactToChecks = false,
   }) async* {
@@ -221,6 +225,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
       fetch: fetch,
       encode: encode,
       skipRevalidate: skipRevalidate,
+      onBeforeStore: onBeforeStore,
       isFirstPass: true,
     );
     if (state.cancelled || cancelToken.isCancelled) {
@@ -259,6 +264,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
           fetch: fetch,
           encode: encode,
           skipRevalidate: skipRevalidate,
+          onBeforeStore: onBeforeStore,
           isFirstPass: false,
         );
         if (state.cancelled || cancelToken.isCancelled) {
@@ -316,6 +322,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required Future<T> Function(ForgeCancelToken? cancelToken) fetch,
     required FutureOr<String> Function(T fresh) encode,
     Future<bool> Function(T cached, ForgeCancelToken cancelToken)? skipRevalidate,
+    Future<void> Function(T? previous, T fresh)? onBeforeStore,
     required bool isFirstPass,
   }) async* {
     final cached = await _cache.read(_workspaceId, kind, key);
@@ -378,6 +385,9 @@ class CachedPrReviewRepository implements PrReviewRepository {
     try {
       final fresh = await _singleFlightFetch<T>(kind, key, fetch, cancelToken);
       final freshEncoded = await encode(fresh);
+      if (onBeforeStore != null) {
+        await onBeforeStore(cachedModel, fresh);
+      }
       // Stamped only when the row was actually rewritten. An oversized payload
       // is refused by [_putBounded] and the OLD row survives; stamping there
       // would vouch for a row nobody refreshed and let the next subscriber
@@ -576,6 +586,16 @@ class CachedPrReviewRepository implements PrReviewRepository {
       encode: (fresh) async => fresh == null
           ? 'null'
           : await _encodeJson(PrCacheCodec.pullRequestToCache(fresh)),
+      onBeforeStore: (previous, fresh) async {
+        if (previous != null &&
+            fresh != null &&
+            (previous.headSha != fresh.headSha ||
+                previous.baseSha != fresh.baseSha)) {
+          final key = _prKey(prNumber);
+          await _cache.deleteEntry(_workspaceId, _Kind.prDiff, key);
+          await _cache.deleteEntry(_workspaceId, _Kind.prFiles, key);
+        }
+      },
     );
   }
 
@@ -765,14 +785,6 @@ class CachedPrReviewRepository implements PrReviewRepository {
   Future<String?> _cachedHeadSha(int prNumber) async =>
       (await _cachedPrDetailMap(prNumber))?['head_sha'] as String?;
 
-  /// Reads the changed-file count from the cached PR detail, or 0 if absent.
-  /// Used as a routing fallback so a live `getPullRequest` failure can't
-  /// misroute a large PR away from the local-git source.
-  Future<int> _cachedChangedFiles(int prNumber) async {
-    final value = (await _cachedPrDetailMap(prNumber))?['changed_files'];
-    return value is num ? value.toInt() : 0;
-  }
-
   /// Watches the unified diff for a PR, revalidating only when head or base SHA changes.
   @override
   Stream<String> watchDiff(int prNumber) {
@@ -881,6 +893,13 @@ class CachedPrReviewRepository implements PrReviewRepository {
     ForgeCancelToken cancelToken, {
     required bool serveCachedFirst,
   }) async* {
+    // Snapshot the cached detail BEFORE probing the live PR: `_probePrDetail`
+    // shares the single-flight lane with `watchPullRequest`, which overwrites
+    // `_Kind.prDetail` with the new head/base SHAs as soon as it resolves.
+    // Reading after the probe would compare the new SHA against itself and
+    // falsely reuse the stale cached file list.
+    final cachedDetail = await _cachedPrDetailMap(prNumber);
+
     // Fetch the live PR first — we need changedFiles to decide the source and
     // to know whether to serve the file cache. One call covers both the SWR
     // check and the changedFiles routing decision.
@@ -902,7 +921,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
     // decision survives a hiccup.
     var changedFiles = currentPr?.changedFiles ?? 0;
     if (changedFiles == 0) {
-      changedFiles = await _cachedChangedFiles(prNumber);
+      final cachedCount = cachedDetail?['changed_files'];
+      changedFiles = cachedCount is num ? cachedCount.toInt() : 0;
     }
     final useLocalGit = changedFiles > _githubFilesApiLimit;
     CcInfraLog.info(
@@ -946,10 +966,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
       if (cachedModel != null &&
           cachedModel.isNotEmpty &&
           !cachedModel.any(_isPatchWithheld)) {
-        // One read+decode for both SHAs.
-        final detail = await _cachedPrDetailMap(prNumber);
-        final cachedSha = detail?['head_sha'] as String?;
-        final cachedBase = detail?['base_sha'] as String?;
+        final cachedSha = cachedDetail?['head_sha'] as String?;
+        final cachedBase = cachedDetail?['base_sha'] as String?;
         if (cachedSha != null &&
             cachedSha.isNotEmpty &&
             cachedBase != null &&
@@ -2310,49 +2328,6 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
   }
 
-  /// Backoff for [_settleReviewerState]. Three tries over ~8s covers the lag
-  /// observed in practice without turning one review into an open-ended poll.
-  static const _reviewerSettleBackoff = <Duration>[
-    Duration(milliseconds: 700),
-    Duration(seconds: 2),
-    Duration(seconds: 5),
-  ];
-
-  /// Re-validates the reviewer rail until the forge shows the review just submitted (or timeout).
-  ///
-  /// Forge list endpoints lag POST; without this the rail flickers "pending" after a successful submit.
-  /// Bounded polls; gives up rather than spinning forever.
-  Future<void> _settleReviewerState(int prNumber, String? before) async {
-    if (before == null) {
-      return;
-    }
-    for (final delay in _reviewerSettleBackoff) {
-      await Future<void>.delayed(delay);
-      // This runs unawaited, outliving the RPC that started it: the workspace
-      // database or the signal bus can be torn down under it (server shutdown,
-      // a workspace closing, a test's tearDown). Nothing here is worth more
-      // than the refresh button it replaces, and an unhandled error in the
-      // server's root isolate is fatal — so give up quietly.
-      try {
-        final current = await _cache.read(
-          _workspaceId,
-          _Kind.prReviewerState,
-          _prKey(prNumber),
-        );
-        if (current != null && current != before) {
-          return;
-        }
-        await _invalidatePrKinds(prNumber, const [
-          _Kind.prReviewerState,
-          _Kind.prReviews,
-          _Kind.prDetail,
-        ]);
-      } on Object {
-        return;
-      }
-    }
-  }
-
   /// Merges a pull request using the specified merge method.
   @override
   Future<PrMergeOutcome> mergePullRequest({
@@ -2475,6 +2450,20 @@ class CachedPrReviewRepository implements PrReviewRepository {
     // Targeted: only the PR detail changed — don't nuke the (expensive) diff/
     // files/commits caches the way the full invalidatePullRequest would.
     await _invalidatePrKinds(prNumber, const [_Kind.prDetail]);
+  }
+
+  /// Posts a top-level conversation comment on [prNumber].
+  @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
+  }) async {
+    await _client.postIssueComment(prNumber: prNumber, body: body);
+    await _invalidatePrKinds(prNumber, const [
+      _Kind.prIssueComments,
+      _Kind.prTimelineEvents,
+      _Kind.prDetail,
+    ]);
   }
 
   /// Replaces a top-level conversation comment's markdown body.
@@ -2618,6 +2607,11 @@ class CachedPrReviewRepository implements PrReviewRepository {
     if (userLogins.isEmpty && teamSlugs.isEmpty) {
       return;
     }
+    final railBefore = await _cache.read(
+      _workspaceId,
+      _Kind.prReviewerState,
+      _prKey(prNumber),
+    );
     await _client.requestReviewers(
       prNumber: prNumber,
       userLogins: userLogins,
@@ -2627,6 +2621,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
       _Kind.prReviewerState,
       _Kind.prDetail,
     ]);
+    unawaited(_settleReviewerState(prNumber, railBefore));
   }
 
   /// Removes requested reviewers from a pull request.

@@ -527,6 +527,22 @@ class ConnectClient {
     await _send(target, 'POST', '/v1/github/revoke', body: request.toJson());
   }
 
+  /// Posts a batch of inline pull-request review comments through the shared
+  /// App's bot (`POST /v1/github/review_comments`).
+  Future<GitHubReviewCommentsResponse> githubReviewComments(
+    ConnectTarget target,
+    GitHubReviewCommentsRequest request,
+  ) async => _parse(
+    await _send(
+      target,
+      'POST',
+      '/v1/github/review_comments',
+      body: request.toJson(),
+      overrideTimeout: _multiCall,
+    ),
+    GitHubReviewCommentsResponse.fromJson,
+  );
+
   /// The installations of the shared app the person can see.
   Future<GitHubInstallationsResponse> githubInstallations(
     ConnectTarget target,

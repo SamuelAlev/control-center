@@ -39,10 +39,15 @@ class _CodeExecutionCallRowState extends State<CodeExecutionCallRow> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final c = widget.call;
-    final mono = CcTypography.monoNum.copyWith(
-      fontFamily: widget.codeFont,
-      fontSize: 12,
-      color: t.textPrimary,
+    final mono = CcFonts.code(
+      textStyle: CcTypography.numeric.copyWith(
+        fontSize: 12,
+        color: t.textPrimary,
+      ),
+      family: widget.codeFont,
+    );
+    final numeric = CcFonts.numeric(
+      textStyle: CcTypography.numeric.copyWith(fontSize: 12),
     );
     final caption = CcTypography.caption.copyWith(color: t.textSecondary);
     final statusColor = nestedCallStatusColor(t, c.status);
@@ -88,7 +93,7 @@ class _CodeExecutionCallRowState extends State<CodeExecutionCallRow> {
                           width: 36,
                           child: Text(
                             '#${c.sequence}',
-                            style: mono.copyWith(color: t.textTertiary),
+                            style: numeric.copyWith(color: t.textTertiary),
                           ),
                         ),
                         Expanded(
@@ -128,7 +133,7 @@ class _CodeExecutionCallRowState extends State<CodeExecutionCallRow> {
                           child: Text(
                             formatScriptDuration(l10n, c.durationMs),
                             textAlign: TextAlign.end,
-                            style: mono.copyWith(color: t.textSecondary),
+                            style: numeric.copyWith(color: t.textSecondary),
                           ),
                         ),
                       ],

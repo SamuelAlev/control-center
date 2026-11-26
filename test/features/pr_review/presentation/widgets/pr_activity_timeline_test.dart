@@ -392,7 +392,7 @@ void main() {
         expect(find.text('krishna'), findsWidgets);
         expect(_richTextContaining('inline note'), findsWidgets);
         expect(_richTextContaining('good catch'), findsWidgets);
-        expect(find.text('2 comments'), findsOneWidget);
+        expect(find.text('1 reply'), findsOneWidget);
         expect(find.text('lib/gone.dart'), findsOneWidget);
         expect(find.text('Outdated'), findsOneWidget);
         expect(find.text('this code is gone now'), findsWidgets);

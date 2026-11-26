@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
 import 'package:flutter/widgets.dart';
 
 /// A plain multiline markdown text field with the editor's panel styling.
@@ -50,6 +51,7 @@ class MarkdownTextField extends StatelessWidget {
       minLines: minLines,
       maxLines: maxLines,
       textStyle: CcTypography.body.copyWith(color: t.textPrimary, height: 1.5),
+      inputFormatters: const [AutoWrapSelectionFormatter()],
       hintText: hintText,
       chromeless: true,
     );

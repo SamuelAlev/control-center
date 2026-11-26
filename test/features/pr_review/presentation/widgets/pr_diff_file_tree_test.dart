@@ -199,7 +199,7 @@ void main() {
       expect(find.text('new.dart'), findsOneWidget);
     });
 
-    testWidgets('does not display +/- counts on file rows', (tester) async {
+    testWidgets('displays +/- counts on file rows', (tester) async {
       final roots = [
         _leaf(
           name: 'main.dart',
@@ -214,13 +214,39 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // The compact tree drops per-row addition/deletion badges.
+      // A file row carries its line stat.
       expect(find.text('main.dart'), findsOneWidget);
-      expect(find.text('+15'), findsNothing);
-      expect(find.text('−7'), findsNothing);
+      expect(find.text('+15 −7', findRichText: true), findsOneWidget);
     });
 
-    testWidgets('folder shows file-count pill (no +/-)', (tester) async {
+    testWidgets('a file with open conversations shows their count', (
+      tester,
+    ) async {
+      final roots = [
+        _leaf(name: 'a.dart', path: 'lib/a.dart', fileIndex: 0),
+        _leaf(name: 'b.dart', path: 'lib/b.dart', fileIndex: 1),
+      ];
+
+      await tester.pumpWidget(
+        _wrap(
+          PrDiffFileTree(
+            roots: roots,
+            onSelectFile: (_) {},
+            unresolvedByPath: const {'lib/b.dart': 3},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byIcon(AppIcons.messageSquare), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('b.dart.*3 unresolved conversations')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('folder shows no count and no +/-', (tester) async {
       final roots = [
         _dir(
           name: 'lib',
@@ -240,11 +266,10 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // The folder keeps its file-count pill…
-      expect(find.text('2'), findsOneWidget);
-      // …but not the aggregated +/- counts.
-      expect(find.text('+8'), findsNothing);
-      expect(find.text('−3'), findsNothing);
+      // A file count pill read as a comment count, so a folder shows neither
+      // that nor the aggregated +/-.
+      expect(find.text('2'), findsNothing);
+      expect(find.text('+8 −3', findRichText: true), findsNothing);
     });
 
     testWidgets('search button invokes onOpenSearch', (tester) async {
@@ -318,8 +343,8 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // The status chips are hidden until the filters disclosure reveals them.
-      await tester.tap(find.text('Search filters'));
+      // The statuses live in the menu behind the field's filter button.
+      await tester.tap(find.byIcon(AppIcons.slidersHorizontal));
       await tester.pumpAndSettle(const Duration(seconds: 5));
       await tester.tap(find.text('Added'));
       await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -329,9 +354,7 @@ void main() {
       expect(find.text('removed.dart'), findsNothing);
     });
 
-    testWidgets('status filter chips are revealed by the filters disclosure', (
-      tester,
-    ) async {
+    testWidgets('the filter button opens the status menu', (tester) async {
       final roots = [_leaf(name: 'test.dart', path: 'test.dart')];
 
       await tester.pumpWidget(
@@ -339,10 +362,10 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      // Hidden by default (single-line filter bar).
+      // Closed by default (single-line filter bar).
       expect(find.text('Added'), findsNothing);
 
-      await tester.tap(find.text('Search filters'));
+      await tester.tap(find.byIcon(AppIcons.slidersHorizontal));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('All'), findsOneWidget);

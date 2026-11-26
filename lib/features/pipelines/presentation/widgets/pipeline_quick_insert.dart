@@ -40,11 +40,10 @@ class _PipelineQuickInsertState extends State<PipelineQuickInsert> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // The "+" lives inside InteractiveViewer. A child TapGestureRecognizer
-    // loses the arena to the viewer's ScaleGestureRecognizer, so a tap that
-    // hit-tests the button never fires onPressed. Pointer-down is not a
-    // gesture — it always reaches us — and IgnorePointer keeps the button
-    // from toggling a second time on the same click.
+    // The "+" lives inside InteractiveViewer, whose ScaleGestureRecognizer
+    // wins the arena over a child tap, so the pointer toggles on pointer-down.
+    // IgnorePointer keeps the button from toggling twice on one click; it
+    // does not block focus, so Enter on the button is the keyboard path.
     return CcPopover(
       controller: _overlay,
       toggleOnTargetTap: false,
@@ -57,12 +56,12 @@ class _PipelineQuickInsertState extends State<PipelineQuickInsert> {
           behavior: HitTestBehavior.opaque,
           onPointerDown: (_) => _overlay.toggle(),
           child: IgnorePointer(
+            // No tooltip of its own: the one above already shows on focus.
             child: CcIconButton(
               icon: AppIcons.plus,
               size: CcButtonSize.sm,
-              tooltip: l10n.pipelineAddStep,
               semanticLabel: l10n.pipelineAddStep,
-              onPressed: () {},
+              onPressed: _overlay.toggle,
             ),
           ),
         ),
@@ -148,10 +147,7 @@ class _PipelineNodeTypePickerState extends State<PipelineNodeTypePicker> {
               ? Center(
                   child: Text(
                     l10n.nodeLibraryNoMatches,
-                    style: TextStyle(
-                      color: tokens.textTertiary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: tokens.textTertiary, fontSize: 12),
                   ),
                 )
               : ListView(
@@ -164,10 +160,7 @@ class _PipelineNodeTypePickerState extends State<PipelineNodeTypePicker> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(6, 8, 6, 4),
                         child: Text(
-                          pipelineNodeCategoryLabel(
-                            l10n,
-                            category,
-                          ).toUpperCase(),
+                          pipelineNodeCategoryLabel(l10n, category),
                           style: pipelineNodeEyebrowStyle(tokens),
                         ),
                       ),
@@ -245,10 +238,7 @@ class _PipelineTriggerTypePickerState extends State<PipelineTriggerTypePicker> {
               ? Center(
                   child: Text(
                     l10n.nodeLibraryNoMatches,
-                    style: TextStyle(
-                      color: tokens.textTertiary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: tokens.textTertiary, fontSize: 12),
                   ),
                 )
               : ListView(
@@ -365,10 +355,17 @@ class _PipelineTriggerGhostPickerState extends State<PipelineTriggerGhostPicker>
       targetAnchor: Alignment.centerRight,
       followerAnchor: Alignment.centerLeft,
       offset: const Offset(8, 0),
+      // Toggled on pointer-down for the reason [PipelineQuickInsert] gives;
+      // the tappable under IgnorePointer is the keyboard path.
       target: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (_) => _overlay.toggle(),
-        child: widget.child,
+        child: IgnorePointer(
+          child: CcTappable(
+            onPressed: _overlay.toggle,
+            builder: (context, _) => widget.child,
+          ),
+        ),
       ),
       overlayBuilder: (context, _) => SizedBox(
         width: 280,

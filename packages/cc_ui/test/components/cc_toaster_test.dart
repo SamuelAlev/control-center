@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -413,5 +414,148 @@ void main() {
     );
 
     expect(handle, isNull);
+  });
+
+  group('keyboard and screen reader', () {
+    late CcToastHandle toaster;
+    late FocusNode pageButton;
+    setUp(() => pageButton = FocusNode(debugLabel: 'page button'));
+    tearDown(() => pageButton.dispose());
+
+    // The app's shape: the scope above a Navigator, so the stack sits in the
+    // root overlay outside the page route's focus scope.
+    Widget host({Duration duration = const Duration(milliseconds: 500)}) =>
+        ccTestApp(
+          CcToastScope(
+            duration: duration,
+            child: Navigator(
+              onGenerateRoute: (settings) => PageRouteBuilder<void>(
+                pageBuilder: (context, _, _) {
+                  toaster = CcToastScope.of(context);
+                  return Center(
+                    child: CcTappable(
+                      focusNode: pageButton,
+                      onPressed: () {},
+                      builder: (context, states) => const Text('Save'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+    Future<void> showToast(WidgetTester tester, String message) async {
+      toaster.show(message);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    FocusNode closeOf(WidgetTester tester, String message) => Focus.of(
+      tester.element(
+        find.descendant(
+          of: find.ancestor(of: find.text(message), matching: find.byType(Row)),
+          matching: find.byIcon(CcIcons.x),
+        ),
+      ),
+    );
+
+    testWidgets('F6 jumps to the newest toast; Escape goes back', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+      pageButton.requestFocus();
+      await tester.pump();
+      await showToast(tester, 'Saved');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.f6);
+      await tester.pump();
+      expect(closeOf(tester, 'Saved').hasPrimaryFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(pageButton.hasPrimaryFocus, isTrue);
+      expect(find.text('Saved'), findsOneWidget);
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+    });
+
+    testWidgets('Tab passes through the stack and back to the page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(duration: const Duration(seconds: 30)));
+      pageButton.requestFocus();
+      await tester.pump();
+      await showToast(tester, 'Saved');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(closeOf(tester, 'Saved').hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(pageButton.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('focus in a toast holds its countdown; closing returns focus', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host());
+      pageButton.requestFocus();
+      await tester.pump();
+      await showToast(tester, 'Read me');
+      await tester.sendKeyEvent(LogicalKeyboardKey.f6);
+      await tester.pump();
+
+      // Well past the dwell: still up while focused.
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Read me'), findsOneWidget);
+
+      // Closing it with the keyboard takes focus back to the page.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Read me'), findsNothing);
+      expect(pageButton.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('closing one of two focused toasts moves to the other', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host(duration: const Duration(seconds: 30)));
+      pageButton.requestFocus();
+      await tester.pump();
+      await showToast(tester, 'First');
+      await showToast(tester, 'Second');
+      await tester.sendKeyEvent(LogicalKeyboardKey.f6);
+      await tester.pump();
+      expect(closeOf(tester, 'Second').hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Second'), findsNothing);
+      expect(closeOf(tester, 'First').hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(pageButton.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('one name per toast, a named close, a named region', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(host(duration: const Duration(seconds: 30)));
+      toaster.show('The build exited', title: 'Pipeline failed');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.semantics.byLabel('Pipeline failed. The build exited'),
+        findsOne,
+      );
+      expect(find.semantics.byLabel('Pipeline failed'), findsNothing);
+      expect(find.semantics.byLabel('The build exited'), findsNothing);
+      expect(find.semantics.byLabel('Dismiss'), findsOne);
+      expect(find.semantics.byLabel('Notifications'), findsOne);
+      final toast = tester.getSemantics(find.text('Pipeline failed'));
+      expect(toast.flagsCollection.isLiveRegion, isTrue);
+      semantics.dispose();
+    });
   });
 }

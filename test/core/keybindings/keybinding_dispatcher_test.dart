@@ -501,6 +501,112 @@ void main() {
       expect(handled, isFalse);
     });
 
+    group('a focused control owns bare Enter and Space', () {
+      final control = FocusNode(debugLabel: 'control');
+      final plain = FocusNode(debugLabel: 'plain');
+      tearDownAll(() {
+        control.dispose();
+        plain.dispose();
+      });
+
+      /// A focusable control that activates on Enter/Space, the way every
+      /// cc_ui button does, beside a focusable node that does not.
+      Future<List<String>> pumpControls(WidgetTester tester) async {
+        final activated = <String>[];
+        await tester.pumpWidget(
+          WidgetsApp(
+            color: const Color(0xFF000000),
+            builder: (context, _) => Column(
+              children: [
+                Actions(
+                  actions: {
+                    ActivateIntent: CallbackAction<ActivateIntent>(
+                      onInvoke: (_) => activated.add('control'),
+                    ),
+                  },
+                  child: Focus(
+                    focusNode: control,
+                    child: const SizedBox(width: 10, height: 10),
+                  ),
+                ),
+                Focus(
+                  focusNode: plain,
+                  child: const SizedBox(width: 10, height: 10),
+                ),
+              ],
+            ),
+          ),
+        );
+        return activated;
+      }
+
+      for (final key in [
+        LogicalKeyboardKey.enter,
+        LogicalKeyboardKey.numpadEnter,
+        LogicalKeyboardKey.space,
+      ]) {
+        testWidgets('${key.keyLabel}: the control fires, the binding does '
+            'not; on a plain node the binding fires', (tester) async {
+          final d = webDispatcher([binding('t.open', KeyStroke(key))]);
+          addTearDown(d.dispose);
+          var fired = 0;
+          d.registerScope({'t.open': () => fired++});
+          final activated = await pumpControls(tester);
+
+          control.requestFocus();
+          await tester.pump();
+          await tester.sendKeyEvent(key, platform: 'macos');
+          expect(activated, ['control']);
+          expect(fired, 0, reason: 'one press, one action');
+
+          plain.requestFocus();
+          await tester.pump();
+          await tester.sendKeyEvent(key, platform: 'macos');
+          expect(fired, 1);
+        });
+      }
+
+      testWidgets('a modified Enter still reaches its binding on a control', (
+        tester,
+      ) async {
+        const cmdEnter = KeyStroke(LogicalKeyboardKey.enter, cmd: true);
+        const shiftEnter = KeyStroke(LogicalKeyboardKey.enter, shift: true);
+        final d = webDispatcher([
+          binding('t.cmd', cmdEnter),
+          binding('t.shift', shiftEnter),
+        ]);
+        addTearDown(d.dispose);
+        final fired = <String>[];
+        d.registerScope({
+          't.cmd': () => fired.add('cmd'),
+          't.shift': () => fired.add('shift'),
+        });
+        await pumpControls(tester);
+        control.requestFocus();
+        await tester.pump();
+
+        await tester.sendKeyDownEvent(
+          LogicalKeyboardKey.metaLeft,
+          platform: 'macos',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter, platform: 'macos');
+        await tester.sendKeyUpEvent(
+          LogicalKeyboardKey.metaLeft,
+          platform: 'macos',
+        );
+        await tester.sendKeyDownEvent(
+          LogicalKeyboardKey.shiftLeft,
+          platform: 'macos',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter, platform: 'macos');
+        await tester.sendKeyUpEvent(
+          LogicalKeyboardKey.shiftLeft,
+          platform: 'macos',
+        );
+        expect(fired, ['cmd', 'shift']);
+      });
+    });
+
     testWidgets('a deactivated binding is neither fired nor consumed', (
       tester,
     ) async {

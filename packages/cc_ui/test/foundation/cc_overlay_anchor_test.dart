@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -183,4 +184,89 @@ void main() {
       expect(rect.height, lessThan(screen.height - trigger.height));
     },
   );
+
+  group('semantics behind an open panel', () {
+    Widget host(
+      CcOverlayController controller, {
+      bool barrierDismissible = true,
+      bool hole = false,
+    }) {
+      return ccTestApp(
+        Column(
+          children: [
+            const Text('Page text'),
+            CcOverlayAnchor(
+              controller: controller,
+              barrierDismissible: barrierDismissible,
+              barrierTargetHole: hole,
+              target: const SizedBox(width: 120, height: 40),
+              overlayBuilder: (context, size) => const Text('menu content'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    testWidgets('a full barrier offers a dismiss action and keeps the panel '
+        'reachable', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = CcOverlayController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(host(controller));
+
+      controller.show();
+      await tester.pump();
+      // The panel is grafted under its target for traversal; blocking the
+      // page would drop it, so the page stays and the panel is found.
+      expect(find.semantics.byLabel('menu content'), findsOne);
+      expect(find.semantics.byLabel('Page text'), findsOne);
+
+      final barrier = find.semantics.byLabel('Dismiss');
+      expect(barrier, findsOne);
+      tester.semantics.performAction(barrier, SemanticsAction.dismiss);
+      await tester.pump();
+      expect(controller.isOpen, isFalse);
+      expect(find.semantics.byLabel('Dismiss'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('a barrier with a hole adds no dismiss node', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final controller = CcOverlayController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(host(controller, hole: true));
+      controller.show();
+      await tester.pump();
+      expect(find.semantics.byLabel('Page text'), findsOne);
+      expect(find.semantics.byLabel('Dismiss'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('a passive overlay (tooltip) blocks nothing', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = CcOverlayController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(host(controller, barrierDismissible: false));
+      controller.show();
+      await tester.pump();
+      expect(find.semantics.byLabel('Page text'), findsOne);
+      expect(find.semantics.byLabel('Dismiss'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('an outside tap still closes a semantic barrier', (
+      tester,
+    ) async {
+      final controller = CcOverlayController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(host(controller));
+      controller.show();
+      await tester.pump();
+      await tester.tapAt(const Offset(500, 500));
+      await tester.pump();
+      expect(controller.isOpen, isFalse);
+    });
+  });
 }

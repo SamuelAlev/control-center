@@ -83,6 +83,8 @@ export 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 export 'package:cc_ui/src/foundation/cc_depth_switcher.dart';
 export 'package:cc_ui/src/foundation/cc_elevation.dart';
 export 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
+export 'package:cc_ui/src/foundation/cc_focus_keeper.dart';
+export 'package:cc_ui/src/foundation/cc_focus_trap.dart';
 export 'package:cc_ui/src/foundation/cc_motion.dart';
 export 'package:cc_ui/src/foundation/cc_native_text_menu.dart';
 export 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
@@ -99,6 +101,7 @@ export 'package:cc_ui/src/primitives/image_fade.dart'
 export 'package:cc_ui/src/theme/cc_font_registry.dart';
 export 'package:cc_ui/src/theme/cc_fonts.dart';
 export 'package:cc_ui/src/theme/cc_script_fonts.dart';
+export 'package:cc_ui/src/theme/cc_strings.dart';
 export 'package:cc_ui/src/theme/cc_theme.dart';
 // Tokens.
 export 'package:cc_ui/src/tokens/app_radii.dart';

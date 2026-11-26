@@ -259,7 +259,12 @@ class _TrialMetric extends StatelessWidget {
           label,
           style: CcTypography.caption.copyWith(color: t.textQuaternary),
         ),
-        Text(value, style: CcTypography.monoNum.copyWith(color: t.textPrimary)),
+        Text(
+          value,
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
+          ),
+        ),
       ],
     );
   }
@@ -312,7 +317,9 @@ class _ReportSection extends StatelessWidget {
         child: CcSelectionRegion(
           child: Text(
             previewLines,
-            style: CcTypography.monoNum.copyWith(color: t.textSecondary),
+            style: CcFonts.code(
+              textStyle: CcTypography.numeric.copyWith(color: t.textSecondary),
+            ),
           ),
         ),
       ),

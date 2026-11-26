@@ -144,9 +144,8 @@ void main() {
         const ContributedSection('settings.workspace-app.google'),
         status: _status(WorkspaceConnectMode.own),
       );
-      // Section labels render uppercase.
       expect(
-        find.text(l10n.workspaceOwnAppTitle('Google Calendar').toUpperCase()),
+        find.text(l10n.workspaceOwnAppTitle('Google Calendar')),
         findsOneWidget,
       );
       expect(find.text('g-client'), findsOneWidget);
@@ -180,7 +179,7 @@ void main() {
         const ContributedSection('settings.gifs'),
         status: _status(WorkspaceConnectMode.inherit),
       );
-      expect(find.text(l10n.workspaceGifsTitle.toUpperCase()), findsOneWidget);
+      expect(find.text(l10n.workspaceGifsTitle), findsOneWidget);
       expect(find.text(l10n.workspaceGifsSourceConnect), findsOneWidget);
       expect(find.text(l10n.workspaceProviderAppKlipyKey), findsNothing);
     });

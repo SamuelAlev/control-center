@@ -148,41 +148,48 @@ class _RevisionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? ds.accentSoft : null,
-          borderRadius: BorderRadius.circular(8),
-          border: isCurrent ? Border.all(color: ds.accent, width: 1) : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              revision.authorKind == 'agent' ? AppIcons.bot : AppIcons.user,
-              size: 13,
-              color: ds.textTertiary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'v${revision.revision}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: ds.textPrimary,
-                decoration: TextDecoration.none,
+    // The gap sits outside the tappable so the focus ring hugs the row.
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: CcTappable(
+        onPressed: onTap,
+        borderRadius: BorderRadius.circular(8),
+        semanticSelected: isSelected,
+        builder: (context, _) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? ds.accentSoft : null,
+            borderRadius: BorderRadius.circular(8),
+            border: isCurrent ? Border.all(color: ds.accent, width: 1) : null,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                revision.authorKind == 'agent' ? AppIcons.bot : AppIcons.user,
+                size: 13,
+                color: ds.textTertiary,
               ),
-            ),
-            const Spacer(),
-            if (onRewind != null)
-              CcIconButton(
-                icon: AppIcons.undo2,
-                semanticLabel: 'Rewind',
-                onPressed: onRewind,
+              const SizedBox(width: 8),
+              Text(
+                'v${revision.revision}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ds.textPrimary,
+                  decoration: TextDecoration.none,
+                ),
               ),
-          ],
+              const Spacer(),
+              if (onRewind != null)
+                CcIconButton(
+                  icon: AppIcons.undo2,
+                  semanticLabel: AppLocalizations.of(
+                    context,
+                  ).planVersionRewind(revision.revision),
+                  onPressed: onRewind,
+                ),
+            ],
+          ),
         ),
       ),
     );

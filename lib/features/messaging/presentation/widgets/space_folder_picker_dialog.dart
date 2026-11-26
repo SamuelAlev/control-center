@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -109,22 +110,29 @@ class _MoveSpaceDialogState extends ConsumerState<_MoveSpaceDialog> {
               ),
             const SizedBox(height: AppSpacing.sm),
             if (_creating)
-              Row(
-                children: [
-                  Expanded(
-                    child: CcTextField(
-                      controller: _name,
-                      hintText: l10n.folderName,
-                      autofocus: true,
-                      onSubmitted: (_) => unawaited(_createAndMove()),
+              // Asked for outright: an autofocus yields to a folder row focused
+              // earlier, which is where the New folder button hands focus as
+              // it goes.
+              FocusOnMount(
+                builder: (context, focusNode) => Row(
+                  children: [
+                    Expanded(
+                      child: CcTextField(
+                        controller: _name,
+                        focusNode: focusNode,
+                        hintText: l10n.folderName,
+                        onSubmitted: (_) => unawaited(_createAndMove()),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  CcButton(
-                    onPressed: _busy ? null : () => unawaited(_createAndMove()),
-                    child: Text(l10n.create),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.sm),
+                    CcButton(
+                      onPressed: _busy
+                          ? null
+                          : () => unawaited(_createAndMove()),
+                      child: Text(l10n.create),
+                    ),
+                  ],
+                ),
               )
             else
               CcButton(

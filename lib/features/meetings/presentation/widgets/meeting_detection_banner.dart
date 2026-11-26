@@ -78,7 +78,7 @@ class MeetingDetectionBanner extends ConsumerWidget {
             size: CcButtonSize.sm,
             icon: AppIcons.circleDot,
             onPressed: () => _record(context, ref, label),
-            child: Text(l10n.meetingDetectedRecord),
+            child: Text(l10n.meetingsRecordMeeting),
           ),
         ],
       ),

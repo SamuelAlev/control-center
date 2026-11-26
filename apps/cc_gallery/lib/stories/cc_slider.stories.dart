@@ -8,7 +8,7 @@ part 'cc_slider.stories.g.dart';
 /// Stories for [CcSlider] — the continuous/stepped value control.
 ///
 /// Hovering the track aims a future value (ghost + chip) without committing;
-/// a click writes it. The committed reading sits in mono at the start edge.
+/// a click writes it. The committed reading sits at the start edge.
 
 const _path = '[Components]/Inputs';
 

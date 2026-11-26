@@ -124,7 +124,6 @@
   "eventNotFound": "ایونٹ نہیں ملا",
   "eventNotFoundDescription": "یہ ایجنڈا ونڈو سے باہر ہو سکتا ہے، یا ماخذ سے ہٹا دیا گیا ہو۔",
   "joinMeeting": "میٹنگ میں شامل ہوں",
-  "join": "شامل ہوں",
   "attendeesCount": "حاضرین ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

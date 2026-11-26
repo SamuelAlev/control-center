@@ -186,4 +186,59 @@ void main() {
       );
     });
   });
+
+  group('MeetingOutcome transcriptCorrections', () {
+    test('parses camelCase and snake_case correction pairs', () {
+      final camel = MeetingOutcome.parse({
+        'enhancedNotes': 'n',
+        'transcriptCorrections': [
+          {'find': '  Cold Rabbit  ', 'replace': ' CodeRabbit '},
+          {'find': 'M C P', 'replace': 'MCP'},
+        ],
+      });
+      expect(camel.transcriptCorrections, const [
+        TranscriptCorrection(find: 'Cold Rabbit', replace: 'CodeRabbit'),
+        TranscriptCorrection(find: 'M C P', replace: 'MCP'),
+      ]);
+
+      final snake = MeetingOutcome.parse({
+        'enhancedNotes': 'n',
+        'transcript_corrections': [
+          {'find': 'Depend about', 'replace': 'Dependabot'},
+        ],
+      });
+      expect(snake.transcriptCorrections, const [
+        TranscriptCorrection(find: 'Depend about', replace: 'Dependabot'),
+      ]);
+    });
+
+    test('filters malformed, too-short, or identical entries', () {
+      final outcome = MeetingOutcome.parse({
+        'enhancedNotes': 'n',
+        'transcriptCorrections': [
+          {'find': 'ab', 'replace': 'AB'}, // < 3 chars
+          {'find': 'same', 'replace': 'same'}, // identical
+          {'find': '', 'replace': 'x'},
+          {'find': 'valid term', 'replace': ''},
+          'not a map',
+          {'find': 'evil cases', 'replace': 'eval cases'},
+        ],
+      });
+      expect(outcome.transcriptCorrections, const [
+        TranscriptCorrection(find: 'evil cases', replace: 'eval cases'),
+      ]);
+    });
+
+    test('fromValidatedJson reads transcriptCorrections', () {
+      final outcome = MeetingOutcome.fromValidatedJson({
+        'enhancedNotes': 'n',
+        'transcriptCorrections': [
+          {'find': 'Anthropy', 'replace': 'Anthropic'},
+        ],
+      });
+      expect(outcome.transcriptCorrections, const [
+        TranscriptCorrection(find: 'Anthropy', replace: 'Anthropic'),
+      ]);
+    });
+  });
 }

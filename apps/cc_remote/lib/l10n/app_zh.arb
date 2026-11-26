@@ -95,7 +95,6 @@
   "eventNotFound": "未找到活动",
   "eventNotFoundDescription": "它可能不在议程时间范围内，或已在上游被移除。",
   "joinMeeting": "加入会议",
-  "join": "加入",
   "attendeesCount": "参会者（{count}）",
   "details": "详情",
   "allDay": "全天",

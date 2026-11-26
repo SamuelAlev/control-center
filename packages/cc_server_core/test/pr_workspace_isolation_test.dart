@@ -935,6 +935,15 @@ void main() {
     expect(code(res), RpcErrorCodes.unauthorized);
     expect(reviews.calls, isEmpty);
 
+    res = await call('pr_review.postIssueComment', 'gina', {
+      'owner': 'acme',
+      'repo': 'vault',
+      'pr_number': 3,
+      'body': 'hi',
+    });
+    expect(code(res), RpcErrorCodes.unauthorized);
+    expect(reviews.calls, isEmpty);
+
     // Their own readable repo works.
     res = await call('pr_review.listAssignableUsers', 'gina', {
       'owner': 'acme',
@@ -1221,6 +1230,14 @@ class _RecordingReview extends EmptyPrReviewRepository {
   Future<List<PrUser>> listAssignableUsers() async {
     reviews.calls.add('listAssignableUsers $who');
     return const [];
+  }
+
+  @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
+  }) async {
+    reviews.calls.add('postIssueComment $who $prNumber');
   }
 
   @override

@@ -13,6 +13,7 @@ import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Severity of a [CcToast], driving its accent color plus a leading status
@@ -48,6 +49,16 @@ const double _obstructionGap = AppSpacing.sm;
 /// immediately via its close control. The handle is self-contained — no
 /// Riverpod or other state-management dependency.
 ///
+/// Keyboard: the stack lives in the root overlay, outside every route's focus
+/// scope. Tab reaches it only once a page hands Tab on past its last control
+/// (a route's default), and never from inside a dialog, which keeps Tab to
+/// itself. So F6 from anywhere under the scope moves focus straight onto the
+/// newest toast's close button; Escape or F6 again goes back to where focus
+/// was. While focus is in
+/// a toast its countdown holds, as it does under the pointer. A screen reader
+/// hears each toast as it arrives (a live region) inside a region named by
+/// `CcStrings.notifications`.
+///
 /// The stack lifts clear of any [CcToastObstruction] in its path, so a pinned
 /// save bar or a dialog's action footer stays reachable while toasts show.
 class CcToastScope extends StatefulWidget {
@@ -63,7 +74,8 @@ class CcToastScope extends StatefulWidget {
   final Widget child;
 
   /// How long each toast stays before auto-dismissing (per-toast overridable
-  /// via `show(duration: …)`). Hovering a toast pauses the countdown.
+  /// via `show(duration: …)`). Hovering or focusing a toast pauses the
+  /// countdown.
   final Duration duration;
 
   /// Where the toast stack sits within the overlay. Directional by default
@@ -105,6 +117,16 @@ abstract class CcToastHandle {
 class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
   final List<_ToastEntry> _entries = [];
   OverlayEntry? _overlayEntry;
+
+  /// The stack's own scope, which F6 moves focus into. Tab passes through it
+  /// and on, like any other region of the page.
+  final FocusScopeNode _stackScope = FocusScopeNode(
+    debugLabel: 'CcToastScope stack',
+    traversalEdgeBehavior: TraversalEdgeBehavior.parentScope,
+  );
+
+  /// Where focus was before F6 took it into the stack.
+  FocusNode? _returnFocus;
 
   /// Mounted [CcToastObstruction]s; [_obstructionsMoved] pings the stack's
   /// layout whenever one appears, leaves, or paints at a new rect.
@@ -177,7 +199,71 @@ class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
     _overlayEntry = null;
     _obstructions.clear();
     _obstructionsMoved.dispose();
+    _stackScope.dispose();
     super.dispose();
+  }
+
+  bool _isRegionKey(KeyEvent event) =>
+      event is KeyDownEvent &&
+      event.logicalKey == LogicalKeyboardKey.f6 &&
+      !HardwareKeyboard.instance.isControlPressed &&
+      !HardwareKeyboard.instance.isMetaPressed &&
+      !HardwareKeyboard.instance.isAltPressed;
+
+  /// F6 under the scope: move focus to the newest toast.
+  KeyEventResult _onScopeKey(FocusNode node, KeyEvent event) {
+    if (!_isRegionKey(event) || _entries.isEmpty || _stackScope.hasFocus) {
+      return KeyEventResult.ignored;
+    }
+    _returnFocus = FocusManager.instance.primaryFocus;
+    _focusNewestToast();
+    return KeyEventResult.handled;
+  }
+
+  /// Escape or F6 inside the stack: give focus back.
+  KeyEventResult _onStackKey(FocusNode node, KeyEvent event) {
+    final escape =
+        event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape;
+    if (!escape && !_isRegionKey(event)) {
+      return KeyEventResult.ignored;
+    }
+    _leaveStack();
+    return KeyEventResult.handled;
+  }
+
+  void _focusNewestToast() {
+    // The newest toast sits nearest the anchored edge: last in a bottom stack,
+    // first in a top one. Its close button is its only focus stop.
+    final stops = _stackScope.traversalDescendants
+        .where((n) => n.canRequestFocus && !n.skipTraversal)
+        .toList();
+    if (stops.isEmpty) {
+      return;
+    }
+    final bottomAnchored =
+        widget.alignment.resolve(Directionality.maybeOf(context)).y >= 0;
+    (bottomAnchored ? stops.last : stops.first).requestFocus();
+  }
+
+  void _leaveStack() {
+    final back = _returnFocus;
+    _returnFocus = null;
+    if (back != null && back.context != null && back.canRequestFocus) {
+      back.requestFocus();
+    } else if (_stackScope.hasFocus) {
+      _stackScope.unfocus();
+    }
+  }
+
+  /// Holds the countdown while the pointer rests on, or focus is in, a toast.
+  void _setHeld(_ToastEntry entry, {bool? hovered, bool? focused}) {
+    entry.hovered = hovered ?? entry.hovered;
+    entry.focused = focused ?? entry.focused;
+    if (entry.hovered || entry.focused) {
+      _pause(entry);
+    } else {
+      _resume(entry);
+    }
   }
 
   @override
@@ -250,24 +336,35 @@ class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
         ),
         child: DefaultTextStyle(
           style: baseStyle,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _toastWidth),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final entry in ordered)
-                  _CcToast(
-                    key: entry.key,
-                    entry: entry,
-                    gapAbove: bottomAnchored,
-                    slideFromBelow: bottomAnchored,
-                    onDismissed: () => _remove(entry),
-                    onDismissRequested: () => _dismiss(entry),
-                    onHoverChanged: (hovering) =>
-                        hovering ? _pause(entry) : _resume(entry),
-                  ),
-              ],
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            label: context.ccStrings.notifications,
+            child: FocusScope(
+              node: _stackScope,
+              onKeyEvent: _onStackKey,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _toastWidth),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final entry in ordered)
+                      _CcToast(
+                        key: entry.key,
+                        entry: entry,
+                        gapAbove: bottomAnchored,
+                        slideFromBelow: bottomAnchored,
+                        onDismissed: () => _remove(entry),
+                        onDismissRequested: () => _dismiss(entry),
+                        onHoverChanged: (hovering) =>
+                            _setHeld(entry, hovered: hovering),
+                        onFocusChanged: (focused) =>
+                            _setHeld(entry, focused: focused),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -284,7 +381,6 @@ class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
     entry.controller.dismiss();
   }
 
-  /// Holds the auto-dismiss countdown while the pointer rests on the toast.
   void _pause(_ToastEntry entry) {
     entry.timer?.cancel();
     entry.timer = null;
@@ -305,18 +401,38 @@ class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
     }
     entry.timer?.cancel();
     entry.timer = null;
+    // A toast that leaves under keyboard focus must not drop focus to nowhere:
+    // it moves to the next toast, or back out once the stack is empty.
+    final hadFocus = entry.focused || _stackScope.hasFocus;
     if (_entries.isEmpty) {
+      if (hadFocus) {
+        _leaveStack();
+      }
       _overlayEntry?.remove();
       _overlayEntry?.dispose();
       _overlayEntry = null;
     } else {
       _overlayEntry?.markNeedsBuild();
+      if (entry.focused) {
+        // Once the toast has left the tree, hand focus to the next one.
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _focusNewestToast();
+          }
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return _CcToastScopeMarker(state: this, child: widget.child);
+    return Focus(
+      // Listens for F6 from the page; never a focus stop itself.
+      canRequestFocus: false,
+      skipTraversal: true,
+      onKeyEvent: _onScopeKey,
+      child: _CcToastScopeMarker(state: this, child: widget.child),
+    );
   }
 }
 
@@ -336,6 +452,10 @@ class _ToastEntry {
   final Duration duration;
   final _ToastDismissController controller = _ToastDismissController();
   Timer? timer;
+
+  /// Why the countdown is held: the pointer, keyboard focus, or both.
+  bool hovered = false;
+  bool focused = false;
 }
 
 /// Lets the scope ask a mounted toast to play its exit animation.
@@ -506,6 +626,7 @@ class _CcToast extends StatefulWidget {
     required this.onDismissed,
     required this.onDismissRequested,
     required this.onHoverChanged,
+    required this.onFocusChanged,
   });
 
   final _ToastEntry entry;
@@ -520,6 +641,7 @@ class _CcToast extends StatefulWidget {
   final VoidCallback onDismissed;
   final VoidCallback onDismissRequested;
   final ValueChanged<bool> onHoverChanged;
+  final ValueChanged<bool> onFocusChanged;
 
   @override
   State<_CcToast> createState() => _CcToastState();
@@ -609,64 +731,72 @@ class _CcToastState extends State<_CcToast>
       child: MouseRegion(
         onEnter: (_) => widget.onHoverChanged(true),
         onExit: (_) => widget.onHoverChanged(false),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: t.panel,
-            borderRadius: AppRadii.brSm,
-            border: Border.all(color: borderColor),
-            boxShadow: CcElevation.floating,
-          ),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              AppSpacing.md,
-              AppSpacing.sm,
-              AppSpacing.sm,
-              AppSpacing.sm,
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onFocusChange: widget.onFocusChanged,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: t.panel,
+              borderRadius: AppRadii.brSm,
+              border: Border.all(color: borderColor),
+              boxShadow: CcElevation.floating,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Status glyph — meaning is color + shape + text,
-                // never color alone.
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    top: AppSpacing.xxs,
-                    end: AppSpacing.sm,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Status glyph — meaning is color + shape + text,
+                  // never color alone.
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      top: AppSpacing.xxs,
+                      end: AppSpacing.sm,
+                    ),
+                    child: Icon(statusIcon, size: 16, color: accent),
                   ),
-                  child: Icon(statusIcon, size: 16, color: accent),
-                ),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (title != null) ...[
-                        Text(
-                          title,
-                          style: CcTypography.bodySm.copyWith(
-                            color: t.textPrimary,
-                            fontWeight: FontWeight.w600,
+                  Expanded(
+                    // Read once, through the toast's own label.
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (title != null) ...[
+                            Text(
+                              title,
+                              style: CcTypography.bodySm.copyWith(
+                                color: t.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xxs),
+                          ],
+                          Text(
+                            message,
+                            style: CcTypography.bodySm.copyWith(
+                              color: title == null
+                                  ? t.textPrimary
+                                  : t.textSecondary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                      ],
-                      Text(
-                        message,
-                        style: CcTypography.bodySm.copyWith(
-                          color: title == null
-                              ? t.textPrimary
-                              : t.textSecondary,
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                _ToastCloseButton(
-                  onClose: widget.onDismissRequested,
-                  color: t.textTertiary,
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.sm),
+                  _ToastCloseButton(
+                    onClose: widget.onDismissRequested,
+                    color: t.textTertiary,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -731,7 +861,7 @@ class _ToastCloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CcTappable(
       onPressed: onClose,
-      semanticLabel: 'Dismiss',
+      semanticLabel: context.ccStrings.dismiss,
       borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);

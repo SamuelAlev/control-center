@@ -9,8 +9,9 @@ part 'foundation_typography.stories.g.dart';
 ///
 /// The system's defining rule: hierarchy comes from **size and color, never
 /// weight**. Every UI style is a single 400 weight; the `label` eyebrow
-/// (uppercase, tracked, 500) is the one deliberate exception. The mono family
-/// (Fira Code) is reserved for code, keys and tabular numerics.
+/// (sentence case, semibold) is the one deliberate exception. The mono family
+/// (Fira Code) is reserved for code and keys; numerics stay in the UI font
+/// with tabular figures (`CcFonts.numeric`).
 
 const _path = '[Foundations]/Tokens';
 
@@ -55,9 +56,11 @@ class TypeScale extends StatelessWidget {
                 AppSpacing.hGapSm,
                 Text(
                   px,
-                  style: CcTypography.monoNum.copyWith(
-                    color: t.textTertiary,
-                    fontSize: 11,
+                  style: CcFonts.numeric(
+                    textStyle: CcTypography.numeric.copyWith(
+                      color: t.textTertiary,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ],
@@ -108,21 +111,15 @@ class TypeScale extends StatelessWidget {
           ),
           row(
             'label',
-            '12 · w500 · tracked',
-            CcFonts.code(
-              textStyle: CcTypography.label,
-              family: context.ccTheme?.monoFontFamily,
-            ),
-            'DIRECT MESSAGES',
+            '12 · w600',
+            CcTypography.label,
+            'Direct messages',
             color: t.textTertiary,
           ),
           row(
-            'monoNum',
+            'numeric',
             '13 · tabular',
-            CcFonts.code(
-              textStyle: CcTypography.monoNum,
-              family: context.ccTheme?.monoFontFamily,
-            ),
+            CcFonts.numeric(textStyle: CcTypography.numeric),
             r'$0.42  ·  1,248 tokens  ·  12 files',
             color: t.textSecondary,
           ),

@@ -174,14 +174,17 @@ class _ProviderDetailPaneState extends ConsumerState<ProviderDetailPane> {
   }
 
   ({String label, CcStatusTone tone}) _state(AppLocalizations l10n) {
-    // Denied outranks connected in the marker, because the marker answers "can
-    // an agent use this?" — reporting a denied provider as healthy green is the
-    // one thing this pane must not do.
+    // Denied outranks connected/expired in the marker, because the marker
+    // answers "can an agent use this?" — reporting a denied provider as
+    // healthy green is the one thing this pane must not do.
     if (widget.denied) {
       return (label: l10n.denied, tone: CcStatusTone.negative);
     }
-    if (widget.info.enabled == HarnessProviderEnabled.disabled) {
+    if (!widget.info.connected) {
       return (label: l10n.providerNotConnected, tone: CcStatusTone.neutral);
+    }
+    if (widget.info.hasExpiredSignIn) {
+      return (label: l10n.providerSignInExpired, tone: CcStatusTone.caution);
     }
     return (label: l10n.connectedLabel, tone: CcStatusTone.positive);
   }

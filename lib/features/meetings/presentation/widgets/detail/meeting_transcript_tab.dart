@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_domain/features/calendar/domain/services/event_attendee_names.dart';
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
@@ -11,6 +13,7 @@ import 'package:control_center/features/meetings/providers/meeting_providers.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -520,21 +523,17 @@ class _PlaybackAwareRowState extends ConsumerState<_PlaybackAwareRow> {
       ),
     );
 
-    // Scroll-into-view lives with the row that becomes active, so it needs no
+    // Following lives with the row that becomes active, so it needs no
     // GlobalKey and no index bookkeeping in the parent — the row already has
     // the context it wants to reveal.
-    if (isActive && !_wasActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        Scrollable.ensureVisible(
-          context,
-          alignment: 0.5,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      });
+    //
+    // Only playback itself moves the page. A line the person jumped to (a tap
+    // on it, a click on the waveform) stays where it is: they chose where to
+    // look.
+    if (isActive &&
+        !_wasActive &&
+        !ref.read(meetingPlaybackProvider.notifier).wasSeekedInto(start, next)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _follow());
     }
     _wasActive = isActive;
 
@@ -549,6 +548,47 @@ class _PlaybackAwareRowState extends ConsumerState<_PlaybackAwareRow> {
                 .seekToMs(widget.segment.startMs)
           : null,
       onRenameSpeaker: widget.onRenameSpeaker,
+    );
+  }
+
+  /// How far outside the viewport the playing line may be and still be
+  /// followed: about one long line.
+  static const double _followReach = 160;
+
+  /// Keeps the playing line in view while the reader is at the playhead.
+  ///
+  /// A line already fully on screen is left alone, so the page moves once per
+  /// screenful rather than on every line. A line far from the viewport is left
+  /// alone too: the reader scrolled away (or is on the notes above), and
+  /// playback carrying on is no reason to take them back.
+  void _follow() {
+    if (!mounted) {
+      return;
+    }
+    final box = context.findRenderObject();
+    final position = Scrollable.maybeOf(context)?.position;
+    if (box == null || position == null) {
+      return;
+    }
+    final viewport = RenderAbstractViewport.of(box);
+    // The scroll offsets that put the line's top at the viewport's top, and
+    // its bottom at the viewport's bottom. Between the two it is fully shown.
+    final atTop = viewport.getOffsetToReveal(box, 0).offset;
+    final atBottom = viewport.getOffsetToReveal(box, 1).offset;
+    final pixels = position.pixels;
+    if (pixels >= atBottom && pixels <= atTop) {
+      return;
+    }
+    if (pixels < atBottom - _followReach || pixels > atTop + _followReach) {
+      return;
+    }
+    unawaited(
+      position.ensureVisible(
+        box,
+        alignment: 0.5,
+        duration: CcMotion.resolveFade(context, CcMotion.slow),
+        curve: CcMotion.standard,
+      ),
     );
   }
 }
@@ -765,9 +805,10 @@ class _SuggestionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return CcTappable(
+      onPressed: onTap,
+      borderRadius: AppRadii.brSm,
+      builder: (context, _) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: ds.surface,

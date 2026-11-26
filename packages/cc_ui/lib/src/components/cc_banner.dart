@@ -69,7 +69,7 @@ class CcBanner extends StatefulWidget {
     this.icon,
     this.actions = const [],
     this.onDismiss,
-    this.dismissLabel = 'Dismiss',
+    this.dismissLabel,
   });
 
   /// The banner's headline text.
@@ -92,8 +92,9 @@ class CcBanner extends StatefulWidget {
   /// top-right.
   final VoidCallback? onDismiss;
 
-  /// Accessibility label for the dismiss control (localized by the caller).
-  final String dismissLabel;
+  /// Accessibility label for the dismiss control. Defaults to
+  /// `CcStrings.dismiss`.
+  final String? dismissLabel;
 
   @override
   State<CcBanner> createState() => _CcBannerState();
@@ -140,6 +141,72 @@ class _CcBannerState extends State<CcBanner>
     final colors = _resolve(t);
     final statusIcon = widget.icon ?? _defaultIcon(widget.variant);
 
+    final Widget content = Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StatusGlyph(icon: statusIcon, bg: colors.bg, fg: colors.fg),
+          const SizedBox(width: AppSpacing.md),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: CcTypography.body.copyWith(
+                          color: t.textPrimary,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
+                    if (widget.onDismiss != null) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      const SizedBox.square(dimension: _kCloseBox),
+                    ],
+                  ],
+                ),
+                if (widget.body != null && widget.body!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    widget.body!,
+                    style: CcTypography.caption.copyWith(
+                      color: t.textSecondary,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ],
+                if (widget.actions.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (final action in widget.actions)
+                        CcButton(
+                          size: CcButtonSize.sm,
+                          variant: action.primary
+                              ? CcButtonVariant.accent
+                              : CcButtonVariant.secondary,
+                          onPressed: action.onPressed,
+                          child: Text(action.label),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
     Widget banner = DecoratedBox(
       decoration: BoxDecoration(
         color: t.bgPrimary,
@@ -147,75 +214,27 @@ class _CcBannerState extends State<CcBanner>
         border: Border.all(color: colors.border),
         boxShadow: CcElevation.floating,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _StatusGlyph(icon: statusIcon, bg: colors.bg, fg: colors.fg),
-            const SizedBox(width: AppSpacing.md),
-            Flexible(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: CcTypography.body.copyWith(
-                            color: t.textPrimary,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      if (widget.onDismiss != null) ...[
-                        const SizedBox(width: AppSpacing.sm),
-                        _BannerCloseButton(
-                          onDismiss: widget.onDismiss!,
-                          color: t.textTertiary,
-                          semanticLabel: widget.dismissLabel,
-                        ),
-                      ],
-                    ],
+      child: widget.onDismiss == null
+          ? content
+          : Stack(
+              children: [
+                content,
+                // The glyph's box sits in the content's top-end corner; the
+                // control lies over that spot with a 24px target that reaches
+                // into the padding, so the layout is the same as with an 18px
+                // control in the title row.
+                PositionedDirectional(
+                  top: AppSpacing.md - _kCloseInset,
+                  end: AppSpacing.md - _kCloseInset,
+                  child: _BannerCloseButton(
+                    onDismiss: widget.onDismiss!,
+                    color: t.textTertiary,
+                    semanticLabel:
+                        widget.dismissLabel ?? context.ccStrings.dismiss,
                   ),
-                  if (widget.body != null && widget.body!.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      widget.body!,
-                      style: CcTypography.caption.copyWith(
-                        color: t.textSecondary,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ],
-                  if (widget.actions.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: [
-                        for (final action in widget.actions)
-                          CcButton(
-                            size: CcButtonSize.sm,
-                            variant: action.primary
-                                ? CcButtonVariant.accent
-                                : CcButtonVariant.secondary,
-                            onPressed: action.onPressed,
-                            child: Text(action.label),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
     );
 
     banner = Semantics(
@@ -299,6 +318,15 @@ class _StatusGlyph extends StatelessWidget {
   }
 }
 
+/// The close glyph's visual box (14px glyph, 2px padding) that the title row
+/// reserves.
+const double _kCloseBox = 18;
+
+/// The close control's pointer target.
+const double _kCloseTarget = 24;
+
+const double _kCloseInset = (_kCloseTarget - _kCloseBox) / 2;
+
 class _BannerColors {
   const _BannerColors({
     required this.bg,
@@ -331,12 +359,14 @@ class _BannerCloseButton extends StatelessWidget {
       borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
-        return Padding(
-          padding: const EdgeInsets.all(2),
-          child: Icon(
-            CcIcons.x,
-            size: 14,
-            color: hovered ? color : color.withValues(alpha: 0.8),
+        return SizedBox.square(
+          dimension: _kCloseTarget,
+          child: Center(
+            child: Icon(
+              CcIcons.x,
+              size: 14,
+              color: hovered ? color : color.withValues(alpha: 0.8),
+            ),
           ),
         );
       },

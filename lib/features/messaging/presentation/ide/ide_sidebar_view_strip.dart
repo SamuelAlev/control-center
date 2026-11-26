@@ -52,9 +52,6 @@ class IdeSidebarViewStrip extends ConsumerStatefulWidget {
 }
 
 class _IdeSidebarViewStripState extends ConsumerState<IdeSidebarViewStrip> {
-  final FocusScopeNode _scopeNode = FocusScopeNode(
-    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
-  );
   late final Map<IdeSidebarView, FocusNode> _cellNodes = {
     for (final view in IdeSidebarView.values) view: FocusNode(),
   };
@@ -65,12 +62,15 @@ class _IdeSidebarViewStripState extends ConsumerState<IdeSidebarViewStrip> {
   /// the current sidebar width.
   List<IdeSidebarView> _visible = const [];
 
+  /// The strip's text direction, read in build: the cells run right to left
+  /// under RTL, so the arrow that means "next" flips with it.
+  TextDirection _direction = TextDirection.ltr;
+
   @override
   void dispose() {
     for (final node in _cellNodes.values) {
       node.dispose();
     }
-    _scopeNode.dispose();
     _menu.dispose();
     super.dispose();
   }
@@ -96,15 +96,29 @@ class _IdeSidebarViewStripState extends ConsumerState<IdeSidebarViewStrip> {
       return KeyEventResult.ignored;
     }
     final count = _visible.length;
-    switch (event.logicalKey) {
-      case LogicalKeyboardKey.arrowRight:
-      case LogicalKeyboardKey.arrowDown:
-        _select(_visible[(current + 1) % count]);
-        return KeyEventResult.handled;
-      case LogicalKeyboardKey.arrowLeft:
-      case LogicalKeyboardKey.arrowUp:
-        _select(_visible[(current - 1) % count]);
-        return KeyEventResult.handled;
+    final rtl = _direction == TextDirection.rtl;
+    final key = event.logicalKey;
+    final forward =
+        key == LogicalKeyboardKey.arrowDown ||
+        key ==
+            (rtl
+                ? LogicalKeyboardKey.arrowLeft
+                : LogicalKeyboardKey.arrowRight);
+    final backward =
+        key == LogicalKeyboardKey.arrowUp ||
+        key ==
+            (rtl
+                ? LogicalKeyboardKey.arrowRight
+                : LogicalKeyboardKey.arrowLeft);
+    if (forward) {
+      _select(_visible[(current + 1) % count]);
+      return KeyEventResult.handled;
+    }
+    if (backward) {
+      _select(_visible[(current - 1) % count]);
+      return KeyEventResult.handled;
+    }
+    switch (key) {
       case LogicalKeyboardKey.home:
         _select(_visible.first);
         return KeyEventResult.handled;
@@ -157,6 +171,7 @@ class _IdeSidebarViewStripState extends ConsumerState<IdeSidebarViewStrip> {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final pinned = ref.watch(ideSidebarPinsProvider);
+    _direction = Directionality.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -169,63 +184,61 @@ class _IdeSidebarViewStripState extends ConsumerState<IdeSidebarViewStrip> {
         return Semantics(
           container: true,
           explicitChildNodes: true,
-          child: FocusScope(
-            node: _scopeNode,
-            child: Focus(
-              canRequestFocus: false,
-              onKeyEvent: _onKey,
-              child: Container(
-                height: EditorTabBar.height,
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: t.borderPrimary)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // The cells take the width the caret leaves. `_split`
-                    // already reserves the caret's width, so at any width the
-                    // sidebar can actually be dragged to there is nothing to
-                    // scroll; the scroll view is the safety net that turns an
-                    // impossible width (below ~64px) into a scrollable rail
-                    // instead of a flex-overflow assertion and it keeps the
-                    // caret whole there because the caret is the only route to
-                    // a view that has no cell.
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (final view in split.cells)
-                              _ViewCell(
-                                view: view,
-                                label: _viewLabel(l10n, view),
-                                selected: view == widget.selected,
-                                focusNode: _cellNodes[view],
-                                tokens: t,
-                                onPressed: () => _select(view),
-                              ),
-                          ],
-                        ),
+          // No focus scope of its own: the strip is one Tab stop (the
+          // selected cell, then the caret) and Tab moves on past it.
+          child: Focus(
+            canRequestFocus: false,
+            onKeyEvent: _onKey,
+            child: Container(
+              height: EditorTabBar.height,
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: t.borderPrimary)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // The cells take the width the caret leaves. `_split`
+                  // already reserves the caret's width, so at any width the
+                  // sidebar can actually be dragged to there is nothing to
+                  // scroll; the scroll view is the safety net that turns an
+                  // impossible width (below ~64px) into a scrollable rail
+                  // instead of a flex-overflow assertion and it keeps the
+                  // caret whole there because the caret is the only route to
+                  // a view that has no cell.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final view in split.cells)
+                            _ViewCell(
+                              view: view,
+                              label: _viewLabel(l10n, view),
+                              selected: view == widget.selected,
+                              focusNode: _cellNodes[view],
+                              tokens: t,
+                              onPressed: () => _select(view),
+                            ),
+                        ],
                       ),
                     ),
-                    _OverflowButton(
-                      controller: _menu,
-                      hiddenCount: split.hidden.length,
-                      tokens: t,
-                      selected: widget.selected,
-                      pinned: pinned,
-                      onSelectView: (view) {
-                        _menu.hide();
-                        _select(view);
-                      },
-                      onTogglePin: (view) => ref
-                          .read(ideSidebarPinsProvider.notifier)
-                          .toggle(view),
-                    ),
-                  ],
-                ),
+                  ),
+                  _OverflowButton(
+                    controller: _menu,
+                    hiddenCount: split.hidden.length,
+                    tokens: t,
+                    selected: widget.selected,
+                    pinned: pinned,
+                    onSelectView: (view) {
+                      _menu.hide();
+                      _select(view);
+                    },
+                    onTogglePin: (view) =>
+                        ref.read(ideSidebarPinsProvider.notifier).toggle(view),
+                  ),
+                ],
               ),
             ),
           ),
@@ -283,63 +296,61 @@ class _ViewCell extends StatelessWidget {
     return CcTooltip(
       message: label,
       showDelay: _nameDwell,
-      child: Semantics(
-        selected: selected,
-        child: SizedBox(
-          width: _cellWidth,
-          child: CcTappable(
-            onPressed: onPressed,
-            focusNode: focusNode,
-            // Roving tabindex: Tab lands on the selected cell, arrows move.
-            canRequestFocus: selected,
-            borderRadius: AppRadii.brSm,
-            semanticLabel: label,
-            builder: (context, states) {
-              final hovered = states.contains(WidgetState.hovered);
-              final pressed = states.contains(WidgetState.pressed);
-              final Color background;
-              if (pressed) {
-                background = t.hoverStrong;
-              } else if (hovered && !selected) {
-                background = t.hover;
-              } else {
-                background = t.hover.withValues(alpha: 0);
-              }
-              final foreground = selected
-                  ? t.fg
-                  : (hovered ? t.fgSecondary : t.textTertiary);
-              return AnimatedContainer(
-                duration: duration,
-                curve: CcMotion.standard,
-                decoration: BoxDecoration(color: background),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Icon(
-                        viewIcon(view),
-                        size: _glyphSize,
-                        color: foreground,
+      child: SizedBox(
+        width: _cellWidth,
+        child: CcTappable(
+          onPressed: onPressed,
+          focusNode: focusNode,
+          // Roving tabindex: Tab lands on the selected cell, arrows move.
+          canRequestFocus: selected,
+          borderRadius: AppRadii.brSm,
+          semanticLabel: label,
+          semanticSelected: selected,
+          builder: (context, states) {
+            final hovered = states.contains(WidgetState.hovered);
+            final pressed = states.contains(WidgetState.pressed);
+            final Color background;
+            if (pressed) {
+              background = t.hoverStrong;
+            } else if (hovered && !selected) {
+              background = t.hover;
+            } else {
+              background = t.hover.withValues(alpha: 0);
+            }
+            final foreground = selected
+                ? t.fg
+                : (hovered ? t.fgSecondary : t.textTertiary);
+            return AnimatedContainer(
+              duration: duration,
+              curve: CcMotion.standard,
+              decoration: BoxDecoration(color: background),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      viewIcon(view),
+                      size: _glyphSize,
+                      color: foreground,
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 2,
+                    child: AnimatedOpacity(
+                      duration: duration,
+                      curve: CcMotion.standard,
+                      opacity: selected ? 1 : 0,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(color: t.accent),
                       ),
                     ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 2,
-                      child: AnimatedOpacity(
-                        duration: duration,
-                        curve: CcMotion.standard,
-                        opacity: selected ? 1 : 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(color: t.accent),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -506,31 +517,29 @@ class _ViewMenuRowState extends State<_ViewMenuRow> {
         child: Row(
           children: [
             Expanded(
-              child: Semantics(
-                selected: widget.active,
-                child: CcTappable(
-                  onPressed: widget.onSelected,
-                  semanticLabel: widget.label,
-                  borderRadius: AppRadii.brSm,
-                  builder: (context, states) => Row(
-                    children: [
-                      Icon(viewIcon(widget.view), size: 16, color: foreground),
-                      AppSpacing.hGapSm,
-                      Expanded(
-                        child: Text(
-                          widget.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.45,
-                            fontWeight: CcTypography.regularWeight,
-                            color: foreground,
-                          ),
+              child: CcTappable(
+                onPressed: widget.onSelected,
+                semanticLabel: widget.label,
+                semanticSelected: widget.active,
+                borderRadius: AppRadii.brSm,
+                builder: (context, states) => Row(
+                  children: [
+                    Icon(viewIcon(widget.view), size: 16, color: foreground),
+                    AppSpacing.hGapSm,
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.45,
+                          fontWeight: CcTypography.regularWeight,
+                          color: foreground,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

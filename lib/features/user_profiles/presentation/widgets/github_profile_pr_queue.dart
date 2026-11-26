@@ -108,8 +108,7 @@ class _ProfilePrQueueBody extends ConsumerWidget {
         'pr.user-focus-search': searchFocusNode.requestFocus,
         'pr.user-focus-search-alt': searchFocusNode.requestFocus,
         'pr.user-refresh': () {
-          ref.invalidate(userProfileActivityProvider);
-          ref.invalidate(teamProfileActivityProvider);
+          invalidateProfileActivityForced(ref, profileKey);
         },
       },
       child: _pane(

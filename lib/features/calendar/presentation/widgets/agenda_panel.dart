@@ -149,9 +149,9 @@ class _EventRow extends StatelessWidget {
         l10n.calendarAttendeesCount(event.attendees.length),
     ].join(' · ');
 
-    return GestureDetector(
-      onTap: onOpen,
-      child: Padding(
+    return CcTappable(
+      onPressed: onOpen,
+      builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +219,11 @@ class _EventRow extends StatelessWidget {
                 size: CcButtonSize.sm,
                 onPressed: onStartRecording,
                 icon: AppIcons.circleDot,
-                child: Text(l10n.calendarStartRecording),
+                child: Text(
+                  event.meetingUrl != null
+                      ? l10n.calendarJoinAndRecord
+                      : l10n.meetingsRecordMeeting,
+                ),
               ),
             ],
           ],
@@ -229,51 +233,41 @@ class _EventRow extends StatelessWidget {
   }
 }
 
-class _MeetLink extends StatefulWidget {
+class _MeetLink extends StatelessWidget {
   const _MeetLink({required this.url, required this.label});
 
   final String url;
   final String label;
 
   @override
-  State<_MeetLink> createState() => _MeetLinkState();
-}
-
-class _MeetLinkState extends State<_MeetLink> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => unawaitedLaunch(widget.url),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            // Alpha-0 rest (not transparent-black) so the hover lerp is
-            // alpha-only — no dark-gray flash crossing states.
-            color: _hovered ? t.hover : t.hover.withValues(alpha: 0),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.video, size: 13, color: t.fgBrandPrimary),
-              const SizedBox(width: 4),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: t.fgBrandPrimary,
-                ),
+    return CcTappable(
+      onPressed: () => unawaitedLaunch(url),
+      builder: (context, states) => AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          // Alpha-0 rest (not transparent-black) so the hover lerp is
+          // alpha-only — no dark-gray flash crossing states.
+          color: states.contains(WidgetState.hovered)
+              ? t.hover
+              : t.hover.withValues(alpha: 0),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.video, size: 13, color: t.fgBrandPrimary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: t.fgBrandPrimary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -4,9 +4,9 @@ import 'package:flutter/widgets.dart';
 ///
 /// Zero radius is the identity of the design system: the contrast between
 /// soft warm color and hard architectural geometry is deliberate. Standard
-/// elements (buttons, inputs, chips, cards, nodes, badges, menu rows) and
-/// large containers (panels, dialogs, product windows) are all square; only
-/// true pills (status capsules, count chips, live dots, the active-nav bar)
+/// elements (buttons, inputs, chips, cards, nodes, badges, status tags, count
+/// chips, menu rows) and large containers (panels, dialogs, product windows) are
+/// all square; only circular live dots, circular avatars, and progress tracks
 /// use the fully-rounded value.
 abstract final class AppRadii {
   const AppRadii._();
@@ -26,7 +26,8 @@ abstract final class AppRadii {
   /// 0px — large surfaces (no radius tier above large).
   static const double xl = 0;
 
-  /// Fully rounded (pill / stadium) — status capsules & live dots only.
+  /// Fully rounded (pill / circle) — live dots, circular avatars & progress
+  /// tracks only.
   static const double pill = 999;
 
   /// [BorderRadius] for [xs].

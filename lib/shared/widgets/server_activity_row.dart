@@ -81,7 +81,7 @@ class _ServerActivityRowState extends State<_ServerActivityRow> {
                 NumberFormat.percentPattern(
                   Localizations.localeOf(context).toLanguageTag(),
                 ).format(progress),
-                style: CcFonts.code(textStyle: CcTypography.caption),
+                style: CcFonts.numeric(textStyle: CcTypography.caption),
               ),
             ],
           ],

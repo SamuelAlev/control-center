@@ -7,6 +7,7 @@ PrCodeReviewComment _c(
   int id, {
   int? inReplyTo,
   int? line,
+  int? originalLine,
   int? startLine,
   int? reviewId,
   String path = 'lib/a.dart',
@@ -14,6 +15,7 @@ PrCodeReviewComment _c(
   bool resolved = false,
   String? threadId,
   bool fileLevel = false,
+  bool isOutdated = false,
 }) => PrCodeReviewComment(
   id: id,
   body: 'body $id',
@@ -24,10 +26,12 @@ PrCodeReviewComment _c(
   inReplyToId: inReplyTo,
   startLine: startLine,
   line: line,
+  originalLine: originalLine,
   reviewId: reviewId,
   threadId: threadId,
   isResolved: resolved,
   isFileLevel: fileLevel,
+  isOutdated: isOutdated,
 );
 
 void main() {
@@ -108,6 +112,22 @@ void main() {
 
     test('a comment with no anchor line is outdated', () {
       final threads = groupServerReviewThreads([_c(1)]);
+
+      expect(threads.single.isOutdated, isTrue);
+      expect(threads.single.endLine, isNull);
+    });
+
+    test('a comment with null line and originalLine is outdated', () {
+      final threads = groupServerReviewThreads([_c(1, originalLine: 27)]);
+
+      expect(threads.single.isOutdated, isTrue);
+      expect(threads.single.endLine, isNull);
+    });
+
+    test('a comment marked isOutdated is outdated even with line set', () {
+      final threads = groupServerReviewThreads([
+        _c(1, line: 27, isOutdated: true),
+      ]);
 
       expect(threads.single.isOutdated, isTrue);
       expect(threads.single.endLine, isNull);
@@ -278,6 +298,40 @@ void main() {
       expect(inline.line, 0);
       expect(inline.lineEnd, 0);
     });
+
+    test('outdated suggestion still reads original code from diffHunk via originalLine', () {
+      final thread = groupServerReviewThreads([
+        PrCodeReviewComment(
+          id: 1,
+          body: '```suggestion\nconst x = 2;\n```',
+          user: null,
+          path: 'lib/a.dart',
+          position: null,
+          line: null,
+          originalLine: 39,
+          startLine: 38,
+          createdAt: DateTime.utc(2026),
+          isOutdated: true,
+          diffHunk:
+              '@@ -35,3 +37,3 @@\n'
+              ' unchanged context\n'
+              '+first commented line\n'
+              '+second commented line',
+        ),
+      ]).single;
+
+      final inline = inlineThreadFromServerThread(
+        thread,
+        unknownAuthorLabel: 'unknown',
+        resolved: false,
+      );
+
+      expect(thread.isOutdated, isTrue);
+      expect(
+        inline.originalCode,
+        'first commented line\nsecond commented line',
+      );
+    });
   });
 
   group('unresolvedConversationCount', () {
@@ -345,6 +399,22 @@ void main() {
         ),
         // The forge's #1, the draft and the one still posting.
         3,
+      );
+    });
+
+    test('by path: one count per file, files with none open left out', () {
+      expect(
+        unresolvedConversationsByPath(
+          serverComments: [
+            _c(1, line: 10, hour: 1),
+            _c(2, inReplyTo: 1, hour: 2),
+            _c(3, line: 4, hour: 3, path: 'lib/b.dart', resolved: true),
+          ],
+          localThreadsByPath: {
+            'lib/a.dart': [local('draft')],
+          },
+        ),
+        {'lib/a.dart': 2},
       );
     });
   });

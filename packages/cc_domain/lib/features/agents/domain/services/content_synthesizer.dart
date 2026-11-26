@@ -15,6 +15,7 @@ const String kContentSynthesizerSlug = 'content-synthesizer';
 class ContentSynthesizer {
   /// Creates a [ContentSynthesizer].
   const ContentSynthesizer({
+    this.agentId,
     required this.adapterId,
     this.modelId,
     this.instructions = '',
@@ -30,6 +31,7 @@ class ContentSynthesizer {
         : builtInAdapter.id;
     final model = agent.modelId?.trim();
     return ContentSynthesizer(
+      agentId: agent.id,
       adapterId: adapterId,
       modelId: model == null || model.isEmpty ? null : model,
       instructions: [
@@ -38,6 +40,11 @@ class ContentSynthesizer {
       ].where((s) => s.isNotEmpty).join('\n\n'),
     );
   }
+
+  /// The workspace's content-synthesizer agent id, when resolved from a roster
+  /// agent. Threaded to one-shot runs so per-agent account pools and run logs
+  /// attach to the agent.
+  final String? agentId;
 
   /// The adapter that runs the completion.
   final String adapterId;
@@ -66,10 +73,11 @@ class ContentSynthesizer {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ContentSynthesizer &&
+          agentId == other.agentId &&
           adapterId == other.adapterId &&
           modelId == other.modelId &&
           instructions == other.instructions;
 
   @override
-  int get hashCode => Object.hash(adapterId, modelId, instructions);
+  int get hashCode => Object.hash(agentId, adapterId, modelId, instructions);
 }

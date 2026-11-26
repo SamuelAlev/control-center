@@ -168,7 +168,8 @@ void mirrorConversationTabs(
 /// A chat key with no open tab at all re-OPENS it ([openConversation]): the
 /// sidebar's conversation rows must keep working after the user closed that
 /// conversation's tab. Guarded to conversations that exist in this space and
-/// aren't archived; any other stale key keeps the current selection.
+/// aren't archived; a `goal:<id>` key likewise opens its goal tab via
+/// [openGoal]; any other stale key keeps the current selection.
 void focusIdeTabByKey(
   EditorLayoutController layout,
   String key, {
@@ -176,6 +177,7 @@ void focusIdeTabByKey(
   required IdeConversationView view,
   required void Function(String spaceId, String conversationId)
   openConversation,
+  void Function(String goalId)? openGoal,
 }) {
   if (focusEditorTabByKey(layout, key) || spaceId == null) {
     return;
@@ -194,6 +196,11 @@ void focusIdeTabByKey(
   }
   if (key == spaceKey) {
     layout.openInActiveLeaf(MessagingIdeTabs.chat(spaceId));
+    return;
+  }
+  final goalId = MessagingTabKinds.goalIdFromTabKey(key);
+  if (goalId != null) {
+    openGoal?.call(goalId);
     return;
   }
   final conversationId = MessagingTabKinds.conversationIdFromChatTabKey(key);

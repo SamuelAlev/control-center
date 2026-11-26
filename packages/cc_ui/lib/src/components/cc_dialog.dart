@@ -60,10 +60,12 @@ class CcDialog extends StatelessWidget {
     final showHeader = title != null || onClose != null;
 
     return Semantics(
-      // Announce the dialog as a route scope to assistive tech.
+      // Announce the dialog as a route scope to assistive tech, named by its
+      // title so a screen reader says which dialog opened.
       scopesRoute: true,
+      namesRoute: true,
       explicitChildNodes: true,
-      label: title ?? 'Dialog',
+      label: title ?? context.ccStrings.dialog,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: DecoratedBox(
@@ -175,7 +177,7 @@ class _DialogCloseButton extends StatelessWidget {
     final t = context.ds;
     return CcTappable(
       onPressed: onClose,
-      semanticLabel: 'Close',
+      semanticLabel: context.ccStrings.close,
       borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
@@ -445,7 +447,7 @@ Future<T?> showCcDialog<T>({
   return Navigator.of(context, rootNavigator: true).push<T>(
     _CcDialogRoute<T>(
       barrierDismissible: barrierDismissible,
-      barrierLabel: 'Dismiss',
+      barrierLabel: context.ccStrings.dismiss,
       // The scrim lives in the page content (so it can blur); keep the route's
       // own barrier transparent but still dismissible.
       barrierColor: const Color(0x00000000),

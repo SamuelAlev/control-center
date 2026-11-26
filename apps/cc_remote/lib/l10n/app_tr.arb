@@ -95,7 +95,6 @@
   "eventNotFound": "Etkinlik bulunamadı",
   "eventNotFoundDescription": "Ajanda penceresinin dışında olabilir veya kaynaktan kaldırılmış olabilir.",
   "joinMeeting": "Toplantıya katıl",
-  "join": "Katıl",
   "attendeesCount": "Katılımcılar ({count})",
   "details": "Ayrıntılar",
   "allDay": "Tüm gün",

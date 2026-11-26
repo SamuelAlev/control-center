@@ -65,16 +65,16 @@ class PresenceAvatarChip extends ConsumerWidget {
 
     return CcTooltip(
       message: tooltipText,
-      // The click cursor is the affordance *and* the guard: the rail sits in
-      // the window-drag title bar, and `WindowDragArea` reads the resolved
-      // cursor to decide whether a press belongs to the child. Without one this
-      // chip is inert chrome to it, so tapping an avatar dragged the window.
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () =>
-              ref.read(followedPrincipalProvider.notifier).toggle(principal),
+      // The tappable's click cursor is the affordance *and* the guard: the
+      // rail sits in the window-drag title bar, and `WindowDragArea` reads the
+      // resolved cursor to decide whether a press belongs to the child.
+      child: CcTappable(
+        onPressed: () =>
+            ref.read(followedPrincipalProvider.notifier).toggle(principal),
+        semanticLabel: tooltipText,
+        semanticToggled: following,
+        borderRadius: BorderRadius.circular(size),
+        builder: (context, _) => ExcludeSemantics(
           child: Container(
             padding: const EdgeInsets.all(1.5),
             decoration: BoxDecoration(

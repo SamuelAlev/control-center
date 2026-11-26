@@ -120,4 +120,42 @@ void main() {
       expect(pressed, 0);
     });
   });
+
+  testWidgets('links read as links and the current page as selected', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(
+        CcBreadcrumb(
+          children: [
+            CcBreadcrumbItem(child: const Text('Home'), onPress: () {}),
+            const CcBreadcrumbItem(child: Text('Settings'), current: true),
+          ],
+        ),
+      ),
+    );
+    expect(find.bySemanticsLabel('Breadcrumb'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byType(CcTappable)),
+      matchesSemantics(
+        label: 'Home',
+        isLink: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.text('Settings')),
+      matchesSemantics(
+        label: 'Settings',
+        hasSelectedState: true,
+        isSelected: true,
+      ),
+    );
+    handle.dispose();
+  });
 }

@@ -6,10 +6,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/utils/scoped_diff_files.dart';
+import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart';
+import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -114,8 +116,20 @@ class TreeOverlay extends ConsumerWidget {
 
     final files = sortFilesByTreeOrder(scoped.files);
     final tree = buildDiffFileTree(files);
+    // The forge's conversations plus this viewer's drafts, as the diff file
+    // headers count them. A resolve shows here once the forge confirms it.
+    final unresolvedByPath = unresolvedConversationsByPath(
+      serverComments:
+          ref.watch(prReviewCommentsProvider(prRef)).value ?? const [],
+      localThreadsByPath: ref.watch(
+        prInlineCommentsControllerProvider(
+          prRef,
+        ).select((s) => s.threadsByPath),
+      ),
+    );
     return PrDiffFileTree(
       roots: tree,
+      unresolvedByPath: unresolvedByPath,
       onSelectFile: (i) => diffKey.currentState?.jumpToFile(i),
       onOpenSearch: onOpenSearch,
       onOpenFileInEditor: onOpenFileInEditor,

@@ -14,6 +14,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,8 +36,9 @@ class NewScheduleButton extends StatelessWidget {
   );
 }
 
-/// Every schedule and watch of the workspace the viewer may read, grouped
-/// active, paused, ended. The page header carries [NewScheduleButton].
+/// The settings card listing every schedule and watch of the workspace the
+/// viewer may read, grouped active, paused, ended. It sizes to its rows and
+/// scrolls with the page; the page header carries [NewScheduleButton].
 class SchedulesList extends ConsumerWidget {
   /// Creates the list.
   const SchedulesList({super.key, required this.workspaceId});
@@ -47,28 +49,48 @@ class SchedulesList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return WorkListStates<WakeRuleView>(
-      value: ref.watch(workspaceWakeRulesProvider(workspaceId)),
-      emptyIcon: AppIcons.calendarClock,
-      empty: l10n.schedulesEmpty,
-      emptyDescription: l10n.schedulesEmptyHint,
-      builder: (rules) => ListView(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: AppSpacing.xl,
-          vertical: AppSpacing.sm,
+    final rules = ref.watch(workspaceWakeRulesProvider(workspaceId));
+    return SectionCard(
+      label: l10n.schedulesTitle,
+      count: rules.value?.length,
+      padding: EdgeInsets.zero,
+      headerPadding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        14,
+        AppSpacing.lg,
+        0,
+      ),
+      // A row insets its own text by `sm`, so this lines the text up with the
+      // card's label and leaves the hover wash a margin from the card's edge.
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.sm,
+          0,
+          AppSpacing.sm,
+          AppSpacing.sm,
         ),
-        children: [
-          for (final status in WakeRuleStatus.values)
-            if (rules.where((r) => r.status == status).toList() case final group
-                when group.isNotEmpty) ...[
-              WorkListGroupHeading(
-                label: scheduleStatusLabel(l10n, status),
-                count: group.length,
-              ),
-              for (var i = 0; i < group.length; i++)
-                ScheduleRow(rule: group[i], first: i == 0),
+        child: WorkListStates<WakeRuleView>(
+          value: rules,
+          emptyIcon: AppIcons.clock,
+          empty: l10n.schedulesEmpty,
+          emptyDescription: l10n.schedulesEmptyHint,
+          builder: (rules) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final status in WakeRuleStatus.values)
+                if (rules.where((r) => r.status == status).toList()
+                    case final group when group.isNotEmpty) ...[
+                  WorkListGroupHeading(
+                    label: scheduleStatusLabel(l10n, status),
+                    count: group.length,
+                  ),
+                  for (var i = 0; i < group.length; i++)
+                    ScheduleRow(rule: group[i], first: i == 0),
+                ],
             ],
-        ],
+          ),
+        ),
       ),
     );
   }

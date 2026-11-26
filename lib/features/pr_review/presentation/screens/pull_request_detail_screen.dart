@@ -1043,6 +1043,10 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
   }
 
+  bool _hasVisitedDiff() => _layout.allTabs().any(
+    (t) => t.kind == PrTabKinds.diff && _bodyHost.hasVisited(t),
+  );
+
   Widget _buildBody(
     EditorTab tab, {
     required bool isVisible,
@@ -1085,12 +1089,22 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           pendingFileJump: _pendingFileJump,
           pendingCommentAnchor: _pendingCommentId,
           onCommentNotInDiff: _revealCommentOnOverview,
+          isVisible: isVisible,
           hasDiffUpdate: pollingState.hasDiffUpdate,
+          isRefreshingDiff: pollingState.refreshingDiff,
           onRefreshDiff: () => unawaited(
             ref
                 .read(prDetailPollingProvider(widget.prRef).notifier)
                 .refreshDiff(),
           ),
+          onAutoRefreshDiff: () => unawaited(
+            ref
+                .read(prDetailPollingProvider(widget.prRef).notifier)
+                .refreshDiffIfStale(),
+          ),
+          onDiffLoaded: () => ref
+              .read(prDetailPollingProvider(widget.prRef).notifier)
+              .clearDiffStaleIfFresh(),
           onOpenFileInEditor: _hostEditor ? _openFileInEditor : null,
         );
       case PrTabKinds.actions:
@@ -1285,7 +1299,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           nextSha != null &&
           prevSha.isNotEmpty &&
           nextSha.isNotEmpty &&
-          prevSha != nextSha) {
+          prevSha != nextSha &&
+          !ref.read(prDetailPollingProvider(widget.prRef)).refreshing &&
+          _hasVisitedDiff()) {
         ref
             .read(prDetailPollingProvider(widget.prRef).notifier)
             .notifyDiffStale();

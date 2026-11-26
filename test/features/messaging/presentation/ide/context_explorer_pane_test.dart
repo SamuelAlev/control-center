@@ -133,6 +133,20 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('Everything'));
       await tester.pump();
+      // The rail row tells a screen reader which explorer is showing.
+      expect(
+        tester
+            .widget<CcTappable>(
+              find
+                  .ancestor(
+                    of: find.text('Everything'),
+                    matching: find.byType(CcTappable),
+                  )
+                  .first,
+            )
+            .semanticSelected,
+        isTrue,
+      );
       expect(find.textContaining('Only in cv-1'), findsOneWidget);
       expect(repository.requestedConversations, ['cv-1']);
 

@@ -1,5 +1,7 @@
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_transcript_row.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
@@ -131,6 +133,44 @@ void main() {
       // Tapping the row body still routes to onTap.
       await tester.tap(find.text('Hi there.'));
       expect(rowTapped, isTrue);
+    });
+
+    testWidgets('Enter on the speaker label renames, Enter on the row seeks', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var renamed = 0;
+      var seeks = 0;
+      await tester.pumpWidget(
+        testWrap(
+          MeetingTranscriptRow(
+            speaker: MeetingSpeaker.them,
+            startMs: 0,
+            text: 'Hi there.',
+            speakerLabel: 'Person 1',
+            onRenameSpeaker: () => renamed++,
+            onTap: () => seeks++,
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.text('Person 1')),
+        isSemantics(isButton: true, label: 'Person 1', hint: 'Rename speaker'),
+      );
+
+      Focus.of(tester.element(find.text('Person 1'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect((renamed, seeks), (1, 0));
+
+      Focus.of(tester.element(find.text('Hi there.'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect((renamed, seeks), (1, 1));
+      handle.dispose();
     });
 
     testWidgets('renders highlighted text when query matches', (tester) async {

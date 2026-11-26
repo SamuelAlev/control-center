@@ -964,6 +964,8 @@ class _InlinePipelineTitle extends StatefulWidget {
 class _InlinePipelineTitleState extends State<_InlinePipelineTitle> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
+  // Held here so focus can go back to the pencil once the field closes.
+  final _pencilFocus = FocusNode(debugLabel: 'rename pencil');
   bool _editing = false;
 
   @override
@@ -986,6 +988,7 @@ class _InlinePipelineTitleState extends State<_InlinePipelineTitle> {
   void dispose() {
     _focus.removeListener(_onFocusChange);
     _focus.dispose();
+    _pencilFocus.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -1003,12 +1006,33 @@ class _InlinePipelineTitleState extends State<_InlinePipelineTitle> {
       extentOffset: _controller.text.length,
     );
     setState(() => _editing = true);
+    // The field's autofocus yields to anything focused earlier on the page,
+    // which the pencil hands its focus back to as it goes.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _editing) {
+        _focus.requestFocus();
+      }
+    });
+  }
+
+  /// Back to the pencil after Enter or Escape. A commit caused by focus
+  /// leaving the field leaves focus where the person put it.
+  void _returnFocusToPencil() {
+    if (!_focus.hasFocus) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_editing) {
+        _pencilFocus.requestFocus();
+      }
+    });
   }
 
   void _commit() {
     if (!_editing) {
       return;
     }
+    _returnFocusToPencil();
     final trimmed = _controller.text.trim();
     setState(() => _editing = false);
     if (trimmed.isEmpty || trimmed == widget.name) {
@@ -1021,6 +1045,7 @@ class _InlinePipelineTitleState extends State<_InlinePipelineTitle> {
     if (!_editing) {
       return;
     }
+    _returnFocusToPencil();
     setState(() => _editing = false);
   }
 
@@ -1068,6 +1093,7 @@ class _InlinePipelineTitleState extends State<_InlinePipelineTitle> {
                 icon: AppIcons.pencil,
                 tooltip: l10n.rename,
                 size: CcButtonSize.sm,
+                focusNode: _pencilFocus,
                 onPressed: _start,
               ),
             ],

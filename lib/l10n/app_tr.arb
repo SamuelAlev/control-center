@@ -474,9 +474,9 @@
   "calendarDisconnect": "Bağlantıyı kes",
   "calendarReconnect": "Yeniden bağlan",
   "calendarEmptyNoEvents": "Bu aralıkta etkinlik yok",
-  "calendarStartRecording": "Kaydı başlat",
-  "calendarStartRecordingAndLink": "Kaydı başlat ve bağla",
   "calendarJoinMeet": "Toplantıya katıl",
+  "calendarJoinAndRecord": "Katıl ve kaydet",
+  "calendarRecordFailed": "Kayıt başlatılamadı",
   "calendarFromCalendar": "Takvimden",
   "calendarLinkedMeeting": "Bağlı toplantı",
   "calendarToday": "Bugün",
@@ -899,7 +899,6 @@
   "actions": "Eylemler",
   "activate": "Etkinleştir",
   "activity": "Etkinlik",
-  "activityLabel": "ETKİNLİK",
   "activitySearchHint": "Etkinlik ara",
   "activityNoMatches": "Filtrelerinize uyan etkinlik yok",
   "activityPageRange": "{start}–{end} / {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Engelleyici",
   "bookmarkLabel": "Yer imi",
   "briefDescription": "Kısa açıklama",
-  "bugLabel": "HATA",
+  "bugLabel": "Hata",
   "bundledDefaultsNeverUpdated": "Paketlenmiş varsayılanlar — hiç güncellenmez",
   "cancel": "İptal",
   "cancelEdit": "Düzenlemeyi iptal et",
@@ -2612,12 +2611,12 @@
   "published": "Yayınlandı",
   "pullRequestApproved": "Pull request onaylandı",
   "pullRequests": "Pull request'ler",
-  "questionLabel": "SORU",
+  "questionLabel": "Soru",
   "queued": "Kuyrukta",
   "react": "React",
   "readerPreferences": "Okuyucu tercihleri",
   "reasoningEffort": "Akıl yürütme eforu",
-  "recommendLabel": "ÖNER",
+  "recommendLabel": "Öner",
   "recordingFromDevice": "{device} cihazından kaydediliyor.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Şablon",
   "prTemplateDefault": "Varsayılan",
   "addReviewers": "İnceleyen ekle",
-  "addAssignees": "Atanan ekle",
+
+  "reRequestReview": "İncelemeyi yeniden iste",
+  "reRequestReviewFor": "{label} kullanıcısından incelemeyi yeniden iste",  "addAssignees": "Atanan ekle",
   "addLabels": "Etiket ekle",
   "searchLabels": "Etiket ara…",
   "noMatchingLabels": "Eşleşen etiket yok",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Hızlı not alın — ajan toplantıdan sonra genişletir.",
   "meetingSpeakerMe": "Siz",
   "meetingStatusRecording": "Kaydediliyor",
+  "meetingStatusPaused": "Duraklatıldı",
   "meetingStatusProcessing": "İşleniyor",
   "meetingStatusDone": "Tamamlandı",
   "meetingStatusFailed": "Başarısız",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Toplantı yok} =1{1 toplantı} other{{count} toplantı}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Açık eylemler",
-  "meetingsLedgerDecisions": "Kararlar",
   "meetingsLiveOpen": "Kaydı aç",
   "meetingTemplateShort": "Şablon",
-  "meetingsStatThisWeek": "Bu hafta",
-  "meetingsStatRecorded": "Kaydedildi",
   "meetingsFilterAll": "Tümü",
   "meetingsFilterDone": "Tamamlandı",
   "meetingsFilterProcessing": "İşleniyor",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "geliştirilmiş",
   "meetingsTranscribing": "yazıya dökülüyor ve özetleniyor…",
   "meetingsOpenAction": "Aç",
   "meetingsStopProcessing": "Durdur",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Bir toplantı devam ediyor gibi görünüyor. Kaydedilsin mi?",
-  "meetingDetectedRecord": "Kaydet",
   "meetingDetectedDismiss": "Yoksay",
   "meetingAutoStopTitle": "Bu toplantı bitmiş görünüyor. Kayıt durdurulsun mu?",
   "meetingAutoStopStop": "Durdur",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Hiç bağlanmadı",
+  "deviceAwaitingApproval": "Onay bekleniyor",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Bu çalışma alanında ekibe ve git commit yazarlığına nasıl göründüğünüz. Boş alanlar hesap adı ve e-postasını miras alır.",
   "displayNameLabel": "Görünen ad",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Çalışıyor",
   "evalsStatusPassed": "Geçti",
   "evalsStatusFailed": "Başarısız",
-  "bannerMeetingJoin": "Katıl",
-  "bannerMeetingRecordAndLink": "Kaydet ve bağla",
   "bannerCalendarReconnect": "Yeniden bağlan",
   "bannerView": "Görüntüle",
   "soundscapeTitle": "Ses manzaraları",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Yorum gönderilemedi: {error}",
   "commentOnLine": "Satır {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Ortamdan kopyalamaya her zaman izin ver",
   "rigClipboardAlwaysCopyDescription": "Herhangi bir ortamdan pano içeriğini sormadan bu cihaza koy.",
   "imageDiffBefore": "Önce",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Sonra",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Yan yana",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Kaydır",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Fark",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "%{percent} değişti",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Görseller",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Kaynak",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Silindi",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} görülmedi olarak işaretlendi",
   "prLineChangesSemantics": "Eklenen satırlar: {additions}, kaldırılan satırlar: {deletions}",
   "closeTabNamed": "Kapat: {tab}",
-  "threadCommentCount": "{count, plural, other{{count} yorum}}",
   "notificationAgentAwaitingInput": "Bir ajan ilginizi bekliyor",
   "notifyAgentAwaitingInput": "Bir ajanın onaya, yanıta veya geçerli kimlik bilgilerine ihtiyacı olduğunda ya da bir ilke bir eylemi engellediğinde",
   "notificationAgentNeedsApproval": "{agent} onayınızı bekliyor",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Bir yönetici karar verir",
   "improvementNotFound": "Bu öneri yok veya açamayacağınız bir space’te.",
   "dispatchSettingsTitle": "Zamanlamalar",
-  "dispatchSettingsSubtitle": "Zamanlamalar ve izlemeler için sınırlar ve kimsenin yanıtlamadığı isteklere ne olacağı.",
   "dispatchLimitsLabel": "Zamanlama sınırları",
   "dispatchLimitsSubtitle": "Ajanların tutabileceği zamanlama ve izleme sayısı için sınırlar ve varsayılanlar.",
   "dispatchLimitRange": "1 ile {max} arası",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "{zone} dilimine göre, yukarıdaki saat dilimi.",
   "dispatchDigestHourRange": "0 ile 23 arası",
   "goalRecordCrumb": "Hedef",
-  "scheduleRecordCrumb": "Zamanlama",
   "improvementRecordCrumb": "Öneri",
   "goalNodeNeedsAgent": "Hedefi yürütecek ajanı seçin.",
   "goalNodeNeedsObjective": "Amacı yazın.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Tarayıcınızın gösterdiği kod bu değil. {count, plural, =1{1 deneme hakkınız kaldı.} other{{count} deneme hakkınız kaldı.}}",
   "mcpServerSignInEnded": "Süre doldu, reddedildi veya çok fazla yanlış kod girildi. Yeni bir oturum açma sayfası için yeniden başlatın.",
   "mcpServerSignInStartAgain": "Yeniden başlat",
-  "mcpServerSignedIn": "{name} hesabında oturum açıldı."
+  "mcpServerSignedIn": "{name} hesabında oturum açıldı.",
+  "ccLoading": "Yükleniyor",
+  "ccProgress": "İlerleme",
+  "ccBreadcrumb": "Gezinti yolu",
+  "ccDialog": "İletişim kutusu",
+  "ccResize": "Yeniden boyutlandır",
+  "ccUnverifiedLabel": "{label} (doğrulanmadı)",
+  "prRowSelect": "{title} seç",
+  "prTableSelectAll": "Tüm pull request'leri seç",
+  "planVersionRewind": "{version} sürümüne geri dön"
 }

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/undo/action_journal.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
@@ -83,8 +84,18 @@ class GeneralPanel extends ConsumerWidget {
       );
     }
     final tabKey = focusedTabKey;
+    final goalId = tabKey == null
+        ? null
+        : MessagingTabKinds.goalIdFromTabKey(tabKey);
     final conversationId = tabKey == MessagingTabKinds.chatSpaceTabKey(spaceId)
         ? ref.watch(standingConversationIdProvider(spaceId)).asData?.value
+        : goalId != null
+        ? ref
+              .watch(goalRunViewProvider((workspaceId: workspaceId, id: goalId)))
+              .asData
+              ?.value
+              ?.goal
+              .conversationId
         : tabKey == null
         ? null
         : MessagingTabKinds.conversationIdFromChatTabKey(tabKey);
@@ -342,12 +353,13 @@ class _GoalAccordionState extends State<_GoalAccordion> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          expanded: _expanded,
-          label: widget.title,
-          button: true,
-          child: InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
+        CcTappable(
+          onPressed: () => setState(() => _expanded = !_expanded),
+          semanticExpanded: _expanded,
+          builder: (context, states) => ColoredBox(
+            color: states.contains(WidgetState.hovered)
+                ? t.hover
+                : const Color(0x00000000),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
@@ -453,44 +465,49 @@ class _TodoRow extends StatelessWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final completed = todo.status == TodoStatus.completed;
-    return InkWell(
-      onTap: onToggle,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(
-          start: AppSpacing.sm,
-          end: AppSpacing.sm,
-          top: 5,
-          bottom: 5,
-        ),
-        child: Row(
-          children: [
-            ReorderableDragStartListener(
-              index: index,
-              child: Semantics(
-                label: l10n.reorderTodo,
-                child: Icon(
-                  AppIcons.gripVertical,
-                  size: 14,
-                  color: t.textQuaternary,
+    return CcTappable(
+      onPressed: onToggle,
+      builder: (context, states) => ColoredBox(
+        color: states.contains(WidgetState.hovered)
+            ? t.hover
+            : const Color(0x00000000),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(
+            start: AppSpacing.sm,
+            end: AppSpacing.sm,
+            top: 5,
+            bottom: 5,
+          ),
+          child: Row(
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: Semantics(
+                  label: l10n.reorderTodo,
+                  child: Icon(
+                    AppIcons.gripVertical,
+                    size: 14,
+                    color: t.textQuaternary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            _TodoStatusGlyph(status: todo.status),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                todo.content,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: completed ? t.textTertiary : t.textPrimary,
-                  decoration: completed ? TextDecoration.lineThrough : null,
+              const SizedBox(width: AppSpacing.xs),
+              _TodoStatusGlyph(status: todo.status),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  todo.content,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: completed ? t.textTertiary : t.textPrimary,
+                    decoration: completed ? TextDecoration.lineThrough : null,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

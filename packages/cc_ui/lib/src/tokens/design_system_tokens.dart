@@ -68,6 +68,7 @@ final class DesignSystemTokens {
     required this.textErrorPrimaryHover,
     required this.textWarningPrimary,
     required this.textSuccessPrimary,
+    required this.textMergedPrimary,
     // Foreground (icons & decorative).
     required this.fgPrimary,
     required this.fgSecondary,
@@ -130,6 +131,7 @@ final class DesignSystemTokens {
     required this.warnSoft,
     required this.danger,
     required this.dangerSoft,
+    required this.mergedSoft,
     required this.sunshine900,
     required this.sunshine700,
     required this.sunshine500,
@@ -209,6 +211,7 @@ final class DesignSystemTokens {
     textErrorPrimaryHover: DesignSystemPalette.red700,
     textWarningPrimary: DesignSystemPalette.yellow800,
     textSuccessPrimary: DesignSystemPalette.green700,
+    textMergedPrimary: DesignSystemPalette.purple700,
     fgPrimary: DesignSystemPalette.gray900,
     fgSecondary: DesignSystemPalette.gray700,
     fgSecondaryHover: DesignSystemPalette.gray800,
@@ -285,6 +288,7 @@ final class DesignSystemTokens {
     warnSoft: Color(0x33B8780A),
     danger: DesignSystemPalette.red600,
     dangerSoft: Color(0x1FDC2626),
+    mergedSoft: Color(0x1F6938EF),
     sunshine900: DesignSystemPalette.sunshine900,
     sunshine700: DesignSystemPalette.sunshine700,
     sunshine500: DesignSystemPalette.sunshine500,
@@ -368,13 +372,16 @@ final class DesignSystemTokens {
     textErrorPrimaryHover: DesignSystemPalette.red300,
     textWarningPrimary: DesignSystemPalette.yellow400,
     textSuccessPrimary: DesignSystemPalette.green400,
+    textMergedPrimary: DesignSystemPalette.purple400,
     fgPrimary: DesignSystemPalette.white,
     fgSecondary: DesignSystemPalette.gray300,
     fgSecondaryHover: DesignSystemPalette.gray200,
     fgTertiary: DesignSystemPalette.gray400,
     fgTertiaryHover: DesignSystemPalette.gray300,
-    fgQuaternary: DesignSystemPalette.gray600,
-    fgQuaternaryHover: DesignSystemPalette.gray500,
+    // gray600 here was 1.7:1 on the dark canvas; the icons this colours
+    // (search glyphs, idle dots) carry meaning and need 3:1.
+    fgQuaternary: DesignSystemPalette.gray500,
+    fgQuaternaryHover: DesignSystemPalette.gray450,
     fgDisabled: DesignSystemPalette.gray500,
     fgWhite: DesignSystemPalette.white,
     fgBrandPrimary: DesignSystemPalette.brand500,
@@ -427,6 +434,7 @@ final class DesignSystemTokens {
     warnSoft: Color(0x33FAC515),
     danger: DesignSystemPalette.red400,
     dangerSoft: Color(0x1FF97066),
+    mergedSoft: Color(0x1F9B8AFB),
     sunshine900: DesignSystemPalette.sunshine900,
     sunshine700: DesignSystemPalette.sunshine700,
     sunshine500: DesignSystemPalette.sunshine500,
@@ -602,6 +610,9 @@ final class DesignSystemTokens {
 
   /// textSuccessPrimary — text color.
   final Color textSuccessPrimary;
+
+  /// textMergedPrimary — text color for the "merged" PR status (purple).
+  final Color textMergedPrimary;
   // Foreground.
   /// fgPrimary — foreground color.
   final Color fgPrimary;
@@ -778,6 +789,9 @@ final class DesignSystemTokens {
   /// dangerSoft — danger pill background.
   final Color dangerSoft;
 
+  /// mergedSoft — merged PR pill background (purple).
+  final Color mergedSoft;
+
   /// sunshine900 — golden-hour brand graphics only.
   final Color sunshine900;
 
@@ -864,6 +878,7 @@ final class DesignSystemTokens {
     Color? textErrorPrimaryHover,
     Color? textWarningPrimary,
     Color? textSuccessPrimary,
+    Color? textMergedPrimary,
     Color? fgPrimary,
     Color? fgSecondary,
     Color? fgSecondaryHover,
@@ -922,6 +937,7 @@ final class DesignSystemTokens {
     Color? warnSoft,
     Color? danger,
     Color? dangerSoft,
+    Color? mergedSoft,
     Color? sunshine900,
     Color? sunshine700,
     Color? sunshine500,
@@ -987,6 +1003,7 @@ final class DesignSystemTokens {
           textErrorPrimaryHover ?? this.textErrorPrimaryHover,
       textWarningPrimary: textWarningPrimary ?? this.textWarningPrimary,
       textSuccessPrimary: textSuccessPrimary ?? this.textSuccessPrimary,
+      textMergedPrimary: textMergedPrimary ?? this.textMergedPrimary,
       fgPrimary: fgPrimary ?? this.fgPrimary,
       fgSecondary: fgSecondary ?? this.fgSecondary,
       fgSecondaryHover: fgSecondaryHover ?? this.fgSecondaryHover,
@@ -1047,6 +1064,7 @@ final class DesignSystemTokens {
       warnSoft: warnSoft ?? this.warnSoft,
       danger: danger ?? this.danger,
       dangerSoft: dangerSoft ?? this.dangerSoft,
+      mergedSoft: mergedSoft ?? this.mergedSoft,
       sunshine900: sunshine900 ?? this.sunshine900,
       sunshine700: sunshine700 ?? this.sunshine700,
       sunshine500: sunshine500 ?? this.sunshine500,
@@ -1118,6 +1136,7 @@ final class DesignSystemTokens {
     textErrorPrimaryHover,
     textWarningPrimary,
     textSuccessPrimary,
+    textMergedPrimary,
     fgPrimary,
     fgSecondary,
     fgSecondaryHover,
@@ -1176,6 +1195,7 @@ final class DesignSystemTokens {
     warnSoft,
     danger,
     dangerSoft,
+    mergedSoft,
     sunshine900,
     sunshine700,
     sunshine500,
@@ -1298,6 +1318,7 @@ final class DesignSystemTokens {
       ),
       textWarningPrimary: l(textWarningPrimary, other.textWarningPrimary),
       textSuccessPrimary: l(textSuccessPrimary, other.textSuccessPrimary),
+      textMergedPrimary: l(textMergedPrimary, other.textMergedPrimary),
       fgPrimary: l(fgPrimary, other.fgPrimary),
       fgSecondary: l(fgSecondary, other.fgSecondary),
       fgSecondaryHover: l(fgSecondaryHover, other.fgSecondaryHover),
@@ -1362,6 +1383,7 @@ final class DesignSystemTokens {
       warnSoft: l(warnSoft, other.warnSoft),
       danger: l(danger, other.danger),
       dangerSoft: l(dangerSoft, other.dangerSoft),
+      mergedSoft: l(mergedSoft, other.mergedSoft),
       sunshine900: l(sunshine900, other.sunshine900),
       sunshine700: l(sunshine700, other.sunshine700),
       sunshine500: l(sunshine500, other.sunshine500),

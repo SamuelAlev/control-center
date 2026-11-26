@@ -49,8 +49,10 @@ class GoalContractView extends StatelessWidget {
                     width: 22,
                     child: Text(
                       '${i + 1}.',
-                      style: CcTypography.monoNum.copyWith(
-                        color: t.textTertiary,
+                      style: CcFonts.numeric(
+                        textStyle: CcTypography.numeric.copyWith(
+                          color: t.textTertiary,
+                        ),
                       ),
                     ),
                   ),

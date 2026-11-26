@@ -7,7 +7,6 @@ import 'package:control_center/features/pr_review/presentation/widgets/merge_fly
 import 'package:control_center/features/pr_review/presentation/widgets/open_in_ide_button.dart'
     if (dart.library.js_interop) 'package:control_center/features/pr_review/presentation/widgets/open_in_ide_button_web.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_draft_actions.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/review_overlay.dart';
 import 'package:control_center/features/pr_review/providers/pr_detail_polling_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
@@ -267,47 +266,11 @@ class _PrMoreActionsMenuState extends ConsumerState<_PrMoreActionsMenu> {
   }
 
   Future<void> _closePr() async {
-    final l10n = AppLocalizations.of(context);
-    final toaster = CcToastScope.of(context);
     _controller.hide();
     if (!mounted) {
       return;
     }
-
-    final confirmed = await showCcDialog<bool>(
-      context: context,
-      builder: (ctx) => CcDialog(
-        title: l10n.closePullRequest,
-        content: Text(l10n.closePullRequestConfirm),
-        actions: [
-          CcButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            variant: CcButtonVariant.secondary,
-            child: Text(l10n.cancel),
-          ),
-          CcButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            variant: CcButtonVariant.destructive,
-            child: Text(l10n.confirm),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    try {
-      await ref
-          .read(prReviewRepositoryProvider)
-          .closePullRequest(prNumber: widget.pr.number);
-      toaster.show(l10n.pullRequestClosed, variant: CcToastVariant.success);
-    } on Exception catch (e) {
-      if (mounted) {
-        showPrError(context, ref, e, (l) => l.failedToClosePr('$e'));
-      }
-    }
+    await confirmAndClosePullRequest(context, ref, widget.pr);
   }
 
   @override

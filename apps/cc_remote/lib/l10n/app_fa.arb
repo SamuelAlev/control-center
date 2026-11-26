@@ -124,7 +124,6 @@
   "eventNotFound": "رویداد پیدا نشد",
   "eventNotFoundDescription": "ممکن است بیرون از بازهٔ برنامه باشد، یا در مبدأ حذف شده باشد.",
   "joinMeeting": "پیوستن به جلسه",
-  "join": "پیوستن",
   "attendeesCount": "شرکت‌کنندگان ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

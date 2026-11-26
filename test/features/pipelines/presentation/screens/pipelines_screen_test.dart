@@ -6,6 +6,7 @@ import 'package:control_center/features/pipelines/presentation/widgets/pipeline_
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_row.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -420,6 +421,80 @@ void main() {
       // page again: its extent matches the first page, not the drained list.
       expect(position.maxScrollExtent, closeTo(firstPageExtent, 8));
       expect(_railCount('${kPipelineRunsPageSize + 10}'), findsOneWidget);
+    });
+
+    // ── Keyboard ──────────────────────────────────────────────────────────
+
+    bool rowFocused(WidgetTester tester, String id) =>
+        tester.widget<PipelineRunRow>(_runRow(id)).focused;
+
+    testWidgets('j/k walk the rows on arrival, and again after a click on the '
+        'table once focus went elsewhere', (tester) async {
+      final runs = [_run(id: 'run-1'), _run(id: 'run-2'), _run(id: 'run-3')];
+      await tester.pumpWidget(
+        _wrap(
+          runs: AsyncValue.data(runs),
+          templates: AsyncValue.data([_template()]),
+          workspaceId: _workspaceId,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pump();
+      expect(rowFocused(tester, 'run-1'), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pump();
+      expect(rowFocused(tester, 'run-2'), isTrue);
+
+      // A click on the rail moves focus there, out of the table's reach.
+      await _tapFilter(tester, 'All');
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pump();
+      expect(rowFocused(tester, 'run-2'), isTrue);
+
+      // A click on the table's empty space below the rows gives it back.
+      final table = tester.getRect(find.byType(CustomScrollView));
+      await tester.tapAt(table.bottomCenter - const Offset(0, 4));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.pump();
+      expect(rowFocused(tester, 'run-1'), isTrue);
+    });
+
+    testWidgets('the table is no Tab stop of its own: Tab goes to a row', (
+      tester,
+    ) async {
+      final runs = [_run(id: 'run-1'), _run(id: 'run-2')];
+      await tester.pumpWidget(
+        _wrap(
+          runs: AsyncValue.data(runs),
+          templates: AsyncValue.data([_template()]),
+          workspaceId: _workspaceId,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Shift+Tab from the last row lands on the row before it, never on a
+      // node spanning the whole table.
+      Focus.of(
+        tester.element(
+          find
+              .descendant(of: _runRow('run-2'), matching: find.byType(Text))
+              .first,
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus!.context!;
+      expect(
+        focused.findAncestorWidgetOfExactType<PipelineRunRow>()?.run.id,
+        'run-1',
+      );
     });
   });
 }

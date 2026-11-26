@@ -101,7 +101,7 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
                           child: Text(
-                            l10n.nodeCategoryTriggers.toUpperCase(),
+                            l10n.nodeCategoryTriggers,
                             style: pipelineNodeEyebrowStyle(tokens),
                           ),
                         ),
@@ -121,10 +121,7 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
                           child: Text(
-                            pipelineNodeCategoryLabel(
-                              l10n,
-                              category,
-                            ).toUpperCase(),
+                            pipelineNodeCategoryLabel(l10n, category),
                             style: pipelineNodeEyebrowStyle(tokens),
                           ),
                         ),

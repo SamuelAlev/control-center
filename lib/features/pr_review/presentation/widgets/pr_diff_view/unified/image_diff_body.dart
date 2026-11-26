@@ -299,6 +299,7 @@ class _ImageDiffBodyState extends State<ImageDiffBody> {
             label: l10n.imageDiffModeDifference,
             accent: context.ds.textSecondary,
             blobRef: resolved.overlayRef!,
+            title: widget.path,
             workspaceId: widget.workspaceId,
             isSvg: false,
             knownSize: _overlaySize,
@@ -394,6 +395,7 @@ class _ImageDiffBodyState extends State<ImageDiffBody> {
       label: l10n.imageDiffDeleted,
       accent: DiffColors.of(context).deletionAccent,
       blobRef: resolved.baseRef!,
+      title: widget.previousPath ?? widget.path,
       workspaceId: widget.workspaceId,
       isSvg: widget.isSvg,
       knownSize: _baseSize,
@@ -418,6 +420,7 @@ class _ImageDiffBodyState extends State<ImageDiffBody> {
       label: l10n.imageDiffAdded,
       accent: DiffColors.of(context).additionAccent,
       blobRef: resolved.headRef!,
+      title: widget.path,
       workspaceId: widget.workspaceId,
       isSvg: widget.isSvg,
       knownSize: _headSize,
@@ -483,6 +486,7 @@ class _ImageDiffBodyState extends State<ImageDiffBody> {
           ),
           before: _SizedDiffImage(
             blobRef: resolved.baseRef!,
+            title: widget.previousPath ?? widget.path,
             workspaceId: widget.workspaceId,
             isSvg: widget.isSvg,
             accent: colors.deletionAccent,
@@ -498,6 +502,7 @@ class _ImageDiffBodyState extends State<ImageDiffBody> {
           ),
           after: _SizedDiffImage(
             blobRef: resolved.headRef!,
+            title: widget.path,
             workspaceId: widget.workspaceId,
             isSvg: widget.isSvg,
             accent: colors.additionAccent,
@@ -523,6 +528,7 @@ class _AssetColumn extends StatelessWidget {
     required this.label,
     required this.accent,
     required this.blobRef,
+    required this.title,
     required this.workspaceId,
     required this.isSvg,
     required this.onSize,
@@ -534,6 +540,7 @@ class _AssetColumn extends StatelessWidget {
   final String label;
   final Color accent;
   final String blobRef;
+  final String title;
   final String workspaceId;
   final bool isSvg;
   final Size? knownSize;
@@ -564,6 +571,7 @@ class _AssetColumn extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         _SizedDiffImage(
           blobRef: blobRef,
+          title: title,
           workspaceId: workspaceId,
           isSvg: isSvg,
           accent: accent,
@@ -588,6 +596,7 @@ class _AssetColumn extends StatelessWidget {
 class _SizedDiffImage extends StatefulWidget {
   const _SizedDiffImage({
     required this.blobRef,
+    required this.title,
     required this.workspaceId,
     required this.isSvg,
     required this.accent,
@@ -598,6 +607,9 @@ class _SizedDiffImage extends StatefulWidget {
   });
 
   final String blobRef;
+
+  /// The file's repository path, shown as the expanded viewer's title.
+  final String title;
   final String workspaceId;
   final bool isSvg;
   final Color accent;
@@ -782,7 +794,7 @@ class _SizedDiffImageState extends State<_SizedDiffImage> {
     }
     return CcExpandableImage(
       labels: appImageViewerLabels(context),
-      title: widget.blobRef,
+      title: widget.title,
       enabled: true,
       viewerBuilder: (_) => widget.isSvg
           ? SvgPicture.string(

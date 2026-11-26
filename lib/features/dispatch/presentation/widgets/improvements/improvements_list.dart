@@ -99,7 +99,8 @@ class ImprovementRow extends ConsumerWidget {
         p.createdAt,
         style: CcTypography.caption.copyWith(color: ds.textTertiary),
       ),
-      onPressed: () => context.go(improvementRoute(p.workspaceId, p.id)),
+      onPressed: () =>
+          context.go(memoryImprovementRoute(p.workspaceId, p.id)),
     );
   }
 }

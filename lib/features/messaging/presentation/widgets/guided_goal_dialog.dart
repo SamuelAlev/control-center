@@ -4,6 +4,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/goals/goal_launch_options.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -172,12 +173,17 @@ class _GuidedGoalDialogState extends ConsumerState<GuidedGoalDialog> {
             ] else ...[
               Text(_question ?? '', style: CcTypography.body),
               const SizedBox(height: AppSpacing.md),
-              CcTextField(
-                controller: _controller,
-                hintText: l10n.guidedGoalAnswerHint,
-                maxLines: 3,
-                autofocus: true,
-                onSubmitted: (_) => _answer(),
+              // Asked for outright on each question: an autofocus would yield
+              // to a dialog button focused earlier (Skip), which is where Next
+              // hands focus as it goes.
+              FocusOnMount(
+                builder: (context, focusNode) => CcTextField(
+                  controller: _controller,
+                  focusNode: focusNode,
+                  hintText: l10n.guidedGoalAnswerHint,
+                  maxLines: 3,
+                  onSubmitted: (_) => _answer(),
+                ),
               ),
             ],
           ],

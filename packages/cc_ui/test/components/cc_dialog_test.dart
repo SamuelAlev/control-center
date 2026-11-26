@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_ui/src/components/cc_dialog.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
+import 'package:cc_ui/src/components/cc_text_field.dart';
 import 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -560,6 +561,98 @@ void main() {
       Navigator.of(host).pop();
       await tester.pumpAndSettle();
       expect(trigger.hasPrimaryFocus, isTrue);
+    });
+  });
+
+  group('showCcDialog initial focus and names', () {
+    late BuildContext host;
+    Widget app() => ccTestApp(
+      Navigator(
+        onGenerateRoute: (settings) => PageRouteBuilder<void>(
+          pageBuilder: (context, animation, secondaryAnimation) {
+            host = context;
+            return const SizedBox.expand();
+          },
+        ),
+      ),
+    );
+
+    testWidgets('an autofocus field in the dialog gets focus', (tester) async {
+      await tester.pumpWidget(app());
+      unawaited(
+        showCcDialog<void>(
+          context: host,
+          builder: (context) => const CcDialog(
+            title: 'Rename',
+            content: CcTextField(autofocus: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final field = tester.widget<EditableText>(find.byType(EditableText));
+      expect(field.focusNode.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('without an autofocus child the first Tab lands on the first '
+        'control', (tester) async {
+      final first = FocusNode(debugLabel: 'first');
+      final second = FocusNode(debugLabel: 'second');
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+      await tester.pumpWidget(app());
+      unawaited(
+        showCcDialog<void>(
+          context: host,
+          builder: (context) => CcDialog(
+            title: 'Pick',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CcTappable(
+                  focusNode: first,
+                  onPressed: () {},
+                  builder: (context, states) => const Text('One'),
+                ),
+                CcTappable(
+                  focusNode: second,
+                  onPressed: () {},
+                  builder: (context, states) => const Text('Two'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(first.hasFocus, isFalse);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(first.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('the dialog names its route; close and barrier have names', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(app());
+      unawaited(
+        showCcDialog<void>(
+          context: host,
+          builder: (context) => CcDialog(
+            content: const Text('Body'),
+            onClose: () => Navigator.of(context).pop(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final dialog = find.semantics.byLabel('Dialog');
+      expect(dialog, findsOne);
+      final flags = dialog.evaluate().single.getSemanticsData().flagsCollection;
+      expect(flags.scopesRoute, isTrue);
+      expect(flags.namesRoute, isTrue);
+      expect(find.semantics.byLabel('Close'), findsOne);
+      expect(find.semantics.byLabel('Dismiss'), findsOne);
+      semantics.dispose();
     });
   });
 }

@@ -121,190 +121,187 @@ class _FastFileHeaderState extends State<FastFileHeader> {
       _ => const Color(0xFF1F75FE),
     };
     final l10n = AppLocalizations.of(context);
-    return Material(
-      color: tokens.bgPrimary,
-      // One announcement for the row: the full path (the visible one may be
-      // truncated from the start), what changed, and whether it is viewed. A
-      // heading, so the screen reader's headings rotor walks file by file;
-      // the expanded state says what Enter/Space on the row will do.
-      child: Semantics(
-        container: true,
-        header: true,
-        button: widget.onToggleExpanded != null,
-        expanded: widget.onToggleExpanded != null ? widget.expanded : null,
-        label: fileHeaderSemanticsLabel(
-          l10n,
-          widget.file,
-          isViewed: widget.isViewed,
+    // One announcement for the row: the full path (the visible one may be
+    // truncated from the start), what changed, and whether it is viewed. A
+    // heading, so the screen reader's headings rotor walks file by file;
+    // the expanded state says what Enter/Space on the row will do.
+    final label = fileHeaderSemanticsLabel(
+      l10n,
+      widget.file,
+      isViewed: widget.isViewed,
+    );
+    final onToggle = widget.onToggleExpanded;
+    final row = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          top: widget.showTopBorder
+              ? BorderSide(color: tokens.borderSecondary)
+              : BorderSide.none,
+          bottom: BorderSide(color: tokens.borderSecondary),
         ),
-        child: InkWell(
-          onTap: widget.onToggleExpanded,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              border: Border(
-                top: widget.showTopBorder
-                    ? BorderSide(color: tokens.borderSecondary)
-                    : BorderSide.none,
-                bottom: BorderSide(color: tokens.borderSecondary),
+              color: dotColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
               ),
             ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 18,
-                  height: 18,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: dotColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: dotColor,
-                      shape: BoxShape.circle,
+                Flexible(
+                  child: ExcludeSemantics(
+                    child: FileHeaderPath(
+                      filename: widget.file.filename,
+                      previousFilename: widget.file.previousFilename,
+                      status: widget.file.status,
+                      style: CcTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: tokens.textPrimary,
+                      ),
+                      mutedColor: tokens.textTertiary,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: ExcludeSemantics(
-                          child: FileHeaderPath(
-                            filename: widget.file.filename,
-                            previousFilename: widget.file.previousFilename,
-                            status: widget.file.status,
-                            style: CcTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textPrimary,
-                            ),
-                            mutedColor: tokens.textTertiary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      CcIconButton(
-                        icon: _copied ? AppIcons.check : AppIcons.copy,
-                        size: CcButtonSize.sm,
-                        color: _copied
-                            ? const Color(0xFF2DA44E)
-                            : tokens.textTertiary,
-                        tooltip: _copied ? l10n.copied : l10n.copyPath,
-                        onPressed: _handleCopy,
-                      ),
-                    ],
-                  ),
+                const SizedBox(width: 4),
+                CcIconButton(
+                  icon: _copied ? AppIcons.check : AppIcons.copy,
+                  size: CcButtonSize.sm,
+                  color: _copied
+                      ? const Color(0xFF2DA44E)
+                      : tokens.textTertiary,
+                  tooltip: _copied ? l10n.copied : l10n.copyPath,
+                  onPressed: _handleCopy,
                 ),
-                if (widget.canPreview && widget.onTogglePreview != null) ...[
-                  const SizedBox(width: 8),
-                  CcSegmentedToggle<bool>(
-                    value: widget.isPreview,
-                    onChanged: (_) => widget.onTogglePreview!.call(),
-                    segments: [
-                      CcSegment(
-                        value: false,
-                        label:
-                            widget.previewOffLabel ??
-                            AppLocalizations.of(context).diff,
-                      ),
-                      CcSegment(
-                        value: true,
-                        label:
-                            widget.previewOnLabel ??
-                            AppLocalizations.of(context).preview,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                // The row label already says these in words.
-                ExcludeSemantics(
-                  child: Text(
-                    '+${widget.file.additions}',
-                    style: const TextStyle(
-                      color: Color(0xFF2DA44E),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                ExcludeSemantics(
-                  child: Text(
-                    '−${widget.file.deletions}',
-                    style: const TextStyle(
-                      color: Color(0xFFCF222E),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                if (widget.unresolvedConversations > 0) ...[
-                  const SizedBox(width: 8),
-                  FileUnresolvedBadge(count: widget.unresolvedConversations),
-                ],
-                if (widget.outdatedComments.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  OutdatedCommentsGroup(comments: widget.outdatedComments),
-                ],
-                if (widget.onAddFileComment != null) ...[
-                  const SizedBox(width: 8),
-                  CcIconButton(
-                    icon: AppIcons.messageSquarePlus,
-                    size: CcButtonSize.sm,
-                    color: tokens.textTertiary,
-                    tooltip: l10n.commentOnThisFile,
-                    onPressed: widget.onAddFileComment,
-                  ),
-                ],
-                if (widget.onOpenInEditor != null) ...[
-                  const SizedBox(width: 8),
-                  CcIconButton(
-                    icon: AppIcons.fileCode,
-                    size: CcButtonSize.sm,
-                    color: tokens.textTertiary,
-                    tooltip: l10n.openInEditor,
-                    onPressed: widget.onOpenInEditor,
-                  ),
-                ],
-                if (widget.onToggleViewed != null) ...[
-                  const SizedBox(width: 8),
-                  CcIconButton(
-                    icon: widget.isViewed
-                        ? AppIcons.checkCircle2
-                        : AppIcons.circle,
-                    size: CcButtonSize.sm,
-                    color: widget.isViewed
-                        ? const Color(0xFF1F75FE)
-                        : tokens.textTertiary,
-                    tooltip: widget.isViewed
-                        ? l10n.diffMarkFileNotViewed
-                        : l10n.diffMarkFileViewed,
-                    onPressed: widget.onToggleViewed,
-                  ),
-                ],
-                if (widget.onToggleExpanded != null) ...[
-                  const SizedBox(width: 2),
-                  CcIconButton(
-                    icon: widget.expanded
-                        ? AppIcons.chevronUp
-                        : AppIcons.chevronDown,
-                    size: CcButtonSize.sm,
-                    color: tokens.textTertiary,
-                    tooltip: widget.expanded ? l10n.collapse : l10n.expand,
-                    onPressed: widget.onToggleExpanded,
-                  ),
-                ],
               ],
             ),
           ),
-        ),
+          if (widget.canPreview && widget.onTogglePreview != null) ...[
+            const SizedBox(width: 8),
+            CcSegmentedToggle<bool>(
+              value: widget.isPreview,
+              onChanged: (_) => widget.onTogglePreview!.call(),
+              segments: [
+                CcSegment(
+                  value: false,
+                  label:
+                      widget.previewOffLabel ??
+                      AppLocalizations.of(context).diff,
+                ),
+                CcSegment(
+                  value: true,
+                  label:
+                      widget.previewOnLabel ??
+                      AppLocalizations.of(context).preview,
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+          ],
+          // The row label already says these in words.
+          ExcludeSemantics(
+            child: Text(
+              '+${widget.file.additions}',
+              style: const TextStyle(
+                color: Color(0xFF2DA44E),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          ExcludeSemantics(
+            child: Text(
+              '−${widget.file.deletions}',
+              style: const TextStyle(
+                color: Color(0xFFCF222E),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          if (widget.unresolvedConversations > 0) ...[
+            const SizedBox(width: 8),
+            FileUnresolvedBadge(count: widget.unresolvedConversations),
+          ],
+          if (widget.outdatedComments.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            OutdatedCommentsGroup(comments: widget.outdatedComments),
+          ],
+          if (widget.onAddFileComment != null) ...[
+            const SizedBox(width: 8),
+            CcIconButton(
+              icon: AppIcons.messageSquarePlus,
+              size: CcButtonSize.sm,
+              color: tokens.textTertiary,
+              tooltip: l10n.commentOnThisFile,
+              onPressed: widget.onAddFileComment,
+            ),
+          ],
+          if (widget.onOpenInEditor != null) ...[
+            const SizedBox(width: 8),
+            CcIconButton(
+              icon: AppIcons.fileCode,
+              size: CcButtonSize.sm,
+              color: tokens.textTertiary,
+              tooltip: l10n.openInEditor,
+              onPressed: widget.onOpenInEditor,
+            ),
+          ],
+          if (widget.onToggleViewed != null) ...[
+            const SizedBox(width: 8),
+            CcIconButton(
+              icon: widget.isViewed ? AppIcons.checkCircle2 : AppIcons.circle,
+              size: CcButtonSize.sm,
+              color: widget.isViewed
+                  ? const Color(0xFF1F75FE)
+                  : tokens.textTertiary,
+              tooltip: widget.isViewed
+                  ? l10n.diffMarkFileNotViewed
+                  : l10n.diffMarkFileViewed,
+              onPressed: widget.onToggleViewed,
+            ),
+          ],
+          if (widget.onToggleExpanded != null) ...[
+            const SizedBox(width: 2),
+            CcIconButton(
+              icon: widget.expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
+              size: CcButtonSize.sm,
+              color: tokens.textTertiary,
+              tooltip: widget.expanded ? l10n.collapse : l10n.expand,
+              onPressed: widget.onToggleExpanded,
+            ),
+          ],
+        ],
       ),
+    );
+    return Material(
+      color: tokens.bgPrimary,
+      child: onToggle == null
+          ? Semantics(container: true, header: true, label: label, child: row)
+          : CcTappable(
+              onPressed: onToggle,
+              semanticLabel: label,
+              semanticExpanded: widget.expanded,
+              // Not a container: the heading flag lands on the row's node.
+              builder: (context, _) => Semantics(header: true, child: row),
+            ),
     );
   }
 }

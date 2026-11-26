@@ -416,9 +416,10 @@ class _DepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      onTap: enabled ? () => onToggle(!selected) : null,
-      child: Padding(
+    return CcTappable(
+      onPressed: enabled ? () => onToggle(!selected) : null,
+      semanticChecked: selected,
+      builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
           children: [

@@ -6,13 +6,12 @@ import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
-import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:flutter/widgets.dart';
 
-/// Labelled [CcSidebar] section: optional mono eyebrow [label] above [children].
+/// Labelled [CcSidebar] section: optional eyebrow [label] above [children].
 /// [collapsible]: tappable header + [CcCollapsible] body.
 /// Rows sit flush (no gutter — gaps would drop the click cursor). Hover via
 /// [CcFluidHoverTarget]; non-target children are boundaries. Collapsed rail
@@ -30,7 +29,7 @@ class CcSidebarGroup extends StatefulWidget {
   /// The group's items (typically [CcSidebarItem]s).
   final List<Widget> children;
 
-  /// Optional uppercase eyebrow label for the group.
+  /// Optional eyebrow label for the group.
   final String? label;
 
   /// Whether the header toggles the children's visibility.
@@ -112,7 +111,6 @@ class _CcSidebarGroupState extends State<CcSidebarGroup> {
             expanded: expanded,
             onToggle: widget.collapsible ? _toggle : null,
             color: t.textTertiary,
-            family: context.ccTheme?.monoFontFamily,
           ),
           CcCollapsible(expanded: expanded, child: body),
         ],
@@ -129,7 +127,6 @@ class _GroupHeader extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.color,
-    this.family,
   });
 
   final String label;
@@ -137,17 +134,13 @@ class _GroupHeader extends StatelessWidget {
   final bool expanded;
   final VoidCallback? onToggle;
   final Color color;
-  final String? family;
 
   Widget _buildRow(BuildContext context) {
     final labelWidget = Text(
-      label.toUpperCase(),
+      label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: CcFonts.code(
-        textStyle: CcTypography.label,
-        family: family,
-      ).copyWith(color: color),
+      style: CcTypography.label.copyWith(color: color),
     );
 
     return Padding(
@@ -175,14 +168,14 @@ class _GroupHeader extends StatelessWidget {
     if (!collapsible || onToggle == null) {
       return _buildRow(context);
     }
-    return Semantics(
-      expanded: expanded,
-      child: CcTappable(
-        onPressed: onToggle,
-        borderRadius: AppRadii.brSm,
-        semanticLabel: label,
-        builder: (context, states) => _buildRow(context),
-      ),
+    return CcTappable(
+      onPressed: onToggle,
+      borderRadius: AppRadii.brSm,
+      semanticLabel: label,
+      semanticExpanded: expanded,
+      // The name above already reads the painted eyebrow, so it is not read
+      // twice.
+      builder: (context, states) => ExcludeSemantics(child: _buildRow(context)),
     );
   }
 }

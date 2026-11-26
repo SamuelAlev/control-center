@@ -531,6 +531,9 @@ final prFilesProvider = StreamProvider.autoDispose.family<List<PrFile>, PrRef>((
   ref.onDispose(controller.close);
 
   ref.listen<AsyncValue<PrFilesLoad>>(prFilesLoadProvider(pr), (_, next) {
+    if (next.isLoading) {
+      return;
+    }
     if (next.hasError) {
       if (!controller.isClosed) {
         controller.addError(next.error!, next.stackTrace);
@@ -542,7 +545,7 @@ final prFilesProvider = StreamProvider.autoDispose.family<List<PrFile>, PrRef>((
       // A fresh empty snapshot must replace a formerly nonempty diff too.
       controller.add(List<PrFile>.unmodifiable(load.files));
     }
-  });
+  }, fireImmediately: true);
 
   return controller.stream;
 });

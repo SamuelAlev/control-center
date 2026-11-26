@@ -191,4 +191,15 @@ void main() {
       expect(find.text(l10n.codeExecutionOpenRecord), findsNothing);
     });
   });
+
+  testWidgets('the link text reads as a link, not a button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester, CodeExecutionRecordLinkText(onPressed: () {}));
+
+    final node = tester.getSemantics(find.text(l10n.codeExecutionOpenRecord));
+    expect(node.label, l10n.codeExecutionOpenRecord);
+    expect(node.flagsCollection.isLink, isTrue);
+    expect(node.flagsCollection.isButton, isFalse);
+    handle.dispose();
+  });
 }

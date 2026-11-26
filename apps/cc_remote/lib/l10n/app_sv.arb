@@ -122,7 +122,6 @@
   "eventNotFound": "Händelsen hittades inte",
   "eventNotFoundDescription": "Den kan ligga utanför agendafönstret, eller ha tagits bort uppströms.",
   "joinMeeting": "Anslut till mötet",
-  "join": "Anslut",
   "attendeesCount": "Deltagare ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

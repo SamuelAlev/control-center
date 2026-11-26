@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -98,48 +99,45 @@ void main() {
       expect(raw.scrollbarOrientation, ScrollbarOrientation.bottom);
     });
 
-    testWidgets(
-      'desktop hover does not assert when no controller is passed',
-      (tester) async {
-        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    testWidgets('desktop hover does not assert when no controller is passed', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
 
-        await tester.pumpWidget(
-          ccTestApp(
-            SizedBox(
-              width: 400,
-              height: 300,
-              child: CcScrollbar(
-                child: ListView(
-                  children: [
-                    for (var i = 0; i < 50; i++) const SizedBox(height: 40),
-                  ],
-                ),
+      await tester.pumpWidget(
+        ccTestApp(
+          SizedBox(
+            width: 400,
+            height: 300,
+            child: CcScrollbar(
+              child: ListView(
+                children: [
+                  for (var i = 0; i < 50; i++) const SizedBox(height: 40),
+                ],
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        final raw = tester.widget<RawScrollbar>(find.byType(RawScrollbar));
-        expect(raw.controller, isNotNull);
-        expect(raw.controller!.hasClients, isTrue);
+      final raw = tester.widget<RawScrollbar>(find.byType(RawScrollbar));
+      expect(raw.controller, isNotNull);
+      expect(raw.controller!.hasClients, isTrue);
 
-        // RawScrollbar's MouseRegion covers the whole child; hovering it is
-        // what asserted when the thumb fell back to an unattached
-        // PrimaryScrollController.
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        await gesture.addPointer(location: Offset.zero);
-        addTearDown(gesture.removePointer);
-        await tester.pump();
-        await gesture.moveTo(tester.getCenter(find.byType(RawScrollbar)));
-        await tester.pump();
+      // RawScrollbar's MouseRegion covers the whole child; hovering it is
+      // what asserted when the thumb fell back to an unattached
+      // PrimaryScrollController.
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(RawScrollbar)));
+      await tester.pump();
 
-        // Must be reset in the test body: the binding's invariant check runs
-        // before tear-downs.
-        debugDefaultTargetPlatformOverride = null;
-      },
-    );
+      // Must be reset in the test body: the binding's invariant check runs
+      // before tear-downs.
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 
   group('CcScrollBehavior', () {
@@ -213,5 +211,57 @@ void main() {
       expect(find.byType(RawScrollbar), findsNothing);
       debugDefaultTargetPlatformOverride = null;
     });
+  });
+
+  testWidgets('a scroll area and its scrollbar add no Tab stop', (
+    tester,
+  ) async {
+    final nodes = [
+      for (final l in ['a', 'b', 'c']) FocusNode(debugLabel: l),
+    ];
+    for (final n in nodes) {
+      addTearDown(n.dispose);
+    }
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    Widget button(int i) => CcTappable(
+      focusNode: nodes[i],
+      onPressed: () {},
+      builder: (context, states) => SizedBox(height: 40, child: Text('B$i')),
+    );
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          children: [
+            button(0),
+            SizedBox(
+              height: 120,
+              child: CcScrollArea(
+                child: CcScrollbar(
+                  controller: controller,
+                  child: ListView(
+                    controller: controller,
+                    children: [
+                      button(1),
+                      for (var i = 0; i < 20; i++)
+                        SizedBox(height: 40, child: Text('Row $i')),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            button(2),
+          ],
+        ),
+      ),
+    );
+    nodes[0].requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(nodes[1].hasPrimaryFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(nodes[2].hasPrimaryFocus, isTrue);
   });
 }

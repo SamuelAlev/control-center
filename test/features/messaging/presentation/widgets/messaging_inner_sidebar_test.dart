@@ -368,8 +368,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The section label renders as a branded mono eyebrow (uppercased).
-      expect(find.text('SPACES'), findsOneWidget);
+      // The section label renders as an eyebrow.
+      expect(find.text('Spaces'), findsOneWidget);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -1218,7 +1218,7 @@ void main() {
       expect(find.byIcon(AppIcons.chevronDown), findsNothing);
       expect(find.text('No spaces yet'), findsOneWidget);
 
-      await tester.tap(find.text('SPACES'));
+      await tester.tap(find.text('Spaces'));
       await tester.pump();
 
       expect(find.text('No spaces yet'), findsOneWidget);

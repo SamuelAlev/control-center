@@ -58,7 +58,6 @@ class _EvidenceSummary extends StatelessWidget {
             label: l.statusLabel,
             value: l.skillEvalStale,
             tone: CcStatusTone.caution,
-            mono: false,
           ),
         ],
       );
@@ -69,7 +68,6 @@ class _EvidenceSummary extends StatelessWidget {
           label: l.statusLabel,
           value: _evidenceStatus(l, campaign),
           tone: _evidenceTone(campaign),
-          mono: false,
         ),
         SettingsFact(
           label: l.skillEvalProgressLabel,
@@ -78,11 +76,10 @@ class _EvidenceSummary extends StatelessWidget {
             campaign.plannedAttempts,
           ),
         ),
-        SettingsFact(label: l.modelLabel, value: campaign.modelId),
+        SettingsFact(label: l.modelLabel, value: campaign.modelId, code: true),
         SettingsFact(
           label: l.skillEvalCorpus,
           value: l.skillEvalCoverage(campaign.corpusId, campaign.repetitions),
-          mono: false,
         ),
       ],
     );
@@ -141,6 +138,7 @@ class _RevisionHistory extends StatelessWidget {
                   value: c.skillHash.length > _shortHashLength
                       ? c.skillHash.substring(0, _shortHashLength)
                       : c.skillHash,
+                  code: true,
                 ),
                 AppTimestamp.relative(c.createdAt),
               ],

@@ -150,6 +150,30 @@ void main() {
             'workspace_id': 'ws-1',
           }, l10n: l10n);
       expect(n!.presentation, NotificationPresentation.banner);
+      // Alerts even with its event open, and nothing to join without a link.
+      expect(n.suppressWhenViewingTarget, isFalse);
+      expect(
+        n.meeting,
+        NotificationMeeting(workspaceId: 'ws-1', eventId: 'ev-1'),
+      );
+    });
+
+    test('meeting_starting_soon carries only an http(s) call link', () {
+      AppNotification map(String url) =>
+          mapNotificationFrame('notifications/meeting_starting_soon', {
+            'event_id': 'ev-1',
+            'title': 'Standup',
+            'start_time': '2026-08-16T10:00:00Z',
+            'workspace_id': 'ws-1',
+            'meeting_url': url,
+          }, l10n: l10n)!;
+
+      expect(
+        map('https://meet.example/abc').meeting!.meetingUrl,
+        'https://meet.example/abc',
+      );
+      expect(map('file:///etc/passwd').meeting!.joinable, isFalse);
+      expect(map('javascript:alert(1)').meeting!.joinable, isFalse);
     });
 
     test('a rig control RELEASE is unfiltered (the event does not record '
@@ -386,6 +410,25 @@ void main() {
           NotificationCategory.prReviewDecision,
           reason: method,
         );
+      }
+    });
+  });
+
+  group('tone', () {
+    // A category is a toggle, not a verdict: each of these carries good and
+    // bad news, and the bell colors the row by the tone.
+    test('good and bad news in one category read differently', () {
+      const tones = {
+        'notifications/pr_ready_to_merge': NotificationTone.positive,
+        'notifications/pr_merge_blocked': NotificationTone.negative,
+        'notifications/pr_approved': NotificationTone.positive,
+        'notifications/pr_changes_requested': NotificationTone.negative,
+        'notifications/pr_review_dismissed': NotificationTone.neutral,
+        'notifications/pr_checks_failed': NotificationTone.negative,
+        'notifications/pr_checks_recovered': NotificationTone.positive,
+      };
+      for (final MapEntry(key: method, value: tone) in tones.entries) {
+        expect(map(method, const {})!.tone, tone, reason: method);
       }
     });
   });
@@ -639,6 +682,33 @@ void main() {
           reason: '$method authored by me should be suppressed',
         );
       }
+    });
+
+    test('my own thread resolution is not announced back at me', () {
+      expect(
+        map(
+          'notifications/pr_thread_resolved',
+          const {'resolved_by_login': 'OctoCat', 'thread_id': 'PRRT_1'},
+          viewerLogins: {'octocat'},
+        ),
+        isNull,
+      );
+      expect(
+        map(
+          'notifications/pr_thread_resolved',
+          const {'resolved_by_login': 'teammate', 'thread_id': 'PRRT_1'},
+          viewerLogins: {'octocat'},
+        ),
+        isNotNull,
+      );
+      expect(
+        map(
+          'notifications/pr_thread_resolved',
+          const {'thread_id': 'PRRT_1'},
+          viewerLogins: {'octocat'},
+        ),
+        isNotNull,
+      );
     });
 
     test('the login match is case-insensitive', () {

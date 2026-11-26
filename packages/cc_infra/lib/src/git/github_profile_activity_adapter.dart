@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/github_profile_acti
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
+import 'package:cc_infra/src/network/github_graphql_client.dart';
 
 /// Builds one GitHub profile's workspace-scoped PR history and delivery metrics.
 ///
@@ -45,17 +46,45 @@ class GitHubProfileActivityAdapter {
       for (final repo in githubRepos)
         (owner: repo.remoteOwner, name: repo.remoteName),
     ];
-    final results = await Future.wait([
-      client.graphql.prCountsByAuthors(logins: authors, repos: coordinates),
-      client.graphql.searchProfilePullRequestNodes(
+    final chunks = GitHubGraphQLClient.buildProfileSearchChunks(
+      logins: authors,
+      repos: coordinates,
+    );
+    late final ({int open, int draft, int merged, int closed}) counts;
+    late final ({List<Map<String, dynamic>> nodes, bool truncated}) search;
+
+    if (chunks.length <= 1) {
+      final results = await Future.wait([
+        client.graphql.prCountsByAuthors(logins: authors, repos: coordinates),
+        client.graphql.searchProfilePullRequestNodes(
+          logins: authors,
+          repos: coordinates,
+          chunks: chunks,
+        ),
+      ]);
+      counts = results[0] as ({int open, int draft, int merged, int closed});
+      search =
+          results[1] as ({List<Map<String, dynamic>> nodes, bool truncated});
+    } else {
+      final countResult = await client.graphql.prCountsByAuthorChunks(
         logins: authors,
         repos: coordinates,
-      ),
-    ]);
-    final counts =
-        results[0] as ({int open, int draft, int merged, int closed});
-    final search =
-        results[1] as ({List<Map<String, dynamic>> nodes, bool truncated});
+      );
+      if (countResult.nonEmptyChunks.isEmpty) {
+        return GitHubProfileActivity.empty;
+      }
+      counts = (
+        open: countResult.open,
+        draft: countResult.draft,
+        merged: countResult.merged,
+        closed: countResult.closed,
+      );
+      search = await client.graphql.searchProfilePullRequestNodes(
+        logins: authors,
+        repos: coordinates,
+        chunks: countResult.nonEmptyChunks,
+      );
+    }
 
     final repoByName = {
       for (final repo in githubRepos) repo.fullName.toLowerCase(): repo,

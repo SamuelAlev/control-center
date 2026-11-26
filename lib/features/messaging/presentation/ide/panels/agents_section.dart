@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/providers/paused_runs_provider
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -305,73 +306,82 @@ class _AgentRow extends StatelessWidget {
 
     // GestureDetector wraps (rather than replaces) CcTappable because the
     // cc_ui primitive covers tap/long-press/keyboard but not right-click.
-    return GestureDetector(
-      onSecondaryTapDown: onSecondaryMenu == null
-          ? null
-          : (details) => onSecondaryMenu!(details.globalPosition),
-      child: CcTappable(
-        onPressed: onTap,
-        onLongPress: onSecondaryMenu == null
+    // From the keyboard the menu opens on Shift+F10 or the context-menu key,
+    // anchored at the row like a long-press.
+    final menu = onSecondaryMenu;
+    return Actions(
+      actions: {
+        _OpenMenuIntent: CallbackAction<_OpenMenuIntent>(
+          onInvoke: (_) => menu?.call(_rowCenter(context)),
+        ),
+      },
+      child: GestureDetector(
+        onSecondaryTapDown: menu == null
             ? null
-            : () => onSecondaryMenu!(_rowCenter(context)),
-        semanticLabel: '$displayLabel, ${visual.label}',
-        borderRadius: AppRadii.brSm,
-        // A flat hover wash instead of an ink ripple — the design system reports
-        // state through color, not motion.
-        builder: (context, states) => ColoredBox(
-          color: states.contains(WidgetState.hovered)
-              ? t.bgSecondaryHover
-              : const Color(0x00000000),
-          // The head of the guide line, painted across the row's *full* box
-          // (padding included) so it can run from the dot down to the row's
-          // bottom edge, which is exactly where the first child's connector
-          // bleeds up to. Without it the rail began a row-padding below the
-          // dot and read as floating rather than descending from this agent.
-          child: CustomPaint(
-            painter: hasChildren
-                ? _TrunkHeadPainter(
-                    color: _guideColor(t),
-                    dotCenterX: dotCenterX,
-                    isRtl: Directionality.of(context) == TextDirection.rtl,
-                  )
-                : null,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: leftPad,
-                end: AppSpacing.sm,
-                top: _rowPadY,
-                bottom: _rowPadY,
-              ),
-              child: Row(
-                children: [
-                  for (final descending in ancestorLines)
-                    _AncestorRail(descending: descending),
-                  if (!isParent) _TreeConnector(isLast: isLastChild),
-                  AgentStatusDot(visual: visual, size: _dotRadius * 2),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      displayLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isParent
-                            ? FontWeight.w600
-                            : CcTypography.regularWeight,
-                        color: isParent ? t.textPrimary : t.textSecondary,
+            : (details) => menu(details.globalPosition),
+        child: CcTappable(
+          onPressed: onTap,
+          onLongPress: menu == null ? null : () => menu(_rowCenter(context)),
+          shortcuts: menu == null ? null : _openMenuShortcuts,
+          semanticLabel: '$displayLabel, ${visual.label}',
+          borderRadius: AppRadii.brSm,
+          // A flat hover wash instead of an ink ripple — the design system reports
+          // state through color, not motion.
+          builder: (context, states) => ColoredBox(
+            color: states.contains(WidgetState.hovered)
+                ? t.bgSecondaryHover
+                : const Color(0x00000000),
+            // The head of the guide line, painted across the row's *full* box
+            // (padding included) so it can run from the dot down to the row's
+            // bottom edge, which is exactly where the first child's connector
+            // bleeds up to. Without it the rail began a row-padding below the
+            // dot and read as floating rather than descending from this agent.
+            child: CustomPaint(
+              painter: hasChildren
+                  ? _TrunkHeadPainter(
+                      color: _guideColor(t),
+                      dotCenterX: dotCenterX,
+                      isRtl: Directionality.of(context) == TextDirection.rtl,
+                    )
+                  : null,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  start: leftPad,
+                  end: AppSpacing.sm,
+                  top: _rowPadY,
+                  bottom: _rowPadY,
+                ),
+                child: Row(
+                  children: [
+                    for (final descending in ancestorLines)
+                      _AncestorRail(descending: descending),
+                    if (!isParent) _TreeConnector(isLast: isLastChild),
+                    AgentStatusDot(visual: visual, size: _dotRadius * 2),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        displayLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isParent
+                              ? FontWeight.w600
+                              : CcTypography.regularWeight,
+                          color: isParent ? t.textPrimary : t.textSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                  if (!isParent && node.turnCount > 0) ...[
-                    const SizedBox(width: AppSpacing.xs),
-                    _TurnBadge(count: node.turnCount),
+                    if (!isParent && node.turnCount > 0) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      _TurnBadge(count: node.turnCount),
+                    ],
+                    if (isParent && onPauseToggle != null) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      _PauseButton(paused: paused, onTap: onPauseToggle!),
+                    ],
                   ],
-                  if (isParent && onPauseToggle != null) ...[
-                    const SizedBox(width: AppSpacing.xs),
-                    _PauseButton(paused: paused, onTap: onPauseToggle!),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
@@ -380,6 +390,16 @@ class _AgentRow extends StatelessWidget {
     );
   }
 }
+
+/// Opens an agent row's context menu from the keyboard.
+class _OpenMenuIntent extends Intent {
+  const _OpenMenuIntent();
+}
+
+const Map<ShortcutActivator, Intent> _openMenuShortcuts = {
+  SingleActivator(LogicalKeyboardKey.f10, shift: true): _OpenMenuIntent(),
+  SingleActivator(LogicalKeyboardKey.contextMenu): _OpenMenuIntent(),
+};
 
 /// The row's own center in global coordinates — the anchor for a long-press
 /// menu, which (unlike a right-click) carries no pointer position.

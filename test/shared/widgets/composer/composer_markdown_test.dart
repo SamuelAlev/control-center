@@ -69,6 +69,39 @@ void main() {
     });
   });
 
+  group('backslash escapes', () {
+    test('an escaped delimiter is literal and its backslash is dimmed', () {
+      const source = r'large \*small\* text';
+      expect(withFlag(source, F.italic), isEmpty);
+      expect(withFlag(source, F.marker), r'\\');
+      expect(withFlag(r'\*\*not bold\*\*', F.bold), isEmpty);
+      expect(withFlag(r'\_no\_ and \~~no~~', F.italic | F.strike), isEmpty);
+      expect(withFlag(r'\[text](https://x.dev)', F.link), isEmpty);
+    });
+
+    test('an escaped delimiter cannot close emphasis', () {
+      expect(withFlag(r'*a\* b*', F.italic), r'a\* b');
+    });
+
+    test('an escaped backslash escapes nothing after it', () {
+      expect(withFlag(r'\\*italic*', F.italic), 'italic');
+    });
+
+    test('an escaped backtick opens no code span', () {
+      expect(withFlag(r'\`not code`', F.code), isEmpty);
+    });
+
+    test('a backslash inside a code span is a plain backslash', () {
+      const source = r'`a\` *italic*';
+      expect(withFlag(source, F.code), r'`a\`');
+      expect(withFlag(source, F.italic), 'italic');
+    });
+
+    test('a backslash before a letter or at the end is plain', () {
+      expect(scanComposerMarkdown(r'C:\dir\').every((f) => f == 0), isTrue);
+    });
+  });
+
   group('blocks', () {
     test('a heading dims its hashes and weights its text', () {
       const source = '## Plan';

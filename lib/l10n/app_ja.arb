@@ -474,9 +474,9 @@
   "calendarDisconnect": "切断",
   "calendarReconnect": "再接続",
   "calendarEmptyNoEvents": "この範囲に予定はありません",
-  "calendarStartRecording": "録音を開始",
-  "calendarStartRecordingAndLink": "録音を開始してリンク",
   "calendarJoinMeet": "会議に参加",
+  "calendarJoinAndRecord": "参加して録音",
+  "calendarRecordFailed": "録音を開始できませんでした",
   "calendarFromCalendar": "カレンダーから",
   "calendarLinkedMeeting": "リンク済みの会議",
   "calendarToday": "今日",
@@ -899,7 +899,6 @@
   "actions": "操作",
   "activate": "有効化",
   "activity": "アクティビティ",
-  "activityLabel": "アクティビティ",
   "activitySearchHint": "アクティビティを検索",
   "activityNoMatches": "フィルターに一致するアクティビティはありません",
   "activityPageRange": "{total}件中 {start}–{end}",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "テンプレート",
   "prTemplateDefault": "デフォルト",
   "addReviewers": "レビュアーを追加",
-  "addAssignees": "担当者を追加",
+
+  "reRequestReview": "レビューを再リクエスト",
+  "reRequestReviewFor": "{label} にレビューを再リクエスト",  "addAssignees": "担当者を追加",
   "addLabels": "ラベルを追加",
   "searchLabels": "ラベルを検索…",
   "noMatchingLabels": "一致するラベルがありません",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "簡単なメモを残してください。会議後にエージェントが展開します。",
   "meetingSpeakerMe": "自分",
   "meetingStatusRecording": "録音中",
+  "meetingStatusPaused": "一時停止中",
   "meetingStatusProcessing": "処理中",
   "meetingStatusDone": "完了",
   "meetingStatusFailed": "失敗",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{会議なし} =1{1件の会議} other{{count}件の会議}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "未完了アクション",
-  "meetingsLedgerDecisions": "決定事項",
   "meetingsLiveOpen": "録音を開く",
   "meetingTemplateShort": "テンプレート",
-  "meetingsStatThisWeek": "今週",
-  "meetingsStatRecorded": "録音済み",
   "meetingsFilterAll": "すべて",
   "meetingsFilterDone": "完了",
   "meetingsFilterProcessing": "処理中",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "拡張済み",
   "meetingsTranscribing": "文字起こしと要約中…",
   "meetingsOpenAction": "開く",
   "meetingsStopProcessing": "停止",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "ミーティングが始まっているようです。録音しますか？",
-  "meetingDetectedRecord": "録音",
   "meetingDetectedDismiss": "閉じる",
   "meetingAutoStopTitle": "ミーティングが終了したようです。録音を停止しますか？",
   "meetingAutoStopStop": "停止",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "未接続",
+  "deviceAwaitingApproval": "承認待ち",
   "profileSectionLabel": "プロフィール",
   "profileSectionDescription": "このワークスペースでチームと git コミット作者にどう見えるかです。空欄はアカウントの名前とメールを継承します。",
   "displayNameLabel": "表示名",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "実行中",
   "evalsStatusPassed": "合格",
   "evalsStatusFailed": "失敗",
-  "bannerMeetingJoin": "参加",
-  "bannerMeetingRecordAndLink": "録画してリンク",
   "bannerCalendarReconnect": "再接続",
   "bannerView": "表示",
   "soundscapeTitle": "サウンドスケープ",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "コメントを投稿できませんでした: {error}",
   "commentOnLine": "{line}行目",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "環境からのコピーを常に許可",
   "rigClipboardAlwaysCopyDescription": "任意の環境からのクリップボード内容を確認なしでこのデバイスに配置します。",
   "imageDiffBefore": "変更前",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "変更後",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "2 画面",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "スワイプ",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "差分",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% 変更",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "画像",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "ソース",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "削除",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} を未閲覧にしました",
   "prLineChangesSemantics": "追加された行: {additions}、削除された行: {deletions}",
   "closeTabNamed": "{tab} を閉じる",
-  "threadCommentCount": "{count, plural, =1{コメント 1 件} other{コメント {count} 件}}",
   "notificationAgentAwaitingInput": "対応が必要なエージェント",
   "notifyAgentAwaitingInput": "エージェントが承認・回答・有効な認証情報を必要とする場合、またはポリシーにより操作がブロックされた場合",
   "notificationAgentNeedsApproval": "{agent} が承認を求めています",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "管理者が判断",
   "improvementNotFound": "この提案は存在しないか、開けないスペースにあります。",
   "dispatchSettingsTitle": "スケジュール",
-  "dispatchSettingsSubtitle": "スケジュールと監視の上限、および誰も回答しないリクエストの扱い。",
   "dispatchLimitsLabel": "スケジュールの上限",
   "dispatchLimitsSubtitle": "エージェントが保持できるスケジュールと監視の数の上限、およびその既定値。",
   "dispatchLimitRange": "1〜{max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "上のタイムゾーン {zone} での時刻。",
   "dispatchDigestHourRange": "0〜23",
   "goalRecordCrumb": "ゴール",
-  "scheduleRecordCrumb": "スケジュール",
   "improvementRecordCrumb": "提案",
   "goalNodeNeedsAgent": "ゴールを進めるエージェントを選んでください。",
   "goalNodeNeedsObjective": "目的を入力してください。",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "ブラウザに表示されたコードではありません。{count, plural, other{残り{count}回です。}}",
   "mcpServerSignInEnded": "時間が経ちすぎた、拒否された、または誤ったコードが多すぎました。もう一度開始して、新しいサインインページを取得してください。",
   "mcpServerSignInStartAgain": "もう一度開始",
-  "mcpServerSignedIn": "{name}にサインインしました。"
+  "mcpServerSignedIn": "{name}にサインインしました。",
+  "ccLoading": "読み込み中",
+  "ccProgress": "進捗",
+  "ccBreadcrumb": "パンくずリスト",
+  "ccDialog": "ダイアログ",
+  "ccResize": "サイズ変更",
+  "ccUnverifiedLabel": "{label}（未検証）",
+  "prRowSelect": "{title} を選択",
+  "prTableSelectAll": "すべてのプルリクエストを選択",
+  "planVersionRewind": "バージョン {version} に戻す"
 }

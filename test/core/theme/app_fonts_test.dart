@@ -1,9 +1,13 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(CcFontRegistry.instance.resetForTests);
+  tearDown(CcFontRegistry.instance.resetForTests);
 
   group('AppFonts', () {
     group('ui', () {
@@ -47,10 +51,8 @@ void main() {
       });
     });
 
-    // A non-bundled family is resolved by CcFontRegistry: the style names the
-    // per-weight variant and the raw family plus the surface's bundled family
-    // follow as fallbacks. No fetch happens here — no byte loader is installed
-    // in tests and none is needed to assert the naming contract.
+    // A non-bundled family is resolved by CcFontRegistry under a single unified
+    // family name so child Text / TextSpan weights inherit real cuts.
     group('uiDynamic', () {
       test('applies the bundled UI family verbatim (no network)', () {
         final style = AppFonts.uiDynamic(AppFonts.uiFamily);
@@ -58,10 +60,16 @@ void main() {
         expect(style.fontFamilyFallback, isNull);
       });
 
-      test('names the per-weight variant of a selected family', () {
+      test('resolves bundled display-name alias Manrope verbatim', () {
+        final style = AppFonts.uiDynamic('Manrope');
+        expect(style.fontFamily, AppFonts.uiFamily);
+        expect(style.fontFamilyFallback, isNull);
+      });
+
+      test('uses the unified family name for a selected family', () {
         final style = AppFonts.uiDynamic('SomeCustomFont');
-        expect(style.fontFamily, 'SomeCustomFont 400');
-        expect(style.fontFamilyFallback, contains('SomeCustomFont'));
+        expect(style.fontFamily, 'SomeCustomFont');
+        expect(style.fontFamilyFallback, contains(AppFonts.uiFamily));
       });
 
       test('falls back to the bundled UI family while loading', () {
@@ -76,11 +84,8 @@ void main() {
           textStyle: baseStyle,
         );
         expect(style.fontSize, 24);
-        expect(
-          style.fontFamily,
-          'SomeCustomFont 600',
-          reason: 'the slot weight picks the cut, not a synthetic bold',
-        );
+        expect(style.fontFamily, 'SomeCustomFont');
+        expect(style.fontWeight, FontWeight.w600);
       });
     });
 
@@ -90,10 +95,15 @@ void main() {
         expect(style.fontFamily, AppFonts.codeFamily);
       });
 
-      test('names the per-weight variant of a selected family', () {
+      test('resolves bundled display-name alias Fira Code verbatim', () {
+        final style = AppFonts.codeDynamic('Fira Code');
+        expect(style.fontFamily, AppFonts.codeFamily);
+      });
+
+      test('uses the unified family name for a selected family', () {
         final style = AppFonts.codeDynamic('UnknownMono');
-        expect(style.fontFamily, 'UnknownMono 400');
-        expect(style.fontFamilyFallback, contains('UnknownMono'));
+        expect(style.fontFamily, 'UnknownMono');
+        expect(style.fontFamilyFallback, contains(AppFonts.codeFamily));
       });
 
       test('falls back to the bundled code family, never the UI one', () {
@@ -128,7 +138,7 @@ void main() {
           fontSize: 12,
           color: Colors.amber,
         );
-        expect(style.fontFamily, 'CustomCode 400');
+        expect(style.fontFamily, 'CustomCode');
         expect(style.fontSize, 12);
         expect(style.color, Colors.amber);
       });
@@ -170,7 +180,7 @@ void main() {
           fontStyle: FontStyle.normal,
           letterSpacing: -0.5,
         );
-        expect(style.fontFamily, 'CustomFont 600');
+        expect(style.fontFamily, 'CustomFont');
         expect(style.fontSize, 16);
         expect(style.fontWeight, FontWeight.w600);
         expect(style.color, Colors.teal);
@@ -233,21 +243,29 @@ void main() {
         expect(textTheme.bodyMedium?.fontFamily, AppFonts.uiFamily);
       });
 
-      testWidgets('resolves a custom family per slot weight', (tester) async {
-        // Per slot, not wholesale: a heading slot must name its own cut, or it
-        // would render as a synthetic bold of the regular one.
+      testWidgets('resolves a custom family uniformly and preloads standard cuts', (
+        tester,
+      ) async {
+        final requested = <(int, bool)>[];
+        CcFontRegistry.instance.install(
+          loader: ({required family, required weight, required italic}) async {
+            if (family == 'SomeCustomFont') {
+              requested.add((weight, italic));
+            }
+            return null;
+          },
+        );
         final base = ThemeData.light().textTheme;
         final textTheme = AppFonts.textThemeFor('SomeCustomFont', base);
+        await tester.pump();
+        expect(textTheme.bodyMedium?.fontFamily, 'SomeCustomFont');
+        expect(textTheme.titleLarge?.fontFamily, 'SomeCustomFont');
         expect(
-          textTheme.bodyMedium?.fontFamily,
-          'SomeCustomFont '
-          '${(base.bodyMedium?.fontWeight ?? FontWeight.w400).value}',
+          textTheme.bodyMedium?.fontFamilyFallback,
+          contains(AppFonts.uiFamily),
         );
-        expect(
-          textTheme.titleLarge?.fontFamily,
-          'SomeCustomFont '
-          '${(base.titleLarge?.fontWeight ?? FontWeight.w400).value}',
-        );
+        expect(requested, contains((700, false)));
+        expect(requested, containsAll(CcFontRegistry.standardCuts));
       });
     });
 

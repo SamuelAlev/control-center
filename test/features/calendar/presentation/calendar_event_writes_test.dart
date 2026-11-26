@@ -5,6 +5,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_event_write_provider.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
+import 'package:control_center/features/calendar/presentation/widgets/calendar_composer_layer.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_event_actions.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_event_composer.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_header_actions.dart';
@@ -12,6 +13,7 @@ import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +60,11 @@ class _Writes extends CalendarEventWriteService {
   Future<void> delete(CalendarEvent event) async => deleted.add(event);
 }
 
+class _ClosedComposer extends CalendarComposerNotifier {
+  @override
+  CalendarSlot? build() => null;
+}
+
 class _OpenComposer extends CalendarComposerNotifier {
   _OpenComposer(this._slot);
   final CalendarSlot _slot;
@@ -94,6 +101,7 @@ Future<GoRouter> _pump(
   required _Writes writes,
   List<CalendarSourceView>? calendars,
   TextDirection direction = TextDirection.ltr,
+  bool composerOpen = true,
 }) async {
   final router = GoRouter(
     initialLocation: calendarRoute(_ws),
@@ -115,7 +123,9 @@ Future<GoRouter> _pump(
         writableCalendarsProvider.overrideWithValue(calendars ?? [_primary]),
         allCalendarsProvider.overrideWithValue(calendars ?? [_primary]),
         calendarEventWriteServiceProvider.overrideWithValue(writes),
-        calendarComposerProvider.overrideWith(() => _OpenComposer(_slot)),
+        calendarComposerProvider.overrideWith(
+          () => composerOpen ? _OpenComposer(_slot) : _ClosedComposer(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -195,6 +205,40 @@ void main() {
 
       expect(find.text(l10n.calendarComposerSaveFailed), findsOneWidget);
       expect(find.text('Review'), findsOneWidget);
+    });
+
+    testWidgets('the new-event button puts the cursor in the title, and '
+        'Escape hands focus back to the button', (tester) async {
+      await _pump(
+        tester,
+        const CalendarComposerLayer(
+          child: Align(
+            alignment: AlignmentDirectional.topStart,
+            child: CalendarNewEventButton(),
+          ),
+        ),
+        writes: _Writes(),
+        composerOpen: false,
+      );
+
+      // The pressed button keeps focus; the card asks for it all the same.
+      await tester.tap(find.byType(CalendarNewEventButton));
+      await tester.pumpAndSettle();
+      final title = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcTextField>();
+      expect(title?.hintText, l10n.calendarComposerTitleHint);
+      tester.testTextInput.enterText('Design review');
+      await tester.pump();
+      expect(find.text('Design review'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(CalendarEventComposer), findsNothing);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<CalendarNewEventButton>(),
+        isNotNull,
+      );
     });
 
     testWidgets('lays out right to left', (tester) async {

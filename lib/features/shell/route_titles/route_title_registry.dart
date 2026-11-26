@@ -73,14 +73,6 @@ final Map<String, RouteTitleBuilder> routeTitleRegistry = {
       l10n.codeExecutionsTitle,
   codeExecutionRoute(workspaceIdParam, codeExecutionIdParam): (_, _, l10n) =>
       l10n.codeExecutionsTitle,
-  goalsRoute(workspaceIdParam): (_, _, l10n) => l10n.goalsTitle,
-  goalRoute(workspaceIdParam, ':recordId'): (_, _, l10n) => l10n.goalsTitle,
-  schedulesRoute(workspaceIdParam): (_, _, l10n) => l10n.schedulesTitle,
-  scheduleRoute(workspaceIdParam, ':recordId'): (_, _, l10n) =>
-      l10n.schedulesTitle,
-  improvementsRoute(workspaceIdParam): (_, _, l10n) => l10n.improvementsTitle,
-  improvementRoute(workspaceIdParam, ':recordId'): (_, _, l10n) =>
-      l10n.improvementsTitle,
   // Settings page titles are DERIVED from `kSettingsNav`, the single source of
   // truth for the settings IA, so a renamed or moved page cannot leave a stale
   // tab title behind. Pipelines/memory keep their own entries below because

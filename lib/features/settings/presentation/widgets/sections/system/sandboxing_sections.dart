@@ -47,7 +47,6 @@ class SandboxingSections extends ConsumerWidget {
                 label: l10n.sandboxingCardLabel,
                 value: isEnabled ? l10n.enabled : l10n.disabled,
                 tone: isEnabled ? CcStatusTone.positive : CcStatusTone.caution,
-                mono: false,
               ),
               SettingsFact(
                 // "In force", not "Backend": this is the RESOLVED backend, which
@@ -57,7 +56,6 @@ class SandboxingSections extends ConsumerWidget {
                 value: isEnabled
                     ? active.resolvedLabel(l10n)
                     : l10n.sandboxBackendNoneActive,
-                mono: false,
               ),
               if (platform != null)
                 SettingsFact(label: l10n.sandboxSummaryHost, value: platform),

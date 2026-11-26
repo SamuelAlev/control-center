@@ -648,6 +648,22 @@ void main() {
       expect(dto.isFileLevel, isTrue);
       expect(dto.line, isNull);
     });
+
+    test('an outdated comment carries is_outdated to the client DTO', () {
+      final c = PrCodeReviewComment(
+        id: 11,
+        body: 'outdated',
+        user: const PrUser(login: 'octocat', avatarUrl: ''),
+        path: 'lib/a.dart',
+        position: null,
+        createdAt: DateTime(2026, 11, 17),
+        originalLine: 27,
+        isOutdated: true,
+      );
+      final dto = PrCodeReviewCommentDto.fromJson(prCodeReviewCommentToWire(c));
+      expect(dto.isOutdated, isTrue);
+      expect(dto.originalLine, 27);
+    });
   });
 
   group('prCountsTowardNeedsMyReview', () {

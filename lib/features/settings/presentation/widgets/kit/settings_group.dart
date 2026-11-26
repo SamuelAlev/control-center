@@ -25,7 +25,7 @@ enum SettingsGroupSeparator {
 /// nesting.
 ///
 /// The heading is sentence-case semibold ink, deliberately *not* the card's
-/// uppercase tracked eyebrow: the card label stays the strongest thing in the
+/// tracked muted eyebrow: the card label stays the strongest thing in the
 /// card, and a group reads as a subdivision of it rather than a rival to it.
 class SettingsGroup extends StatelessWidget {
   /// Creates a [SettingsGroup].

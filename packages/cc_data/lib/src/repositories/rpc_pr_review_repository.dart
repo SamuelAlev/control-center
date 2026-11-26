@@ -238,6 +238,7 @@ class RpcPrReviewRepository implements PrReviewRepository {
         threadId: d.threadId,
         isResolved: d.isResolved,
         isFileLevel: d.isFileLevel,
+        isOutdated: d.isOutdated,
         reactions: _reactionsFromDto(d.reactions),
       );
 
@@ -985,6 +986,15 @@ class RpcPrReviewRepository implements PrReviewRepository {
   }) => _client.call(
     'pr_review.updatePullRequest',
     _coords({'pr_number': prNumber, 'title': ?title, 'body': ?body}),
+  );
+
+  @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
+  }) => _client.call(
+    'pr_review.postIssueComment',
+    _coords({'pr_number': prNumber, 'body': body}),
   );
 
   @override

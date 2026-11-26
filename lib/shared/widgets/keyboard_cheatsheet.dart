@@ -138,11 +138,11 @@ class _Section extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
           child: Text(
-            title.toUpperCase(),
+            title,
             style: CcTypography.caption.copyWith(
               color: ds.textTertiary,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.7,
+              letterSpacing: 0.2,
             ),
           ),
         ),

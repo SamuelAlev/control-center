@@ -265,5 +265,50 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       expect(closed, 1);
     });
+
+    testWidgets('opened from a node that keeps focus, it still takes focus, '
+        'and Escape hands focus back to that node', (tester) async {
+      final open = ValueNotifier(false);
+      addTearDown(open.dispose);
+      await tester.pumpWidget(
+        testWrap(
+          ValueListenableBuilder<bool>(
+            valueListenable: open,
+            builder: (context, shown, _) => Row(
+              children: [
+                CcButton(
+                  onPressed: () => open.value = true,
+                  child: const Text('node'),
+                ),
+                if (shown)
+                  SizedBox(
+                    width: kKnowledgeGraphInspectorWidth,
+                    height: 700,
+                    child: KnowledgeGraphInspector(
+                      nodeData: _factNode(_fact()),
+                      onClose: () => open.value = false,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('node'));
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<KnowledgeGraphInspector>(),
+        isNotNull,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(KnowledgeGraphInspector), findsNothing);
+      final focused = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcButton>();
+      expect((focused?.child as Text?)?.data, 'node');
+    });
   });
 }

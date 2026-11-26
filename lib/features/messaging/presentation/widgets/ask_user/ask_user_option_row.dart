@@ -171,7 +171,7 @@ class _TrailingMark extends StatelessWidget {
     final numeral = Text(
       '$index',
       style: CcFonts.code(
-        textStyle: CcTypography.monoNum.copyWith(
+        textStyle: CcTypography.numeric.copyWith(
           color: selected ? tokens.bgPrimary : tokens.textTertiary,
           fontWeight: CcTypography.semiboldWeight,
         ),

@@ -339,6 +339,7 @@ NotificationFrame prThreadResolvedFrame(PrThreadResolved event) => (
     'comment_id': ?event.commentId,
     'path': ?event.path,
     'line': ?event.line,
+    'resolved_by_login': ?event.resolvedByLogin,
     'for_user_id': ?event.forUserId,
   },
 );

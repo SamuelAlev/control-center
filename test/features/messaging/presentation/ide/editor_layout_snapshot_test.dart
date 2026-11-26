@@ -6,6 +6,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/agent_
 import 'package:control_center/features/messaging/presentation/ide/editor/artifact_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/context_explorer_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/editor_layout_snapshot.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/goal_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/plan_tab.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
@@ -557,6 +558,42 @@ void main() {
           '"agentId":"ag-1"}}]}}';
 
       expect(messagingLayoutCodec.decode(json), isNull);
+    });
+  });
+
+  group('goal restoration', () {
+    test('round-trips workspaceId and goalId while stripping openContractEditor', () {
+      final ctl = _single([
+        goalTab(
+          workspaceId: 'ws-1',
+          goalId: 'goal-9',
+          label: 'Ship release',
+          openContractEditor: true,
+        ),
+      ]);
+
+      final restored = messagingLayoutCodec.decode(
+        messagingLayoutCodec.encode(ctl),
+      )!;
+      final tab = _tabsOf(restored.root).single;
+
+      expect(tab.kind, MessagingTabKinds.goal);
+      expect(tab.dedupKey, 'goal:goal-9');
+      expect(tab.args['workspaceId'], 'ws-1');
+      expect(tab.args['goalId'], 'goal-9');
+      expect(tab.args.containsKey('openContractEditor'), isFalse);
+    });
+
+    test('a goal tab missing required args is dropped', () {
+      const missingGoal =
+          '{"v":2,"root":{"t":"leaf","tabs":['
+          '{"kind":"goal","label":"Ship","args":{"workspaceId":"ws-1"}}]}}';
+      const missingWorkspace =
+          '{"v":2,"root":{"t":"leaf","tabs":['
+          '{"kind":"goal","label":"Ship","args":{"goalId":"goal-9"}}]}}';
+
+      expect(messagingLayoutCodec.decode(missingGoal), isNull);
+      expect(messagingLayoutCodec.decode(missingWorkspace), isNull);
     });
   });
 }

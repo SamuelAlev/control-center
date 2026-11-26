@@ -291,6 +291,77 @@ void main() {
     });
   });
 
+  group('CcImageViewer keyboard', () {
+    testWidgets('takes focus from an opener, so + − 0 work at once', (
+      tester,
+    ) async {
+      final opener = FocusNode(debugLabel: 'opener');
+      addTearDown(opener.dispose);
+      final show = ValueNotifier(false);
+      addTearDown(show.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          Column(
+            children: [
+              Focus(focusNode: opener, child: const SizedBox(height: 10)),
+              ValueListenableBuilder<bool>(
+                valueListenable: show,
+                builder: (context, on, _) => on
+                    ? const SizedBox(
+                        width: 400,
+                        height: 300,
+                        child: CcImageViewer(labels: _labels, child: _sample),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      );
+      opener.requestFocus();
+      await tester.pump();
+      show.value = true;
+      await tester.pump();
+      await tester.pump();
+      expect(opener.hasFocus, isFalse);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+      await tester.pumpAndSettle();
+      expect(_scaleOf(tester), closeTo(1.5, 0.001));
+      await tester.sendKeyEvent(LogicalKeyboardKey.minus);
+      await tester.pumpAndSettle();
+      expect(_scaleOf(tester), closeTo(1.0, 0.001));
+      await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+      await tester.pumpAndSettle();
+      expect(_scaleOf(tester), 1.0);
+    });
+
+    testWidgets('arrows pan a zoomed image and do nothing at fit', (
+      tester,
+    ) async {
+      await _pumpViewer(tester);
+      await tester.pump();
+      final atFit = _translationOf(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(_translationOf(tester), atFit);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+      await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+      await tester.pumpAndSettle();
+      final zoomed = _translationOf(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      // The content moves left to show more of its right side.
+      expect(_translationOf(tester).dx, lessThan(zoomed.dx));
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(_translationOf(tester).dy, lessThan(zoomed.dy));
+    });
+  });
+
   group('CcExpandableImage', () {
     Widget host({bool enabled = true}) => ccTestApp(
       Navigator(

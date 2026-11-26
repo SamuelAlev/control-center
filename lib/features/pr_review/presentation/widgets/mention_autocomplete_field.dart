@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
+import 'package:control_center/shared/widgets/markdown/auto_wrap_selection_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,7 +11,7 @@ import 'package:material_ui/material_ui.dart';
 /// A multiline markdown text field with `@user` and `#issue` autocomplete.
 ///
 /// When the caret sits on an `@`/`#` token, a dropdown of candidates appears
-/// anchored under the field (`@` → assignable users, `#` → open issues/PRs,
+/// under that token's line (`@` → assignable users, `#` → open issues/PRs,
 /// debounced). Up/Down move the highlight, Enter/Tab accept, Esc dismisses.
 /// Modifier shortcuts (Cmd+Enter, Cmd+B) are left to ancestor handlers — only
 /// the bare navigation keys are intercepted while the menu is open.
@@ -66,6 +67,7 @@ class _MentionAutocompleteFieldState
     extends ConsumerState<MentionAutocompleteField> {
   final LayerLink _link = LayerLink();
   final OverlayPortalController _overlay = OverlayPortalController();
+  final GlobalKey _fieldKey = GlobalKey();
 
   Timer? _debounce;
   bool _active = false;
@@ -252,13 +254,16 @@ class _MentionAutocompleteFieldState
       _highlighted = 0;
     }
 
-    return CompositedTransformTarget(
-      link: _link,
-      child: OverlayPortal(
-        controller: _overlay,
-        overlayChildBuilder: _buildOverlay,
+    return OverlayPortal(
+      controller: _overlay,
+      overlayChildBuilder: _buildOverlay,
+      // The target sits inside the portal so the menu, which is laid out
+      // right after this child, can measure the caret against it.
+      child: CompositedTransformTarget(
+        link: _link,
         // Chromeless: the MarkdownEditor box owns the fill, border and ring.
         child: Padding(
+          key: _fieldKey,
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: CcTextField(
             controller: widget.controller,
@@ -271,6 +276,7 @@ class _MentionAutocompleteFieldState
               color: t.textPrimary,
               height: 1.5,
             ),
+            inputFormatters: const [AutoWrapSelectionFormatter()],
             hintText: widget.hintText,
             chromeless: true,
           ),
@@ -295,15 +301,16 @@ class _MentionAutocompleteFieldState
         ),
         CompositedTransformFollower(
           link: _link,
-          targetAnchor: AlignmentDirectional.bottomStart.resolve(
-            Directionality.of(context),
-          ),
-          followerAnchor: AlignmentDirectional.topStart.resolve(
-            Directionality.of(context),
-          ),
-          offset: const Offset(0, 4),
-          child: Align(
-            alignment: AlignmentDirectional.topStart,
+          // The follower shares the field's origin; the delegate then places
+          // the menu under the token's line, in the field's own coordinates.
+          child: CustomSingleChildLayout(
+            delegate: _MentionMenuLayout(
+              fieldKey: _fieldKey,
+              link: _link,
+              focusNode: widget.focusNode,
+              tokenStart: _tokenStart,
+              textDirection: Directionality.of(context),
+            ),
             child: Material(
               type: MaterialType.transparency,
               child: Container(
@@ -343,6 +350,71 @@ class _MentionAutocompleteFieldState
   }
 }
 
+/// Places the menu just under the line holding the `@`/`#` token, its start
+/// edge on the token, kept inside the field's width. Falls back to the
+/// field's bottom edge when the caret cannot be measured.
+class _MentionMenuLayout extends SingleChildLayoutDelegate {
+  _MentionMenuLayout({
+    required this.fieldKey,
+    required this.link,
+    required this.focusNode,
+    required this.tokenStart,
+    required this.textDirection,
+  });
+
+  final GlobalKey fieldKey;
+  final LayerLink link;
+  final FocusNode focusNode;
+  final int tokenStart;
+  final TextDirection textDirection;
+
+  static const double _gap = 4;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final field = fieldKey.currentContext?.findRenderObject();
+    // The field's size comes from the link: reading another render box's
+    // size during this layout is not allowed.
+    final fieldSize = link.leaderSize;
+    if (field is! RenderBox || fieldSize == null) {
+      return Offset.zero;
+    }
+    final isRtl = textDirection == TextDirection.rtl;
+    final maxX = (fieldSize.width - childSize.width).clamp(
+      0.0,
+      double.infinity,
+    );
+    // The focus node is attached to the field's inner Focus, a descendant
+    // of EditableText, so the state is an ancestor of its context.
+    final editable = focusNode.context
+        ?.findAncestorStateOfType<EditableTextState>();
+    if (editable == null || !editable.mounted || tokenStart < 0) {
+      return Offset(isRtl ? maxX : 0, fieldSize.height + _gap);
+    }
+    final render = editable.renderEditable;
+    final offset = tokenStart.clamp(0, editable.textEditingValue.text.length);
+    // The endpoint is the bottom of the token's line. (The caret-rect getter
+    // reads the editable's size, which this layout may not.)
+    final lineEnd = MatrixUtils.transformPoint(
+      render.getTransformTo(field),
+      render
+          .getEndpointsForSelection(TextSelection.collapsed(offset: offset))
+          .first
+          .point,
+    );
+    final x = isRtl ? lineEnd.dx - childSize.width : lineEnd.dx;
+    return Offset(x.clamp(0.0, maxX), lineEnd.dy + _gap);
+  }
+
+  // The caret moves with every edit and the overlay only rebuilds on one.
+  @override
+  bool shouldRelayout(_MentionMenuLayout oldDelegate) => true;
+}
+
 class _MentionItem {
   const _MentionItem({
     required this.insertText,
@@ -377,10 +449,18 @@ class _MentionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        color: selected ? tokens.bgPrimaryHover : Colors.transparent,
+    // The field keeps focus and drives the list with its arrow keys, so the
+    // rows are never Tab stops of their own.
+    return CcTappable(
+      onPressed: onTap,
+      canRequestFocus: false,
+      semanticSelected: selected,
+      builder: (context, states) => Container(
+        color: selected
+            ? tokens.bgPrimaryHover
+            : states.contains(WidgetState.hovered)
+            ? tokens.hover
+            : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [

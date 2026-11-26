@@ -11,6 +11,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -376,6 +377,56 @@ void main() {
     // The classic flat tile renders instead: job name + expansion chevron.
     expect(find.text('Build'), findsOneWidget);
     expect(find.byIcon(AppIcons.chevronDown), findsOneWidget);
+  });
+
+  testWidgets('a flat job row announces its expanded state on the toggle', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final checks = [
+      _check(
+        name: 'Build',
+        status: CheckRunStatus.completed,
+        conclusion: CheckRunConclusion.success,
+        jobId: 101,
+        workflowRunId: 900,
+        completedAt: DateTime(2024, 6, 15, 10),
+      ),
+    ];
+    await tester.pumpWidget(
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+        overrides: [
+          prWorkflowGraphProvider.overrideWith((ref, key) async => null),
+        ],
+      ),
+    );
+    await _expandWorkflow(tester);
+
+    final toggle = find.descendant(
+      of: find.byWidgetPredicate(
+        (w) => w is CcTappable && w.semanticLabel == 'Build',
+      ),
+      matching: find.byType(Icon),
+    );
+    expect(
+      tester.getSemantics(toggle),
+      isSemantics(
+        isButton: true,
+        label: 'Build',
+        hasExpandedState: true,
+        isExpanded: false,
+      ),
+    );
+    Focus.of(tester.element(toggle)).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(
+      tester.getSemantics(toggle),
+      isSemantics(hasExpandedState: true, isExpanded: true),
+    );
+    handle.dispose();
   });
 
   testWidgets('accordion list padding is 24px on both sides', (tester) async {

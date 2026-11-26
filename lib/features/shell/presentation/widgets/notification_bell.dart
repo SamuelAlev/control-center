@@ -167,11 +167,10 @@ class _PanelHeader extends StatelessWidget {
         children: [
           Text(
             l10n.notificationsTitle,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: t.textPrimary,
-            ),
+            // ignore: lines_longer_than_80_chars
+            textHeightBehavior: const TextHeightBehavior(applyHeightToFirstAscent: false, applyHeightToLastDescent: false),
+            // ignore: lines_longer_than_80_chars
+            style: CcTypography.body.copyWith(fontWeight: CcTypography.semiboldWeight, height: 1.0, color: t.textPrimary),
           ),
           if (unread > 0) ...[
             const SizedBox(width: AppSpacing.xs),
@@ -253,7 +252,7 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
     final l10n = AppLocalizations.of(context);
     final entry = widget.entry;
     final n = entry.notification;
-    final accent = _colorFor(n.category, t);
+    final accent = _colorFor(n, t);
     final unread = !entry.read;
     final actions = ref.read(notificationCenterActionsProvider);
 
@@ -335,7 +334,7 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _CategoryIcon(
-                    category: n.category,
+                    icon: _iconFor(n),
                     color: accent,
                     unread: unread,
                   ),
@@ -525,12 +524,12 @@ class _SlidingTimestamp extends StatelessWidget {
 /// The category glyph in a tinted plate — the row's fastest "what is this".
 class _CategoryIcon extends StatelessWidget {
   const _CategoryIcon({
-    required this.category,
+    required this.icon,
     required this.color,
     required this.unread,
   });
 
-  final NotificationCategory category;
+  final IconData icon;
   final Color color;
   final bool unread;
 
@@ -547,7 +546,7 @@ class _CategoryIcon extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Icon(
-        _iconFor(category),
+        icon,
         size: 14,
         color: unread ? color : color.withValues(alpha: 0.7),
       ),
@@ -555,7 +554,21 @@ class _CategoryIcon extends StatelessWidget {
   }
 }
 
-IconData _iconFor(NotificationCategory category) => switch (category) {
+/// The glyph for [n]: its category's, unless the event's tone contradicts it
+/// (a check mark on "changes requested" reads as the opposite of the news).
+IconData _iconFor(AppNotification n) => switch ((n.category, n.tone)) {
+  (NotificationCategory.prMergeReadiness, NotificationTone.negative) =>
+    AppIcons.circleSlash,
+  (NotificationCategory.prReviewDecision, NotificationTone.negative) =>
+    AppIcons.fileDiff,
+  (NotificationCategory.prReviewDecision, NotificationTone.neutral) =>
+    AppIcons.undo2,
+  (NotificationCategory.prChecksStatus, NotificationTone.positive) =>
+    AppIcons.circleCheck,
+  _ => _categoryIcon(n.category),
+};
+
+IconData _categoryIcon(NotificationCategory category) => switch (category) {
   NotificationCategory.agentRunCompleted => AppIcons.bot,
   NotificationCategory.agentAwaitingInput => AppIcons.messageCircleQuestion,
   NotificationCategory.pullRequestPublished => AppIcons.gitPullRequest,
@@ -575,13 +588,22 @@ IconData _iconFor(NotificationCategory category) => switch (category) {
   NotificationCategory.rigStatusChanged => AppIcons.monitor,
 };
 
-/// The category's color, read from design tokens (never a literal) so both
-/// themes and the contrast floor hold.
+/// The row's color, read from design tokens (never a literal) so both themes
+/// and the contrast floor hold.
 ///
 /// Semantics over decoration: green = it landed, red = it needs you, amber =
 /// it is about to happen, purple = merged (the forge's own convention), brand
-/// = it is addressed to you.
-Color _colorFor(NotificationCategory category, DesignSystemTokens t) =>
+/// = it is addressed to you. An event's own tone wins over its category: a
+/// category such as merge readiness announces both outcomes, and "no longer
+/// mergeable" must not wear the color of "merged".
+Color _colorFor(AppNotification n, DesignSystemTokens t) => switch (n.tone) {
+  NotificationTone.positive => t.fgSuccessPrimary,
+  NotificationTone.negative => t.fgErrorPrimary,
+  NotificationTone.neutral => t.fgSecondary,
+  null => _categoryColor(n.category, t),
+};
+
+Color _categoryColor(NotificationCategory category, DesignSystemTokens t) =>
     switch (category) {
       NotificationCategory.prMerged ||
       NotificationCategory.prMergeReadiness => t.fgMergedPrimary,

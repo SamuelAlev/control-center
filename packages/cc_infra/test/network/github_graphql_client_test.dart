@@ -590,9 +590,10 @@ void main() {
     });
 
     test('a page failing leaves only its own repo unread', () async {
-      var call = 0;
       final b = build(
-        (r) => call++ == 0 ? _error(r, 504) : _json(r, rollup('FAILURE')),
+        (r) => (_bodyOf(r)['query'] as String).contains('name: "a"')
+            ? _error(r, 504)
+            : _json(r, rollup('FAILURE')),
       );
       final res = await b.client.fetchOpenPullRequestsChecks(const [
         (owner: 'o', name: 'a'),
@@ -1647,9 +1648,511 @@ void main() {
         expect(result.truncated, isFalse);
         expect(result.nodes, hasLength(1));
         expect(result.nodes.single['number'], 42);
-        final variables = _bodyOf(b.fake.requests.single)['variables'] as Map;
+        final body = _bodyOf(b.fake.requests.single);
+        final query = body['query'] as String;
+        expect(query, contains('reviews(first: 5)'));
+        expect(query, isNot(contains('closedAt')));
+        expect(query, isNot(contains('reviews(first: 5) {\n                totalCount')));
+        expect(query, isNot(contains('reviews(first: 25)')));
+        final variables = body['variables'] as Map;
         expect(variables['q'], contains('author:ada'));
         expect(variables['q'], contains('repo:acme/app'));
+      },
+    );
+
+    test(
+      'caps search at 2 waves and marks truncated when hasNextPage remains',
+      () async {
+        var page = 0;
+        final b = build((r) {
+          page++;
+          return _json(r, {
+            'data': {
+              'search': {
+                'issueCount': 500,
+                'nodes': [
+                  for (var i = 0; i < 3; i++)
+                    {
+                      'number': page * 10 + i,
+                      'title': 'PR $page-$i',
+                      'state': 'MERGED',
+                      'repository': {'nameWithOwner': 'acme/app'},
+                    },
+                ],
+                'pageInfo': {'hasNextPage': true, 'endCursor': 'cursor-$page'},
+              },
+            },
+          });
+        });
+
+        final result = await b.client.searchProfilePullRequestNodes(
+          logins: const ['ada'],
+          repos: const [(owner: 'acme', name: 'app')],
+          maxResults: 5,
+        );
+
+        expect(b.fake.requests, hasLength(2));
+        expect(result.nodes, hasLength(5));
+        expect(result.truncated, isTrue);
+      },
+    );
+
+    test(
+      'queries all provided chunks so later repo chunks are not starved',
+      () async {
+        final repos = [
+          for (var i = 0; i < 11; i++) (owner: 'acme', name: 'repo-$i'),
+        ];
+        final b = build((r) {
+          final q = (_bodyOf(r)['variables'] as Map)['q'] as String;
+          final fromSecondChunk = q.contains('repo:acme/repo-10');
+          return _json(r, {
+            'data': {
+              'search': {
+                'issueCount': 1,
+                'nodes': [
+                  {
+                    'number': fromSecondChunk ? 202 : 101,
+                    'title': fromSecondChunk ? 'Late chunk' : 'Early chunk',
+                    'state': 'OPEN',
+                    'repository': {
+                      'nameWithOwner':
+                          fromSecondChunk ? 'acme/repo-10' : 'acme/repo-0',
+                    },
+                  },
+                ],
+                'pageInfo': {'hasNextPage': false},
+              },
+            },
+          });
+        });
+
+        final result = await b.client.searchProfilePullRequestNodes(
+          logins: const ['ada'],
+          repos: repos,
+        );
+
+        expect(b.fake.requests, hasLength(2));
+        expect(result.truncated, isFalse);
+        expect(
+          result.nodes.map((n) => n['number']).toSet(),
+          equals({101, 202}),
+        );
+      },
+    );
+
+    test('halves page size on 504 gateway timeout and retries', () async {
+      final askedSizes = <int>[];
+      final b = build((r) {
+        final first = (_bodyOf(r)['variables'] as Map)['first'] as int;
+        askedSizes.add(first);
+        if (askedSizes.length == 1) {
+          return _error(r, 504, message: 'Gateway timeout');
+        }
+        return _json(r, {
+          'data': {
+            'search': {
+              'issueCount': 1,
+              'nodes': [
+                {
+                  'number': 7,
+                  'title': 'Recovered PR',
+                  'state': 'OPEN',
+                  'repository': {'nameWithOwner': 'acme/app'},
+                },
+              ],
+              'pageInfo': {'hasNextPage': false},
+            },
+          },
+        });
+      });
+
+      final result = await b.client.searchProfilePullRequestNodes(
+        logins: const ['ada'],
+        repos: const [(owner: 'acme', name: 'app')],
+      );
+
+      expect(askedSizes, [100, 50]);
+      expect(result.nodes, hasLength(1));
+      expect(result.nodes.single['number'], 7);
+    });
+
+    test(
+      'prCountsByAuthorChunks chunks repos at 10, sums, and filters empty chunks',
+      () async {
+        final repos = [
+          for (var i = 0; i < 11; i++) (owner: 'acme', name: 'repo-$i'),
+        ];
+        final b = build((r) {
+          final openQuery = (_bodyOf(r)['variables'] as Map)['open'] as String;
+          final isSecondChunk = openQuery.contains('repo:acme/repo-10');
+          return _json(r, {
+            'data': {
+              'open': {'issueCount': isSecondChunk ? 0 : 2},
+              'draft': {'issueCount': isSecondChunk ? 0 : 1},
+              'merged': {'issueCount': isSecondChunk ? 0 : 4},
+              'closed': {'issueCount': isSecondChunk ? 0 : 3},
+            },
+          });
+        });
+
+        final counts = await b.client.prCountsByAuthorChunks(
+          logins: const ['ada'],
+          repos: repos,
+        );
+
+        expect(b.fake.requests, hasLength(2));
+        expect(counts.open, 2);
+        expect(counts.draft, 1);
+        expect(counts.merged, 4);
+        expect(counts.closed, 3);
+        expect(counts.nonEmptyChunks, hasLength(1));
+        expect(counts.nonEmptyChunks.single.repos, hasLength(10));
+      },
+    );
+  });
+
+  group('GitHubGraphQLClient.listReviewThreads', () {
+    test('requests resolvedBy { login } and parses resolvedByLogin', () async {
+      final b = build(
+        (r) => _json(r, {
+          'data': {
+            'repository': {
+              'pullRequest': {
+                'reviewThreads': {
+                  'pageInfo': {'hasNextPage': false},
+                  'nodes': [
+                    {
+                      'id': 'PRRT_1',
+                      'isResolved': true,
+                      'isOutdated': false,
+                      'resolvedBy': {'login': 'teammate'},
+                      'comments': {
+                        'nodes': [
+                          {'databaseId': 101},
+                        ],
+                      },
+                    },
+                    {
+                      'id': 'PRRT_2',
+                      'isResolved': true,
+                      'isOutdated': false,
+                      'resolvedBy': null,
+                      'comments': {
+                        'nodes': [
+                          {'databaseId': 102},
+                        ],
+                      },
+                    },
+                    {
+                      'id': 'PRRT_3',
+                      'isResolved': true,
+                      'isOutdated': false,
+                      'resolvedBy': {'login': ''},
+                      'comments': {
+                        'nodes': [
+                          {'databaseId': 103},
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      final threads = await b.client.listReviewThreads(
+        owner: 'acme',
+        repo: 'app',
+        number: 42,
+      );
+
+      final query = _bodyOf(b.fake.requests.single)['query'] as String;
+      expect(query, contains('resolvedBy { login }'));
+      expect(threads, hasLength(3));
+      expect(threads[0].id, 'PRRT_1');
+      expect(threads[0].resolvedByLogin, 'teammate');
+      expect(threads[1].id, 'PRRT_2');
+      expect(threads[1].resolvedByLogin, isNull);
+      expect(threads[2].id, 'PRRT_3');
+      expect(threads[2].resolvedByLogin, isNull);
+    });
+  });
+
+  group('GitHubGraphQLClient adaptive batching & surgical PR fetch', () {
+    test(
+      'fetchOpenPullRequestsBatch paginates first: 50 up to 100 and fires onPage',
+      () async {
+        final pagesSeen = <(int, List<int>)>[];
+        var call = 0;
+        final b = build((r) {
+          call++;
+          final q = _bodyOf(r)['query'] as String;
+          expect(q, contains('first: 50'));
+          if (call == 1) {
+            expect(q, isNot(contains('after:')));
+            return _json(r, {
+              'data': {
+                'r0': {
+                  'pullRequests': {
+                    'totalCount': 75,
+                    'pageInfo': {'hasNextPage': true, 'endCursor': 'c1'},
+                    'nodes': [
+                      for (var i = 1; i <= 50; i++) {'number': i, 'id': 'ID_$i'},
+                    ],
+                  },
+                },
+              },
+            });
+          }
+          expect(q, contains('after: "c1"'));
+          return _json(r, {
+            'data': {
+              'r0': {
+                'pullRequests': {
+                  'totalCount': 75,
+                  'pageInfo': {'hasNextPage': false, 'endCursor': 'c2'},
+                  'nodes': [
+                    for (var i = 51; i <= 75; i++) {'number': i, 'id': 'ID_$i'},
+                  ],
+                },
+              },
+            },
+          });
+        });
+
+        final res = await b.client.fetchOpenPullRequestsBatch(
+          const [(owner: 'o', name: 'a')],
+          onPage: (idx, nodes) {
+            pagesSeen.add((
+              idx,
+              [for (final n in nodes) n['number'] as int],
+            ));
+          },
+        );
+
+        expect(b.fake.requests, hasLength(2));
+        expect(res.byIndex[0]!.nodes, hasLength(75));
+        expect(res.byIndex[0]!.totalCount, 75);
+        expect(res.byIndex[0]!.hasMore, isFalse);
+        expect(pagesSeen, hasLength(2));
+        expect(pagesSeen[0].$2, hasLength(50));
+        expect(pagesSeen[1].$2, hasLength(25));
+      },
+    );
+
+    test(
+      'fetchOpenPullRequestsBatch halves page size on 504 and recovers from '
+      'the same cursor',
+      () async {
+        final askedSizes = <int>[];
+        final cursors = <String?>[];
+        final b = build((r) {
+          final q = _bodyOf(r)['query'] as String;
+          final size = int.parse(
+            RegExp(r'first: (\d+)').firstMatch(q)!.group(1)!,
+          );
+          final cursor = RegExp(r'after: "([^"]+)"').firstMatch(q)?.group(1);
+          askedSizes.add(size);
+          cursors.add(cursor);
+          if (size >= 50) {
+            return _error(r, 504);
+          }
+          if (cursor == null) {
+            return _json(r, {
+              'data': {
+                'r0': {
+                  'pullRequests': {
+                    'totalCount': 30,
+                    'pageInfo': {'hasNextPage': true, 'endCursor': 'c_half'},
+                    'nodes': [
+                      for (var i = 1; i <= 25; i++) {'number': i},
+                    ],
+                  },
+                },
+              },
+            });
+          }
+          return _json(r, {
+            'data': {
+              'r0': {
+                'pullRequests': {
+                  'totalCount': 30,
+                  'pageInfo': {'hasNextPage': false, 'endCursor': 'c_end'},
+                  'nodes': [
+                    for (var i = 26; i <= 30; i++) {'number': i},
+                  ],
+                },
+              },
+            },
+          });
+        });
+
+        final res = await b.client.fetchOpenPullRequestsBatch(
+          const [(owner: 'o', name: 'busy')],
+        );
+
+        expect(askedSizes, [50, 25, 25]);
+        expect(cursors, [null, null, 'c_half']);
+        expect(res.byIndex[0]!.nodes.map((n) => n['number']), [
+          for (var i = 1; i <= 30; i++) i,
+        ]);
+      },
+    );
+
+    test('fetchOpenPullRequestsBatch does NOT split on 403/401', () async {
+      final b = build((r) => _error(r, 403));
+      await expectLater(
+        b.client.fetchOpenPullRequestsBatch(const [(owner: 'o', name: 'a')]),
+        throwsA(isA<NetworkException>()),
+      );
+      expect(b.fake.requests, hasLength(1));
+    });
+
+    test(
+      'fetchPullRequestStatusByIds chunks by 20 and binary-splits 502 chunks '
+      'around a pathological PR',
+      () async {
+        final b = build((r) {
+          final vars = _bodyOf(r)['variables'] as Map<String, dynamic>;
+          final ids = (vars['ids'] as List).cast<String>();
+          expect(ids.length, lessThanOrEqualTo(20));
+          // ID_7 always 504s on GitHub's side; any batch containing it fails.
+          if (ids.contains('ID_7')) {
+            return _error(r, 502);
+          }
+          return _json(r, {
+            'data': {
+              'nodes': [
+                for (final id in ids)
+                  {
+                    'number': int.parse(id.split('_').last),
+                    'reviewDecision': 'APPROVED',
+                    'lastCommit': {
+                      'nodes': [
+                        {
+                          'commit': {
+                            'statusCheckRollup': {'state': 'SUCCESS'},
+                          },
+                        },
+                      ],
+                    },
+                  },
+              ],
+            },
+          });
+        });
+
+        final ids = [for (var i = 1; i <= 25; i++) 'ID_$i'];
+        final res = await b.client.fetchPullRequestStatusByIds(ids);
+
+        // Every PR except the poisoned ID_7 was recovered!
+        expect(res.keys, unorderedEquals([for (var i = 1; i <= 25; i++) if (i != 7) i]));
+        expect(res[1]!.checksRollup, 'SUCCESS');
+        expect(res[1]!.reviewDecision, 'APPROVED');
+      },
+    );
+
+    test('fetchPullRequestStatusByIds throws when every chunk fails', () async {
+      final b = build((r) => _error(r, 504));
+      await expectLater(
+        b.client.fetchPullRequestStatusByIds(const ['ID_1', 'ID_2']),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+
+    test('fetchPullRequestStatusByIds empty input makes 0 requests', () async {
+      final b = build((r) => _json(r, {}));
+      expect(await b.client.fetchPullRequestStatusByIds(const []), isEmpty);
+      expect(b.fake.requests, isEmpty);
+    });
+
+    test('fetchOpenPullRequestsChecks halves page size on 504', () async {
+      final askedSizes = <int>[];
+      final b = build((r) {
+        final q = _bodyOf(r)['query'] as String;
+        final size = int.parse(
+          RegExp(r'first: (\d+)').firstMatch(q)!.group(1)!,
+        );
+        askedSizes.add(size);
+        if (size >= 25) {
+          return _error(r, 504);
+        }
+        return _json(r, {
+          'data': {
+            'r0': {
+              'pullRequests': {
+                'pageInfo': {'hasNextPage': false, 'endCursor': 'end'},
+                'nodes': [
+                  {
+                    'number': 1,
+                    'reviewDecision': 'CHANGES_REQUESTED',
+                    'lastCommit': {
+                      'nodes': [
+                        {
+                          'commit': {
+                            'statusCheckRollup': {'state': 'FAILURE'},
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        });
+      });
+
+      final res = await b.client.fetchOpenPullRequestsChecks(
+        const [(owner: 'o', name: 'a')],
+      );
+      expect(askedSizes, [25, 12]);
+      expect(res[0]![1]!.checksRollup, 'FAILURE');
+      expect(res[0]![1]!.reviewDecision, 'CHANGES_REQUESTED');
+    });
+
+    test(
+      'fetchPullRequestsByNumbers fetches aliased nodes with state & checks',
+      () async {
+        final b = build(
+          (r) => _json(r, {
+            'data': {
+              'repository': {
+                'p0': {
+                  'number': 10,
+                  'title': 'Open PR',
+                  'state': 'OPEN',
+                  'reviewDecision': 'APPROVED',
+                },
+                'p1': null, // deleted or non-existent PR
+                'p2': {
+                  'number': 12,
+                  'title': 'Merged PR',
+                  'state': 'MERGED',
+                  'mergedAt': '2026-11-25T10:00:00Z',
+                },
+              },
+            },
+          }),
+        );
+
+        final res = await b.client.fetchPullRequestsByNumbers(
+          owner: 'o',
+          repo: 'r',
+          numbers: const [10, 11, 12, 10],
+        );
+
+        expect(b.fake.requests, hasLength(1));
+        final q = _bodyOf(b.fake.requests.single)['query'] as String;
+        expect(q, contains('p0: pullRequest(number: 10)'));
+        expect(q, contains('p1: pullRequest(number: 11)'));
+        expect(q, contains('p2: pullRequest(number: 12)'));
+        expect(res.keys, unorderedEquals([10, 12]));
+        expect(res[10]!['state'], 'OPEN');
+        expect(res[12]!['state'], 'MERGED');
       },
     );
   });

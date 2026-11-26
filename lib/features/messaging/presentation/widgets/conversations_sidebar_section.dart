@@ -152,7 +152,7 @@ class _ConversationsSidebarSectionState
   }
 }
 
-/// A labelled sidebar section: a branded mono-eyebrow header carrying a
+/// A labelled sidebar section: an eyebrow header carrying a
 /// trailing [action], above its [children].
 ///
 /// When [collapsible], the label and a rotating chevron toggle the section
@@ -194,12 +194,9 @@ class _SidebarSectionState extends State<_SidebarSection> {
   Widget build(BuildContext context) {
     final color = context.designSystem?.textTertiary;
     final expanded = !widget.collapsible || _expanded;
-    final labelStyle = CcFonts.code(
-      textStyle: CcTypography.label,
-      family: context.ccTheme?.monoFontFamily,
-    ).copyWith(color: color);
+    final labelStyle = CcTypography.label.copyWith(color: color);
     final labelText = Text(
-      widget.label.toUpperCase(),
+      widget.label,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: labelStyle,

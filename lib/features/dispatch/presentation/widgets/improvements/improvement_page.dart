@@ -31,7 +31,7 @@ class ImprovementPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     void back() => ref
         .read(navigationHistoryProvider.notifier)
-        .backOr(improvementsRoute(workspaceId));
+        .backOr(memoryImprovementsRoute(workspaceId));
     return WorkRecordStates<ImprovementProposalView>(
       value: ref.watch(
         improvementViewProvider((workspaceId: workspaceId, id: proposalId)),

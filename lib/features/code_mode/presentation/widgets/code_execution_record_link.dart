@@ -150,9 +150,10 @@ class CodeExecutionRecordLinkText extends StatelessWidget {
       color: t.textSecondary,
       decoration: TextDecoration.none,
     );
+    // Opens the record page: a link, named by its own text.
     return CcTappable(
       onPressed: onPressed,
-      semanticLabel: l10n.codeExecutionOpenRecord,
+      semanticButton: false,
       builder: (context, states) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [

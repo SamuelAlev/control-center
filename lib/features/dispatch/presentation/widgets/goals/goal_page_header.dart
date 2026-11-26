@@ -19,20 +19,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// The top of a goal's page: back, the objective's first line, its status,
+/// The top of a goal's page: the objective's first line, its status,
 /// who pursues it and where, and the controls the viewer has (pause, resume,
 /// stop, approve completion). Resume and raising the budget follow the
 /// server's `can_resume`; approve shows only while the goal waits for
 /// review, and asks first.
 class GoalPageHeader extends ConsumerWidget {
   /// Creates the header.
-  const GoalPageHeader({super.key, required this.view, required this.onBack});
+  const GoalPageHeader({super.key, required this.view});
 
   /// The goal as this viewer sees it.
   final GoalRunView view;
-
-  /// Leaves the page.
-  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,14 +54,6 @@ class GoalPageHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CcButton(
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          icon: AppIcons.arrowLeft,
-          onPressed: onBack,
-          child: Text(l10n.goalsBackToList),
-        ),
-        const SizedBox(height: AppSpacing.sm),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

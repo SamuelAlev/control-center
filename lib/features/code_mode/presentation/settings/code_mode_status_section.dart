@@ -40,7 +40,6 @@ class CodeModeStatusSection extends StatelessWidget {
             tone: status.available
                 ? CcStatusTone.positive
                 : CcStatusTone.negative,
-            mono: false,
           ),
           if (status.available && version != null && version.isNotEmpty)
             SettingsFact(label: l10n.codeModeFactRunner, value: version),

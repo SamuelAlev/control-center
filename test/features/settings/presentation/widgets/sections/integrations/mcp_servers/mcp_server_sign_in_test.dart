@@ -183,6 +183,19 @@ void main() {
     expect(opened.last, 'https://auth.example.com/authorize?state=s2');
     expect(find.text(l10n.mcpServerSignInEnded), findsNothing);
     expect(codeField(), findsOneWidget);
+    // The pressed button stays in its slot (now Finish) and held focus; the
+    // new code goes straight into the field anyway.
+    expect(
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>(),
+      isNotNull,
+    );
+    tester.testTextInput.enterText('K7Q2');
+    await tester.pump();
+    expect(
+      tester.widget<EditableText>(codeField()).controller.text,
+      'K7Q2',
+    );
   });
 
   testWidgets('a refused start is toasted and opens nothing', (tester) async {

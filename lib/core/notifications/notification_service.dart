@@ -128,8 +128,11 @@ class LocalNotificationService implements NotificationPort {
         title: notification.title,
         body: notification.body,
         route: notification.route,
-        timeSensitive: wait != null,
+        // A wait blocks an agent and a meeting has a start time: both may
+        // break through a Focus the operator allowed them in.
+        timeSensitive: wait != null || notification.meeting != null,
         approvalId: wait != null && wait.approvable ? wait.id : null,
+        meeting: notification.meeting,
       );
     } on Object catch (e) {
       AppLog.e('notifications', 'Failed to show notification: $e');

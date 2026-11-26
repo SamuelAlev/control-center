@@ -5,7 +5,8 @@ import 'package:widgetbook/widgetbook.dart';
 
 part 'cc_color_tag.stories.g.dart';
 
-/// Stories for [CcColorTag] — a read-only forge-colored label chip.
+/// Stories for [CcColorTag] — a forge-colored label chip with an optional
+/// color-matched ghost remove button.
 const _path = '[Components]/Containers';
 
 const component = ComponentMeta(name: 'CcColorTag', path: _path);
@@ -20,6 +21,8 @@ final $GitHubColors = _Story(
   name: 'GitHub colors',
   args: _Args.fixed(preview: ccColorTagGitHubColorsStory),
 );
+
+final $Removable = _Story(args: _Args.fixed(preview: ccColorTagRemovableStory));
 
 /// GitHub-style labels across light, mid and dark fills so ink contrast is
 /// visible (yellow/cyan get dark type; red/blue get white).
@@ -69,6 +72,36 @@ Widget ccColorTagFallbackStory(BuildContext context) {
       children: [
         CcColorTag(label: 'needs-review'),
         CcColorTag(label: 'not-a-color', color: 'zzzzzz'),
+      ],
+    ),
+  );
+}
+
+void _noop() {}
+
+/// Removable tags carry an always-visible small ghost `×` matched to the tag's
+/// ink across dark, light, fallback, compact, and removing states.
+Widget ccColorTagRemovableStory(BuildContext context) {
+  return const Center(
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        CcColorTag(label: 'brand checker', color: '8e4452', onRemove: _noop),
+        CcColorTag(label: 'enhancement', color: 'a2eeef', onRemove: _noop),
+        CcColorTag(label: 'needs-review', onRemove: _noop),
+        CcColorTag(
+          label: 'dependencies',
+          color: '0366d6',
+          compact: true,
+          onRemove: _noop,
+        ),
+        CcColorTag(
+          label: 'removing',
+          color: '0e8a16',
+          removing: true,
+          onRemove: _noop,
+        ),
       ],
     ),
   );

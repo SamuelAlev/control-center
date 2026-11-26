@@ -63,25 +63,35 @@ Color _dotColor(DesignSystemTokens t, CcStatusTone tone) => switch (tone) {
   CcStatusTone.info => t.accent,
 };
 
-/// Resolves the soft capsule fill for a [CcStatusTone].
+/// Resolves the soft fill for a [CcStatusTone].
 Color _fillColor(DesignSystemTokens t, CcStatusTone tone) => switch (tone) {
   CcStatusTone.positive => t.successSoft,
   CcStatusTone.negative => t.dangerSoft,
   CcStatusTone.caution => t.warnSoft,
-  CcStatusTone.neutral => t.bgSecondary,
+  CcStatusTone.neutral => t.surface,
   CcStatusTone.info => t.accentSoft,
 };
 
 /// Resolves the label text color for a [CcStatusTone].
 Color _textColor(DesignSystemTokens t, CcStatusTone tone) => switch (tone) {
-  CcStatusTone.positive => t.success,
-  CcStatusTone.negative => t.danger,
-  CcStatusTone.caution => t.warn,
-  CcStatusTone.neutral => t.textTertiary,
+  CcStatusTone.positive => t.textSuccessPrimary,
+  CcStatusTone.negative => t.textErrorPrimary,
+  CcStatusTone.caution => t.textWarningPrimary,
+  CcStatusTone.neutral => t.textSecondary,
   CcStatusTone.info => t.accent,
 };
 
-/// A live-state tag: a [CcStatusDot] + a short [label] inside a soft capsule.
+/// Resolves the hairline border color for a [CcStatusTone].
+Color _borderColor(DesignSystemTokens t, CcStatusTone tone) => switch (tone) {
+  CcStatusTone.positive => t.success.withValues(alpha: 0.28),
+  CcStatusTone.negative => t.danger.withValues(alpha: 0.28),
+  CcStatusTone.caution => t.warn.withValues(alpha: 0.32),
+  CcStatusTone.neutral => t.borderSecondary,
+  CcStatusTone.info => t.accent.withValues(alpha: 0.28),
+};
+
+/// A live-state tag: a [CcStatusDot] + a short [label] inside a square,
+/// hairline-bordered tag.
 ///
 /// Conveys connection / health / lifecycle states (`connected`, `failed`,
 /// `running`, `stopped`, `healthy`, `unhealthy`, …) by tone *and* label *and* a
@@ -111,7 +121,8 @@ class CcStatusTag extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: _fillColor(t, tone),
-        borderRadius: const BorderRadius.all(Radius.circular(AppRadii.pill)),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: _borderColor(t, tone)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(

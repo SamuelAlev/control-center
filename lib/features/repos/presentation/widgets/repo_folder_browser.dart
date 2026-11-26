@@ -3,6 +3,7 @@
 
 import 'package:cc_domain/core/domain/entities/directory_listing.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
 /// The current path with a button to navigate to the parent directory.
@@ -246,13 +247,20 @@ class _FolderRow extends StatelessWidget {
                 ),
               ),
               if (onToggle != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onToggle,
-                  child: Padding(
+                // The padded target is the control; the checkbox inside is
+                // only its picture, so it is no Tab stop or node of its own.
+                CcTappable(
+                  onPressed: onToggle,
+                  semanticLabel: AppLocalizations.of(context).selectThisFolder,
+                  semanticChecked: selected,
+                  builder: (context, _) => Padding(
                     padding: const EdgeInsets.all(6),
-                    child: IgnorePointer(
-                      child: CcCheckbox(value: selected, onChanged: (_) {}),
+                    child: ExcludeFocus(
+                      child: ExcludeSemantics(
+                        child: IgnorePointer(
+                          child: CcCheckbox(value: selected, onChanged: (_) {}),
+                        ),
+                      ),
                     ),
                   ),
                 )

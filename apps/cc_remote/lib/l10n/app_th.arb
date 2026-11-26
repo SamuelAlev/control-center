@@ -95,7 +95,6 @@
   "eventNotFound": "ไม่พบเหตุการณ์",
   "eventNotFoundDescription": "อาจอยู่นอกช่วงวาระ หรือถูกลบที่ต้นทาง",
   "joinMeeting": "เข้าร่วมการประชุม",
-  "join": "เข้าร่วม",
   "attendeesCount": "ผู้เข้าร่วม ({count})",
   "details": "รายละเอียด",
   "allDay": "ทั้งวัน",

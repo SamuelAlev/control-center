@@ -1,7 +1,11 @@
+import 'dart:ui' show Tristate;
+
 import 'package:cc_ui/src/components/cc_popover.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -138,6 +142,125 @@ void main() {
       await tester.pumpAndSettle();
       expect(decoration().color, DesignSystemTokens.light().hoverStrong);
       await gesture.up();
+    });
+
+    group('focus', () {
+      late FocusNode inner;
+      late FocusNode after;
+      setUp(() {
+        inner = FocusNode(debugLabel: 'inner');
+        after = FocusNode(debugLabel: 'after');
+      });
+      tearDown(() {
+        inner.dispose();
+        after.dispose();
+      });
+
+      Widget host() => ccTestApp(
+        Column(
+          children: [
+            CcPopover(
+              target: const Text('Open'),
+              overlayBuilder: (context, size) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CcTappable(
+                    focusNode: inner,
+                    onPressed: () {},
+                    builder: (context, states) => const Text('Inner'),
+                  ),
+                  CcTappable(
+                    onPressed: () {},
+                    builder: (context, states) => const Text('Second'),
+                  ),
+                ],
+              ),
+            ),
+            CcTappable(
+              focusNode: after,
+              onPressed: () {},
+              builder: (context, states) => const Text('After'),
+            ),
+          ],
+        ),
+      );
+
+      FocusNode trigger(WidgetTester tester) =>
+          Focus.of(tester.element(find.text('Open')));
+
+      Future<void> open(WidgetTester tester) async {
+        await tester.tap(find.text('Open'));
+        await tester.pump();
+        await tester.pump();
+      }
+
+      testWidgets('opening moves focus in; Tab stays inside', (tester) async {
+        await tester.pumpWidget(host());
+        await open(tester);
+        expect(trigger(tester).hasFocus, isFalse);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(inner.hasPrimaryFocus, isTrue);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(inner.hasPrimaryFocus, isTrue, reason: 'Tab wraps inside');
+        expect(after.hasFocus, isFalse);
+      });
+
+      testWidgets('Escape closes and returns focus to the trigger', (
+        tester,
+      ) async {
+        await tester.pumpWidget(host());
+        await open(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Inner'), findsNothing);
+        expect(trigger(tester).hasPrimaryFocus, isTrue);
+
+        // The next Tab continues from the trigger.
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(after.hasPrimaryFocus, isTrue);
+      });
+
+      testWidgets('an outside tap returns focus to the trigger', (
+        tester,
+      ) async {
+        await tester.pumpWidget(host());
+        await open(tester);
+        await tester.tapAt(const Offset(700, 500));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Inner'), findsNothing);
+        expect(trigger(tester).hasPrimaryFocus, isTrue);
+      });
+
+      testWidgets('the trigger reports expanded', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await tester.pumpWidget(host());
+        expect(
+          tester.getSemantics(find.text('Open')),
+          matchesSemantics(
+            label: 'Open',
+            isButton: true,
+            hasExpandedState: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            isFocusable: true,
+            hasTapAction: true,
+            hasFocusAction: true,
+          ),
+        );
+        await open(tester);
+        expect(
+          tester.getSemantics(find.text('Open')).flagsCollection.isExpanded,
+          Tristate.isTrue,
+        );
+        semantics.dispose();
+      });
     });
   });
 }

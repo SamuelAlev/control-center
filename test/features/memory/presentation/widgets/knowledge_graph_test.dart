@@ -329,6 +329,34 @@ void main() {
     expect(find.text('content f1'), findsNothing);
   });
 
+  testWidgets('the keyboard opens a topic and toggles its facts', (
+    tester,
+  ) async {
+    await _pumpGraph(tester);
+    final node = find.byKey(const ValueKey('topic:prefs/editor'));
+
+    Focus.of(
+      tester.element(find.descendant(of: node, matching: find.text('editor'))),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byType(KnowledgeGraphInspector), findsOneWidget);
+
+    Focus.of(
+      tester.element(
+        find.descendant(
+          of: _topicToggle('prefs', 'editor', 'Show facts'),
+          matching: find.byType(Icon),
+        ),
+      ),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    expect(find.text('content f1'), findsOneWidget);
+  });
+
   testWidgets('the canvas control expands and collapses every topic', (
     tester,
   ) async {

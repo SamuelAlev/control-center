@@ -38,7 +38,7 @@ class ProgressArtifactBlock extends StatelessWidget {
                 child: Text(
                   progressPreview(code),
                   style: CcFonts.code(
-                    textStyle: CcTypography.monoNum.copyWith(
+                    textStyle: CcTypography.numeric.copyWith(
                       color: t.textPrimary,
                     ),
                   ),
@@ -81,7 +81,7 @@ class ProgressArtifactBlock extends StatelessWidget {
                 child: Text(
                   progressPreview(source),
                   style: CcFonts.code(
-                    textStyle: CcTypography.monoNum.copyWith(
+                    textStyle: CcTypography.numeric.copyWith(
                       color: t.textPrimary,
                     ),
                   ),
@@ -98,7 +98,7 @@ class ProgressArtifactBlock extends StatelessWidget {
             child: Text(
               progressPreview(const JsonEncoder.withIndent('  ').convert(json)),
               style: CcFonts.code(
-                textStyle: CcTypography.monoNum.copyWith(color: t.textPrimary),
+                textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
               ),
             ),
           ),

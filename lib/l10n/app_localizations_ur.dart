@@ -1077,13 +1077,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get calendarEmptyNoEvents => 'اس رینج میں کوئی ایونٹ نہیں';
 
   @override
-  String get calendarStartRecording => 'ریکارڈنگ شروع کریں';
-
-  @override
-  String get calendarStartRecordingAndLink => 'ریکارڈنگ شروع کریں اور لنک کریں';
-
-  @override
   String get calendarJoinMeet => 'میٹنگ میں شامل ہوں';
+
+  @override
+  String get calendarJoinAndRecord => 'شامل ہوں اور ریکارڈ کریں';
+
+  @override
+  String get calendarRecordFailed => 'ریکارڈنگ شروع نہیں ہو سکی';
 
   @override
   String get calendarFromCalendar => 'کیلنڈر سے';
@@ -1918,9 +1918,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get activity => 'سرگرمی';
-
-  @override
-  String get activityLabel => 'سرگرمی';
 
   @override
   String get activitySearchHint => 'سرگرمی تلاش کریں';
@@ -2868,7 +2865,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get briefDescription => 'مختصر تفصیل';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -7459,6 +7456,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String get addReviewers => 'ریویوورز شامل کریں';
 
   @override
+  String get reRequestReview => 'دوبارہ ریویو کی درخواست کریں';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '$label سے دوبارہ ریویو کی درخواست کریں';
+  }
+
+  @override
   String get addAssignees => 'تفویض شدہ شامل کریں';
 
   @override
@@ -7626,6 +7631,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get meetingStatusRecording => 'ریکارڈ ہو رہا ہے';
 
   @override
+  String get meetingStatusPaused => 'توقف';
+
+  @override
   String get meetingStatusProcessing => 'پروسیس ہو رہا ہے';
 
   @override
@@ -7653,34 +7661,10 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count میٹنگز',
-      one: '1 میٹنگ',
-      zero: 'کوئی میٹنگ نہیں',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'کھلے ایکشنز';
-
-  @override
-  String get meetingsLedgerDecisions => 'فیصلے';
-
-  @override
   String get meetingsLiveOpen => 'ریکارڈنگ کھولیں';
 
   @override
   String get meetingTemplateShort => 'ٹیمپلیٹ';
-
-  @override
-  String get meetingsStatThisWeek => 'اس ہفتے';
-
-  @override
-  String get meetingsStatRecorded => 'ریکارڈ شدہ';
 
   @override
   String get meetingsFilterAll => 'سب';
@@ -7724,9 +7708,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total ایکشن آئٹمز';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'بہتر';
 
   @override
   String get meetingsTranscribing => 'ٹرانسکرائب اور خلاصہ ہو رہا ہے…';
@@ -7960,9 +7941,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'لگتا ہے میٹنگ ہو رہی ہے۔ ریکارڈ کریں؟';
-
-  @override
-  String get meetingDetectedRecord => 'ریکارڈ';
 
   @override
   String get meetingDetectedDismiss => 'برطرف کریں';
@@ -9481,6 +9459,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get deviceNeverSeen => 'کبھی منسلک نہیں';
 
   @override
+  String get deviceAwaitingApproval => 'منظوری کا انتظار';
+
+  @override
   String get profileSectionLabel => 'پروفائل';
 
   @override
@@ -10308,12 +10289,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'ناکام';
-
-  @override
-  String get bannerMeetingJoin => 'شامل ہوں';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'ریکارڈ اور لنک';
 
   @override
   String get bannerCalendarReconnect => 'دوبارہ منسلک کریں';
@@ -13622,6 +13597,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'تبصرہ پوسٹ نہیں ہو سکا: ⁨$error⁩';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'لائن $line';
   }
@@ -15100,17 +15080,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '$tab بند کریں';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count تبصرے',
-      one: '1 تبصرہ',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21351,10 +21320,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get dispatchSettingsTitle => 'شیڈولز';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'شیڈولز اور واچز کی حدیں، اور ان درخواستوں کا کیا ہوگا جن کا کوئی جواب نہ دے۔';
-
-  @override
   String get dispatchLimitsLabel => 'شیڈول کی حدیں';
 
   @override
@@ -21433,9 +21398,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'ہدف';
-
-  @override
-  String get scheduleRecordCrumb => 'شیڈول';
 
   @override
   String get improvementRecordCrumb => 'تجویز';
@@ -21835,5 +21797,38 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent از $cap، اس کے سلسلے کے ہر شیڈول کو شمار کرتے ہوئے';
+  }
+
+  @override
+  String get ccLoading => 'لوڈ ہو رہا ہے';
+
+  @override
+  String get ccProgress => 'پیش رفت';
+
+  @override
+  String get ccBreadcrumb => 'بریڈ کرمب';
+
+  @override
+  String get ccDialog => 'ڈائیلاگ';
+
+  @override
+  String get ccResize => 'سائز تبدیل کریں';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (غیر تصدیق شدہ)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title منتخب کریں';
+  }
+
+  @override
+  String get prTableSelectAll => 'تمام pull requests منتخب کریں';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'ورژن $version پر واپس جائیں';
   }
 }

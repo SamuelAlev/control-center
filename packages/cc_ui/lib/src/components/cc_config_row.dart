@@ -1,5 +1,5 @@
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
-import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
@@ -32,22 +32,22 @@ enum CcConfigSource {
 bool _isOverride(CcConfigSource source) =>
     source == CcConfigSource.project || source == CcConfigSource.localOverride;
 
-/// The built-in uppercase label for a source, used when no localized [label]
+/// The built-in label for a source, used when no localized [label]
 /// override is supplied to [CcSourceBadge].
 String _defaultSourceLabel(CcConfigSource source) => switch (source) {
-  CcConfigSource.defaultValue => 'DEFAULT',
-  CcConfigSource.system => 'SYSTEM',
-  CcConfigSource.global => 'GLOBAL',
-  CcConfigSource.inherited => 'INHERITED',
-  CcConfigSource.project => 'PROJECT',
-  CcConfigSource.localOverride => 'LOCAL OVERRIDE',
+  CcConfigSource.defaultValue => 'Default',
+  CcConfigSource.system => 'System',
+  CcConfigSource.global => 'Global',
+  CcConfigSource.inherited => 'Inherited',
+  CcConfigSource.project => 'Project',
+  CcConfigSource.localOverride => 'Local override',
 };
 
-/// A small monospace badge naming where a config value comes from. Project and
+/// A small badge naming where a config value comes from. Project and
 /// local-override sources take the brand/info tint to draw the eye; everything
 /// else is quiet neutral.
 ///
-/// Pass [label] to localize the text; when omitted a built-in uppercase name is
+/// Pass [label] to localize the text; when omitted a built-in name is
 /// used so the badge is usable standalone.
 class CcSourceBadge extends StatelessWidget {
   /// Creates a [CcSourceBadge].
@@ -56,7 +56,7 @@ class CcSourceBadge extends StatelessWidget {
   /// The provenance of the value.
   final CcConfigSource source;
 
-  /// Optional localized label; falls back to a built-in uppercase name.
+  /// Optional localized label; falls back to a built-in name.
   final String? label;
 
   @override
@@ -74,12 +74,10 @@ class CcSourceBadge extends StatelessWidget {
         ),
         child: Text(
           label ?? _defaultSourceLabel(source),
-          style: CcFonts.code(
-            textStyle: CcTypography.caption.copyWith(
-              color: fg,
-              letterSpacing: 0.5,
-              fontWeight: FontWeight.w600,
-            ),
+          style: CcTypography.caption.copyWith(
+            color: fg,
+            letterSpacing: 0.2,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -133,7 +131,8 @@ class CcConfigRow extends StatelessWidget {
   /// Force the override accent stripe regardless of [source].
   final bool highlightOverride;
 
-  /// Optional tap handler; when set the whole row becomes activatable.
+  /// Optional tap handler; when set the whole row becomes a button that
+  /// takes focus and activates with Enter or Space.
   final VoidCallback? onTap;
 
   @override
@@ -204,10 +203,13 @@ class CcConfigRow extends StatelessWidget {
     if (onTap == null) {
       return body;
     }
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: body,
+    // A control in [status] or [actions] is a tappable of its own nested in
+    // this one: it wins its own tap and its own Enter, so one press never
+    // also activates the row.
+    return CcTappable(
+      onPressed: onTap,
+      borderRadius: AppRadii.brSm,
+      builder: (context, states) => body,
     );
   }
 }

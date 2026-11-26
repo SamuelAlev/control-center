@@ -395,7 +395,7 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
                               ),
                             ),
                             _header(
-                              l10n.ideNotInstalled.toUpperCase(),
+                              l10n.ideNotInstalled,
                               tokens,
                               theme,
                               muted: true,

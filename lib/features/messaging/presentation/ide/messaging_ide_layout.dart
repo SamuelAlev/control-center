@@ -53,6 +53,7 @@ import 'package:control_center/shared/editor/host/editor_body_host.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -506,14 +507,22 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
       return;
     }
     final uri = GoRouterState.of(context).uri;
+    if (spaceIdFromLocation(uri.path, _workspaceId) !=
+        widget.selectedSpaceId) {
+      return;
+    }
     final location = locationWithEditorTab(uri, activeEditorTabKey(_layout));
     if (location == uri.toString()) {
       return;
     }
     _tabUrl.resync(_layout);
     // Resolving saved focus is part of opening the space, not another Back
-    // step. Ordinary tab presses still use the lightweight platform writer.
-    Router.neglect(context, () => router.go(location));
+    // step. Route through navigationHistoryProvider so the in-app back/forward
+    // stack replaces the bare entry in place too; fall back to Router.neglect
+    // when mounted outside the shell (e.g. isolated route tests).
+    if (!ref.read(navigationHistoryProvider.notifier).replace(location)) {
+      Router.neglect(context, () => router.go(location));
+    }
   }
 
   /// Focuses the tab a `?tab=` [key] names (see [focusIdeTabByKey]).
@@ -523,6 +532,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
     spaceId: widget.selectedSpaceId,
     view: _conversations,
     openConversation: _open.openConversation,
+    openGoal: _open.openGoal,
   );
 
   /// Toggles the sidebar visibility (⌘B / the panel button). Retains the width
@@ -1062,19 +1072,27 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
         // Panes laid out flush, edge-to-edge: the editor fills the remaining
         // width and the sidebar abuts it with no gap. The boundary line is the
         // overlaid divider below, not a border on either pane.
+        //
+        // Each pane is its own Tab region, so Tab finishes the editor before
+        // it reaches the sidebar instead of interleaving the two by position.
         Row(
           children: [
             Expanded(
-              child: EditorWorkspace(
-                layout: _layout,
-                chrome: _chrome(l10n),
-                onResized: _schedulePersist,
-                buildBody: (tab, {required isVisible}) =>
-                    _buildBody(tab, isVisible),
+              child: FocusTraversalGroup(
+                child: EditorWorkspace(
+                  layout: _layout,
+                  chrome: _chrome(l10n),
+                  onResized: _schedulePersist,
+                  buildBody: (tab, {required isVisible}) =>
+                      _buildBody(tab, isVisible),
+                ),
               ),
             ),
             if (_sidebarVisible)
-              SizedBox(width: _sidebarWidth, child: _buildSidebar(l10n)),
+              SizedBox(
+                width: _sidebarWidth,
+                child: FocusTraversalGroup(child: _buildSidebar(l10n)),
+              ),
           ],
         ),
         // The draggable hairline is overlaid on the editor↔sidebar seam and

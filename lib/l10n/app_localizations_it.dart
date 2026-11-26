@@ -1091,13 +1091,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Nessun evento in questo intervallo';
 
   @override
-  String get calendarStartRecording => 'Avvia registrazione';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Registra e collega';
-
-  @override
   String get calendarJoinMeet => 'Partecipa alla riunione';
+
+  @override
+  String get calendarJoinAndRecord => 'Partecipa e registra';
+
+  @override
+  String get calendarRecordFailed => 'Impossibile avviare la registrazione';
 
   @override
   String get calendarFromCalendar => 'Dal calendario';
@@ -1940,9 +1940,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get activity => 'Attività';
-
-  @override
-  String get activityLabel => 'ATTIVITÀ';
 
   @override
   String get activitySearchHint => 'Cerca nell\'attività';
@@ -2854,7 +2851,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Chiedi all\'IA di revisionare questa PR';
 
   @override
-  String get assignees => 'ASSEGNATARI';
+  String get assignees => 'Assegnatari';
 
   @override
   String get attachImage => 'Allega immagine';
@@ -2908,7 +2905,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get briefDescription => 'Breve descrizione';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -3908,7 +3905,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Fatti e politiche appariranno qui man mano che gli agenti lavorano.';
 
   @override
-  String get memoryLabel => 'MEMORIA';
+  String get memoryLabel => 'Memoria';
 
   @override
   String get merge => 'Merge';
@@ -4504,7 +4501,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get pullRequests => 'Pull request';
 
   @override
-  String get questionLabel => 'DOMANDA';
+  String get questionLabel => 'Domanda';
 
   @override
   String get queued => 'In coda';
@@ -4519,7 +4516,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get reasoningEffort => 'Sforzo di ragionamento';
 
   @override
-  String get recommendLabel => 'RACCOMANDAZIONE';
+  String get recommendLabel => 'Raccomandazione';
 
   @override
   String recordingFromDevice(String device) {
@@ -4700,7 +4697,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get reviewedByMe => 'Revisionate da me';
 
   @override
-  String get reviewers => 'REVISORI';
+  String get reviewers => 'Revisori';
 
   @override
   String get roleLabel => 'Ruolo';
@@ -5187,7 +5184,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get suggestion => 'Suggerimento';
 
   @override
-  String get suggestLabel => 'SUGGERIMENTO';
+  String get suggestLabel => 'Suggerimento';
 
   @override
   String get superseded => 'Sostituito';
@@ -5232,7 +5229,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get thisCannotBeUndone => 'Questa azione non può essere annullata.';
 
   @override
-  String get ticketLabel => 'TICKET';
+  String get ticketLabel => 'Ticket';
 
   @override
   String get titleLabel => 'Titolo';
@@ -7548,6 +7545,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addReviewers => 'Aggiungi revisori';
 
   @override
+  String get reRequestReview => 'Richiedi di nuovo la revisione';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Richiedi di nuovo la revisione a $label';
+  }
+
+  @override
   String get addAssignees => 'Aggiungi assegnatari';
 
   @override
@@ -7715,6 +7720,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get meetingStatusRecording => 'Registrazione';
 
   @override
+  String get meetingStatusPaused => 'In pausa';
+
+  @override
   String get meetingStatusProcessing => 'Elaborazione';
 
   @override
@@ -7742,34 +7750,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count riunioni',
-      one: '1 riunione',
-      zero: 'Nessuna riunione',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Attività aperte';
-
-  @override
-  String get meetingsLedgerDecisions => 'Decisioni';
-
-  @override
   String get meetingsLiveOpen => 'Apri la registrazione';
 
   @override
   String get meetingTemplateShort => 'Modello';
-
-  @override
-  String get meetingsStatThisWeek => 'Questa settimana';
-
-  @override
-  String get meetingsStatRecorded => 'Registrato';
 
   @override
   String get meetingsFilterAll => 'Tutte';
@@ -7813,9 +7797,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total attività';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'arricchita';
 
   @override
   String get meetingsTranscribing => 'trascrizione e sintesi…';
@@ -8053,9 +8034,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Sembra che sia in corso una riunione. Registrarla?';
-
-  @override
-  String get meetingDetectedRecord => 'Registra';
 
   @override
   String get meetingDetectedDismiss => 'Ignora';
@@ -9593,6 +9571,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deviceNeverSeen => 'Mai connesso';
 
   @override
+  String get deviceAwaitingApproval => 'In attesa di approvazione';
+
+  @override
   String get profileSectionLabel => 'Profilo';
 
   @override
@@ -10422,12 +10403,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Non riuscito';
-
-  @override
-  String get bannerMeetingJoin => 'Partecipa';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Registra e collega';
 
   @override
   String get bannerCalendarReconnect => 'Riconnetti';
@@ -13766,6 +13741,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Impossibile pubblicare il commento: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Riga $line';
   }
@@ -15256,17 +15236,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Chiudi $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count commenti',
-      one: '1 commento',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21582,10 +21551,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dispatchSettingsTitle => 'Pianificazioni';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limiti per pianificazioni e monitoraggi, e cosa succede alle richieste che nessuno risponde.';
-
-  @override
   String get dispatchLimitsLabel => 'Limiti delle pianificazioni';
 
   @override
@@ -21664,9 +21629,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Obiettivo';
-
-  @override
-  String get scheduleRecordCrumb => 'Pianificazione';
 
   @override
   String get improvementRecordCrumb => 'Proposta';
@@ -22073,5 +22035,38 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent di $cap, includendo ogni pianificazione della sua catena';
+  }
+
+  @override
+  String get ccLoading => 'Caricamento';
+
+  @override
+  String get ccProgress => 'Avanzamento';
+
+  @override
+  String get ccBreadcrumb => 'Percorso di navigazione';
+
+  @override
+  String get ccDialog => 'Finestra di dialogo';
+
+  @override
+  String get ccResize => 'Ridimensiona';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (non verificato)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Seleziona $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Seleziona tutte le pull request';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Ripristina alla versione $version';
   }
 }

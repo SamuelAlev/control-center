@@ -170,6 +170,7 @@ ViewerActivityPollers _buildViewerActivityPollers({
         ],
         onWorkspaceTouched: (workspaceId) =>
             unawaited(openPrPoller.pollSoon(workspaceId)),
+        onPrsActive: openPrPoller.syncPullRequests,
         // A person's activity spans workspaces, so the dedupe store lives in
         // global.db's server_meta, one key per person and grant.
         loadDedupeState: () => globalDb.workspaceRouteDao.meta(dedupeKey),

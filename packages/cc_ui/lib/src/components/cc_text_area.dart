@@ -18,7 +18,9 @@ const Color _transparent = Color(0x00000000);
 /// to [maxLines]) and reserves a taller resting height ([minLines] lines). It
 /// stays on the widgets layer (no Material, no ink). Desktop-first: no drag
 /// selection handles (`selectionControls: null`); keyboard selection works via
-/// the default shortcuts.
+/// the default shortcuts. Like `CcTextField`, [label] is the field's accessible
+/// name, [helperText] (else [hintText]) its hint, and an [errorText] is
+/// announced as it appears.
 class CcTextArea extends StatefulWidget {
   /// Creates a [CcTextArea].
   const CcTextArea({
@@ -264,7 +266,10 @@ class _CcTextAreaState extends State<CcTextArea>
             top: 0,
             left: 0,
             right: 0,
-            child: Text(widget.hintText!, style: hintStyle),
+            // Read as the field's hint, not as text in it.
+            child: ExcludeSemantics(
+              child: Text(widget.hintText!, style: hintStyle),
+            ),
           ),
         editable,
       ],
@@ -297,23 +302,33 @@ class _CcTextAreaState extends State<CcTextArea>
       child: box,
     );
 
-    final fieldWithMouse = MouseRegion(
-      cursor: enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
-      onEnter: (_) {
-        _hovered = true;
-        _syncBrowserMenu();
-      },
-      onExit: (_) {
-        _hovered = false;
-        _syncBrowserMenu();
-      },
-      child: box,
-    );
-
     final showLabel = widget.label != null;
     final showError = hasError;
     final showWarn = hasWarn;
     final showHelper = widget.helperText != null && !showError && !showWarn;
+
+    // The host declares the field's state (Flutter web otherwise builds a
+    // disabled input), its name (the label) and its hint.
+    final fieldWithMouse = Semantics(
+      container: true,
+      enabled: enabled,
+      readOnly: !enabled || widget.readOnly,
+      label: widget.label,
+      hint: showHelper ? widget.helperText : widget.hintText,
+      child: MouseRegion(
+        cursor: enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
+        onEnter: (_) {
+          _hovered = true;
+          _syncBrowserMenu();
+        },
+        onExit: (_) {
+          _hovered = false;
+          _syncBrowserMenu();
+        },
+        child: box,
+      ),
+    );
+
     if (!showLabel && !showHelper && !showError && !showWarn) {
       return fieldWithMouse;
     }
@@ -322,27 +337,35 @@ class _CcTextAreaState extends State<CcTextArea>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showLabel) ...[
-          Text(
-            widget.label!,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
+          // Already the field's name.
+          ExcludeSemantics(
+            child: Text(
+              widget.label!,
+              style: CcTypography.caption.copyWith(color: t.textSecondary),
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
         ],
         fieldWithMouse,
         if (showError) ...[
           const SizedBox(height: AppSpacing.xs),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(CcIcons.circleX, size: 13, color: t.danger),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: Text(
-                  widget.errorText!,
-                  style: CcTypography.caption.copyWith(color: t.danger),
+          // Announced when it appears, not only when someone reads past it.
+          Semantics(
+            container: true,
+            liveRegion: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(CcIcons.circleX, size: 13, color: t.danger),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    widget.errorText!,
+                    style: CcTypography.caption.copyWith(color: t.danger),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ] else if (showWarn) ...[
           const SizedBox(height: AppSpacing.xs),
@@ -361,9 +384,12 @@ class _CcTextAreaState extends State<CcTextArea>
           ),
         ] else if (showHelper) ...[
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            widget.helperText!,
-            style: CcTypography.caption.copyWith(color: t.textTertiary),
+          // Already the field's hint.
+          ExcludeSemantics(
+            child: Text(
+              widget.helperText!,
+              style: CcTypography.caption.copyWith(color: t.textTertiary),
+            ),
           ),
         ],
       ],

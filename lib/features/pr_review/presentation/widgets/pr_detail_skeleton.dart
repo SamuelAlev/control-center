@@ -84,7 +84,7 @@ class PrOverviewSkeleton extends StatelessWidget {
         // Meta strip (state capsule, author, branches).
         Row(
           children: [
-            PrSkeletonBar(width: 64, height: 20, radius: AppRadii.pill),
+            PrSkeletonBar(width: 64, height: 20, radius: AppRadii.sm),
             SizedBox(width: AppSpacing.md),
             PrSkeletonBar(width: 120),
             SizedBox(width: AppSpacing.md),

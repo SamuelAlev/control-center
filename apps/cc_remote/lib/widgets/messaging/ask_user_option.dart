@@ -46,8 +46,8 @@ extension _AskUserOption on _AskUserCardState {
                     child: Center(
                       child: Text(
                         '${index + 1}',
-                        style: CcFonts.code(
-                          textStyle: CcTypography.monoNum.copyWith(
+                        style: CcFonts.numeric(
+                          textStyle: CcTypography.numeric.copyWith(
                             color: selected ? t.textPrimary : t.textTertiary,
                             fontWeight: CcTypography.semiboldWeight,
                           ),

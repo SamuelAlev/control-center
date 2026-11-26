@@ -1,7 +1,12 @@
+import 'dart:ui' show Tristate;
+
 import 'package:cc_ui/src/components/cc_autocomplete.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_select.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -218,38 +223,37 @@ void main() {
       },
     );
 
-    testWidgets(
-      'reopening after a selection still lists every option',
-      (tester) async {
-        await tester.pumpWidget(
-          ccTestApp(
-            Center(
-              child: CcAutocomplete<String>(
-                options: _options,
-                hintText: 'Search',
-                onSelected: (_) {},
-              ),
+    testWidgets('reopening after a selection still lists every option', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcAutocomplete<String>(
+              options: _options,
+              hintText: 'Search',
+              onSelected: (_) {},
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.tap(find.text('Search'));
-        await tester.pumpAndSettle();
-        await tester.enterText(find.byType(EditableText), 'ch');
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cherry'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText), 'ch');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cherry'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Banana'), findsNothing);
+      expect(find.text('Banana'), findsNothing);
 
-        await tester.tap(find.byType(EditableText));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byType(EditableText));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Banana'), findsOneWidget);
-        expect(find.text('Cherry'), findsWidgets);
-      },
-    );
+      expect(find.text('Apple'), findsOneWidget);
+      expect(find.text('Banana'), findsOneWidget);
+      expect(find.text('Cherry'), findsWidgets);
+    });
 
     testWidgets(
       'a live typed query still filters when the field is clicked again',
@@ -695,6 +699,167 @@ void main() {
         expect(panel.top, greaterThanOrEqualTo(field.bottom));
       },
     );
+  });
+
+  group('CcAutocomplete keyboard', () {
+    late FocusNode after;
+    setUp(() => after = FocusNode(debugLabel: 'after'));
+    tearDown(() => after.dispose());
+
+    Widget host({
+      ValueChanged<String>? onSelected,
+      ValueChanged<String>? onCustomValue,
+    }) => ccTestApp(
+      Column(
+        children: [
+          CcAutocomplete<String>(
+            options: _options,
+            hintText: 'Search fruit',
+            onSelected: onSelected ?? (_) {},
+            onCustomValue: onCustomValue,
+          ),
+          CcTappable(
+            focusNode: after,
+            onPressed: () {},
+            builder: (context, states) => const Text('After'),
+          ),
+        ],
+      ),
+    );
+
+    Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
+      await tester.sendKeyEvent(k);
+      await tester.pump();
+    }
+
+    testWidgets('↑/↓ reopen the list after Escape; focus stays in the field', (
+      tester,
+    ) async {
+      String? chosen;
+      await tester.pumpWidget(host(onSelected: (v) => chosen = v));
+      await tester.tap(find.text('Search fruit'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText), 'an');
+      await tester.pump();
+      expect(find.text('Banana'), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.text('Banana'), findsNothing);
+
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(find.text('Banana'), findsOneWidget);
+      final field = tester.widget<EditableText>(find.byType(EditableText));
+      expect(field.focusNode.hasPrimaryFocus, isTrue);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(chosen, 'b');
+    });
+
+    testWidgets('Enter on a closed list picks no hidden option', (
+      tester,
+    ) async {
+      String? chosen;
+      String? custom;
+      await tester.pumpWidget(
+        host(onSelected: (v) => chosen = v, onCustomValue: (v) => custom = v),
+      );
+      await tester.tap(find.text('Search fruit'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText), 'an');
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(chosen, isNull);
+      // The typed text is submitted as before.
+      expect(custom, 'an');
+    });
+
+    testWidgets('Tab onto the clear button commits nothing; Tab away does', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      String? custom;
+      await tester.pumpWidget(host(onCustomValue: (v) => custom = v));
+      await tester.tap(find.text('Search fruit'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText), 'zz');
+      await tester.pump();
+      expect(find.semantics.byLabel('Clear'), findsOne);
+
+      await key(tester, LogicalKeyboardKey.tab);
+      await tester.pump();
+      final clear = find.ancestor(
+        of: find.byIcon(CcIcons.x),
+        matching: find.byType(CcTappable),
+      );
+      expect(
+        Focus.of(tester.element(find.byIcon(CcIcons.x))).hasPrimaryFocus,
+        isTrue,
+      );
+      expect(clear, findsOneWidget);
+      expect(custom, isNull);
+
+      await key(tester, LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(after.hasPrimaryFocus, isTrue);
+      expect(custom, 'zz');
+      semantics.dispose();
+    });
+
+    testWidgets('the field reports whether its list is expanded', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(host());
+      SemanticsNode field() => tester.getSemantics(find.byType(EditableText));
+      expect(field().flagsCollection.isExpanded, Tristate.isFalse);
+      await tester.tap(find.text('Search fruit'));
+      await tester.pumpAndSettle();
+      expect(field().flagsCollection.isExpanded, Tristate.isTrue);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(field().flagsCollection.isExpanded, Tristate.isFalse);
+      semantics.dispose();
+    });
+
+    testWidgets('the semantic label names the field itself', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcAutocomplete<String>(
+              options: _options,
+              semanticLabel: 'Fruit',
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.byType(EditableText));
+      expect(node.label, 'Fruit');
+      expect(node.flagsCollection.isTextField, isTrue);
+      semantics.dispose();
+    });
+
+    testWidgets('Enter keeps focus in the field on desktop', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await tester.pumpWidget(host());
+        await tester.tap(find.text('Search fruit'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(EditableText), 'zz');
+        await tester.pump();
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+        final field = tester.widget<EditableText>(find.byType(EditableText));
+        expect(field.focusNode.hasPrimaryFocus, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
   });
 }
 

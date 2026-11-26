@@ -87,5 +87,34 @@ void main() {
 
       expect(copied, [dt.toUtc().toIso8601String()]);
     });
+
+    testWidgets('is a button, but not a Tab stop', (tester) async {
+      final dt = DateTime(2026, 7, 17, 19, 40, 5);
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        testWrap(AppTimestamp(dateTime: dt, child: const Text('1m ago'))),
+      );
+
+      final node = tester.getSemantics(find.text('1m ago'));
+      expect(node.flagsCollection.isButton, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      final focused = FocusManager.instance.primaryFocus?.context;
+      expect(
+        focused == null ||
+            find
+                .descendant(
+                  of: find.byType(AppTimestamp),
+                  matching: find.byElementPredicate((e) => e == focused),
+                )
+                .evaluate()
+                .isEmpty,
+        isTrue,
+      );
+      handle.dispose();
+    });
   });
 }

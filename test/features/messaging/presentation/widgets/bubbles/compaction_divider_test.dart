@@ -1,6 +1,9 @@
+import 'dart:ui' show Tristate;
+
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/compaction_divider.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../helpers/test_wrap.dart';
@@ -54,11 +57,11 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(GestureDetector).first);
+      await tester.tap(find.byType(CcTappable));
       await tester.pumpAndSettle();
       expect(find.textContaining('THE SUMMARY BODY'), findsWidgets);
 
-      await tester.tap(find.byType(GestureDetector).first);
+      await tester.tap(find.byType(CcTappable));
       await tester.pumpAndSettle();
       expect(find.textContaining('THE SUMMARY BODY'), findsNothing);
     });
@@ -83,7 +86,7 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(GestureDetector), findsWidgets);
+      expect(find.byType(CcTappable), findsOneWidget);
     });
 
     testWidgets('is announced as an expandable control', (tester) async {
@@ -93,13 +96,31 @@ void main() {
       );
       await tester.pump();
 
-      expect(
-        tester.getSemantics(find.byType(Semantics).first),
-        isNotNull,
-        reason: 'a control that only reads as a horizontal rule is one a '
-            'screen-reader user cannot open',
-      );
+      // A control that only reads as a horizontal rule is one a
+      // screen-reader user cannot open.
+      final node = tester.getSemantics(find.byType(CcTappable));
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.flagsCollection.isExpanded, Tristate.isFalse);
+      expect(node.label, contains('7'));
       handle.dispose();
+    });
+
+    testWidgets('opens and closes from the keyboard', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          CompactionDivider(message: compaction(summary: 'THE SUMMARY BODY')),
+        ),
+      );
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('THE SUMMARY BODY'), findsWidgets);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('THE SUMMARY BODY'), findsNothing);
     });
   });
 }

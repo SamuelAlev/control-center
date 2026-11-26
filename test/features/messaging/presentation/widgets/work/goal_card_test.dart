@@ -6,7 +6,11 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart'
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verdict.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verification.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/goal_card.dart';
+import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:control_center/shared/editor/editor_tab_opener.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -469,5 +473,49 @@ void main() {
     final title = tester.getCenter(find.text('Keep the changelog current'));
     final badge = tester.getCenter(find.text('Active'));
     expect(badge.dx, lessThan(title.dx));
+  });
+
+  testWidgets('Open goal and Add a check open goal tabs via EditorTabOpenerScope', (
+    tester,
+  ) async {
+    final opened = <EditorTab>[];
+    await tester.pumpWidget(
+      testWrap(
+        ProviderScope(
+          overrides: workOverrides(goals: repo),
+          child: EditorTabOpenerScope(
+            opener: EditorTabOpener(opened.add),
+            child: SingleChildScrollView(
+              child: GoalCard(
+                view: GoalRunView(
+                  goal: goal(
+                    hold: GoalHold.person,
+                    contract: GoalContract(criteria: ['ship it']),
+                  ),
+                  canResume: true,
+                  canApprove: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(tip('Open goal'));
+    await tester.pump();
+    expect(opened, hasLength(1));
+    expect(opened.first.kind, MessagingTabKinds.goal);
+    expect(opened.first.dedupKey, goalTabKey('goal-1'));
+    expect(opened.first.args['goalId'], 'goal-1');
+    expect(opened.first.args['openContractEditor'], isNull);
+
+    await tester.tap(find.text('Add a check'));
+    await tester.pump();
+    expect(opened, hasLength(2));
+    expect(opened.last.kind, MessagingTabKinds.goal);
+    expect(opened.last.dedupKey, goalTabKey('goal-1'));
+    expect(opened.last.args['openContractEditor'], isTrue);
   });
 }

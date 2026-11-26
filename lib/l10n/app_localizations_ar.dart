@@ -1090,13 +1090,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get calendarEmptyNoEvents => 'لا أحداث في هذا النطاق';
 
   @override
-  String get calendarStartRecording => 'بدء التسجيل';
-
-  @override
-  String get calendarStartRecordingAndLink => 'بدء التسجيل والربط';
-
-  @override
   String get calendarJoinMeet => 'الانضمام إلى الاجتماع';
+
+  @override
+  String get calendarJoinAndRecord => 'الانضمام والتسجيل';
+
+  @override
+  String get calendarRecordFailed => 'تعذّر بدء التسجيل';
 
   @override
   String get calendarFromCalendar => 'من التقويم';
@@ -1942,9 +1942,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activity => 'النشاط';
-
-  @override
-  String get activityLabel => 'النشاط';
 
   @override
   String get activitySearchHint => 'البحث في النشاط';
@@ -7573,6 +7570,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addReviewers => 'إضافة مراجعين';
 
   @override
+  String get reRequestReview => 'إعادة طلب المراجعة';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'إعادة طلب المراجعة من $label';
+  }
+
+  @override
   String get addAssignees => 'إضافة معيّنين';
 
   @override
@@ -7737,6 +7742,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get meetingStatusRecording => 'جارٍ التسجيل';
 
   @override
+  String get meetingStatusPaused => 'متوقفة مؤقتًا';
+
+  @override
   String get meetingStatusProcessing => 'قيد المعالجة';
 
   @override
@@ -7768,37 +7776,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count اجتماع',
-      many: '$count اجتماعًا',
-      few: '$count اجتماعات',
-      two: 'اجتماعان',
-      one: 'اجتماع واحد',
-      zero: 'لا اجتماعات',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'بنود عمل مفتوحة';
-
-  @override
-  String get meetingsLedgerDecisions => 'القرارات';
-
-  @override
   String get meetingsLiveOpen => 'فتح التسجيل';
 
   @override
   String get meetingTemplateShort => 'قالب';
-
-  @override
-  String get meetingsStatThisWeek => 'هذا الأسبوع';
-
-  @override
-  String get meetingsStatRecorded => 'مسجَّلة';
 
   @override
   String get meetingsFilterAll => 'الكل';
@@ -7846,9 +7827,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total من بنود العمل';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'محسَّنة';
 
   @override
   String get meetingsTranscribing => 'جارٍ التفريغ والتلخيص…';
@@ -8081,9 +8059,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'يبدو أن اجتماعًا يجري الآن. هل تريد تسجيله؟';
-
-  @override
-  String get meetingDetectedRecord => 'تسجيل';
 
   @override
   String get meetingDetectedDismiss => 'تجاهل';
@@ -9614,6 +9589,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deviceNeverSeen => 'لم يتصل مطلقًا';
 
   @override
+  String get deviceAwaitingApproval => 'بانتظار الموافقة';
+
+  @override
   String get profileSectionLabel => 'الملف الشخصي';
 
   @override
@@ -10453,12 +10431,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'فاشل';
-
-  @override
-  String get bannerMeetingJoin => 'انضمام';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'تسجيل وربط';
 
   @override
   String get bannerCalendarReconnect => 'إعادة الاتصال';
@@ -13884,6 +13856,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'تعذّر نشر التعليق: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'السطر $line';
   }
@@ -15390,21 +15367,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'إغلاق $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count تعليق',
-      many: '$count تعليقًا',
-      few: '$count تعليقات',
-      two: 'تعليقان',
-      one: 'تعليق واحد',
-      zero: 'لا تعليقات',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21706,10 +21668,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dispatchSettingsTitle => 'الجدولات';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'حدود الجدولات والمراقبات، وما يحدث للطلبات التي لا يرد عليها أحد.';
-
-  @override
   String get dispatchLimitsLabel => 'حدود الجدولة';
 
   @override
@@ -21788,9 +21746,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'هدف';
-
-  @override
-  String get scheduleRecordCrumb => 'جدولة';
 
   @override
   String get improvementRecordCrumb => 'اقتراح';
@@ -22206,5 +22161,38 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent من $cap، مع احتساب كل جدولة في سلسلتها';
+  }
+
+  @override
+  String get ccLoading => 'جارٍ التحميل';
+
+  @override
+  String get ccProgress => 'التقدم';
+
+  @override
+  String get ccBreadcrumb => 'مسار التنقّل';
+
+  @override
+  String get ccDialog => 'مربع حوار';
+
+  @override
+  String get ccResize => 'تغيير الحجم';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (غير متحقق منه)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'تحديد $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'تحديد كل طلبات السحب';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'الرجوع إلى الإصدار $version';
   }
 }

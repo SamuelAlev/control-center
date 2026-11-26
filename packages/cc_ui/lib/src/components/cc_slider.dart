@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
+import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
@@ -10,12 +11,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Flat horizontal slider (widgets-only; safe in off-Material overlays). Rest:
-/// ink fill on tertiary track, panel thumb, mono value at start. Hover aims
+/// ink fill on tertiary track, panel thumb, tabular value at start. Hover aims
 /// (ghost thumb) without committing; accent only while aiming/dragging.
 ///
-/// [divisions] snaps (and may paint dots); [stepLabels] names stops. Arrows
-/// step one division (or 1% continuous); Home/End → [min]/[max]. Null
-/// [onChanged] disables. Thumb tracks pointer (no motion animation).
+/// [divisions] snaps (and may paint dots); [stepLabels] names stops. The
+/// arrow keys step one division (or 1% continuous): Left/Right in the thumb's
+/// on-screen direction, Up/Down toward [max]/[min]. Page Up/Page Down take a
+/// tenth of the range (at least one division), Home/End go to [min]/[max].
+/// Pressing the track focuses it; the focus ring shows only for keyboard
+/// focus. Null [onChanged] disables. Thumb tracks pointer (no motion
+/// animation).
 class CcSlider extends StatefulWidget {
   /// Creates a [CcSlider].
   const CcSlider({
@@ -134,6 +139,35 @@ class CcSlider extends StatefulWidget {
 class _CcSliderState extends State<CcSlider> {
   bool _dragging = false;
   double? _hoverValue;
+  FocusNode? _ownNode;
+
+  /// Focused from the keyboard: sampled when focus arrives, like [FocusRing],
+  /// so a click that focuses the track does not light the ring.
+  bool _keyboardFocused = false;
+
+  FocusNode get _focusNode =>
+      widget.focusNode ?? (_ownNode ??= FocusNode(debugLabel: 'CcSlider'));
+
+  @override
+  void dispose() {
+    _ownNode?.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange(bool focused) {
+    final next = focused && FocusModality.instance.isKeyboard;
+    if (next != _keyboardFocused) {
+      setState(() => _keyboardFocused = next);
+    }
+  }
+
+  /// A press on the track moves focus here, as it would for a native slider,
+  /// so the keys that follow adjust this value.
+  void _focusFromPointer() {
+    if (_enabled && !_focusNode.hasPrimaryFocus) {
+      _focusNode.requestFocus();
+    }
+  }
 
   bool get _enabled => widget.onChanged != null;
 
@@ -216,6 +250,17 @@ class _CcSliderState extends State<CcSlider> {
     return divisions == null ? range / 100 : range / divisions;
   }
 
+  /// One Page Up/Page Down step: a tenth of the range, rounded up to whole
+  /// divisions when stepped.
+  double get _pageStep {
+    final divisions = _divisions;
+    final range = widget.max - widget.min;
+    if (divisions == null) {
+      return range / 10;
+    }
+    return (divisions / 10).ceil() * range / divisions;
+  }
+
   void _nudge(double delta) {
     if (!_enabled) {
       return;
@@ -284,6 +329,9 @@ class _CcSliderState extends State<CcSlider> {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final aimed = _hoverValue;
     final previewing = aimed != null && aimed != _clamped;
+    // Touch the tracker so the first key press of a session is seen.
+    // ignore: unnecessary_statements
+    FocusModality.instance;
 
     return Semantics(
       slider: true,
@@ -297,9 +345,10 @@ class _CcSliderState extends State<CcSlider> {
       onIncrease: _enabled ? () => _nudge(_step) : null,
       onDecrease: _enabled ? () => _nudge(-_step) : null,
       child: FocusableActionDetector(
-        focusNode: widget.focusNode,
+        focusNode: _focusNode,
         autofocus: widget.autofocus,
         enabled: _enabled,
+        onFocusChange: _onFocusChange,
         // Arrow keys track the thumb's VISUAL motion (Material Slider parity):
         // under RTL the track is mirrored, so arrow-left increases the value.
         shortcuts: <ShortcutActivator, Intent>{
@@ -309,6 +358,16 @@ class _CcSliderState extends State<CcSlider> {
           const SingleActivator(LogicalKeyboardKey.arrowRight): _AdjustIntent(
             forward: !isRtl,
           ),
+          const SingleActivator(LogicalKeyboardKey.arrowUp):
+              const _AdjustIntent(forward: true),
+          const SingleActivator(LogicalKeyboardKey.arrowDown):
+              const _AdjustIntent(forward: false),
+          const SingleActivator(LogicalKeyboardKey.pageUp): const _AdjustIntent(
+            forward: true,
+            page: true,
+          ),
+          const SingleActivator(LogicalKeyboardKey.pageDown):
+              const _AdjustIntent(forward: false, page: true),
           const SingleActivator(LogicalKeyboardKey.home): const _ExtentIntent(
             toMax: false,
           ),
@@ -319,7 +378,8 @@ class _CcSliderState extends State<CcSlider> {
         actions: <Type, Action<Intent>>{
           _AdjustIntent: CallbackAction<_AdjustIntent>(
             onInvoke: (intent) {
-              _nudge(intent.forward ? _step : -_step);
+              final step = intent.page ? _pageStep : _step;
+              _nudge(intent.forward ? step : -step);
               return null;
             },
           ),
@@ -337,7 +397,8 @@ class _CcSliderState extends State<CcSlider> {
             : SystemMouseCursors.basic,
         child: Builder(
           builder: (context) {
-            final focused = Focus.of(context).hasPrimaryFocus;
+            final focused =
+                Focus.of(context).hasPrimaryFocus && _keyboardFocused;
             return Row(
               children: [
                 if (widget.showValue) ...[
@@ -387,14 +448,18 @@ class _CcSliderState extends State<CcSlider> {
                         child: GestureDetector(
                           key: CcSlider.trackKey,
                           behavior: HitTestBehavior.opaque,
-                          onTapDown: (d) => _emit(
-                            _valueForOffset(
-                              d.localPosition.dx,
-                              width,
-                              isRtl: isRtl,
-                            ),
-                          ),
+                          onTapDown: (d) {
+                            _focusFromPointer();
+                            _emit(
+                              _valueForOffset(
+                                d.localPosition.dx,
+                                width,
+                                isRtl: isRtl,
+                              ),
+                            );
+                          },
                           onHorizontalDragStart: (d) {
+                            _focusFromPointer();
                             setState(() {
                               _dragging = true;
                               _hoverValue = null;
@@ -496,11 +561,13 @@ class _CcSliderValueLabel extends StatelessWidget {
     final color = !enabled
         ? tokens.textDisabled
         : (previewing ? tokens.textTertiary : tokens.textPrimary);
-    final style = CcFonts.code(
-      textStyle: CcTypography.monoNum.copyWith(color: color),
+    final style = CcFonts.numeric(
+      textStyle: CcTypography.numeric.copyWith(color: color),
     );
     // Size to the longest of min/max/current so the track does not jump as
-    // the reading changes. ~0.62em per mono numeral at this size.
+    // the reading changes. The UI font's tabular numeral is 0.62em, but the
+    // reading is proportional around it (`%` is 0.9em), so each character
+    // reserves 0.7em: enough for `100%`, roomy for words and separators.
     final chars = [
       text,
       _withPrefix(reserve),
@@ -513,12 +580,15 @@ class _CcSliderValueLabel extends StatelessWidget {
         curve: CcMotion.standard,
         style: style,
         child: SizedBox(
-          width: chars * 8.0,
+          width: chars * _reservePerChar * style.fontSize!,
           child: Text(text, textAlign: TextAlign.end),
         ),
       ),
     );
   }
+
+  /// Width one character of the reading reserves, in ems of its font size.
+  static const double _reservePerChar = 0.7;
 
   String _withPrefix(String value) {
     final prefix = this.prefix;
@@ -709,8 +779,8 @@ class _CcSliderPreviewChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: CcFonts.code(
-            textStyle: CcTypography.monoNum.copyWith(color: tokens.textPrimary),
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric.copyWith(color: tokens.textPrimary),
           ),
         ),
       ),
@@ -843,9 +913,12 @@ String _defaultSliderFormat(double value, double min, double max) {
 
 /// Steps the value by one increment in either direction.
 class _AdjustIntent extends Intent {
-  const _AdjustIntent({required this.forward});
+  const _AdjustIntent({required this.forward, this.page = false});
 
   final bool forward;
+
+  /// A Page Up/Page Down step rather than an arrow step.
+  final bool page;
 }
 
 /// Jumps the value to one end of the range.

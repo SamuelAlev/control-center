@@ -208,6 +208,25 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('Enter on a focused file header collapses it', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_diffBesideTree([_file('lib/a.dart')]));
+      await _settle(tester);
+
+      SemanticsNode header() =>
+          _allNodes(tester).firstWhere((n) => n.label.startsWith('lib/a.dart'));
+      expect(header().flagsCollection.isButton, isTrue);
+      expect(header().flagsCollection.isHeader, isTrue);
+      expect(header().flagsCollection.isExpanded, Tristate.isTrue);
+
+      _focusHeaderOf(tester, 'lib/a.dart');
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await _settle(tester);
+      expect(header().flagsCollection.isExpanded, Tristate.isFalse);
+      handle.dispose();
+    });
+
     testWidgets('painted code rows are exposed with kind and line number', (
       tester,
     ) async {

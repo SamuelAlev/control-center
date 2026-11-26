@@ -474,9 +474,9 @@
   "calendarDisconnect": "Leválasztás",
   "calendarReconnect": "Újracsatlakozás",
   "calendarEmptyNoEvents": "Nincs esemény ebben a tartományban",
-  "calendarStartRecording": "Felvétel indítása",
-  "calendarStartRecordingAndLink": "Felvétel indítása és összekapcsolás",
   "calendarJoinMeet": "Csatlakozás a megbeszéléshez",
+  "calendarJoinAndRecord": "Csatlakozás és felvétel",
+  "calendarRecordFailed": "Nem sikerült elindítani a felvételt",
   "calendarFromCalendar": "Naptárból",
   "calendarLinkedMeeting": "Összekapcsolt megbeszélés",
   "calendarToday": "Ma",
@@ -899,7 +899,6 @@
   "actions": "Műveletek",
   "activate": "Aktiválás",
   "activity": "Tevékenység",
-  "activityLabel": "TEVÉKENYSÉG",
   "activitySearchHint": "Tevékenység keresése",
   "activityNoMatches": "Nincs a szűrőkre illeszkedő tevékenység",
   "activityPageRange": "{start}–{end} / {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Blokkolás",
   "bookmarkLabel": "Könyvjelző",
   "briefDescription": "Rövid leírás",
-  "bugLabel": "HIBA",
+  "bugLabel": "Hiba",
   "bundledDefaultsNeverUpdated": "Csomagolt alapértelmezettek — soha nem frissítve",
   "cancel": "Mégse",
   "cancelEdit": "Szerkesztés megszakítása",
@@ -2612,12 +2611,12 @@
   "published": "Közzétéve",
   "pullRequestApproved": "Pull request jóváhagyva",
   "pullRequests": "Pull requestek",
-  "questionLabel": "KÉRDÉS",
+  "questionLabel": "Kérdés",
   "queued": "Várólistán",
   "react": "Reagálás",
   "readerPreferences": "Olvasóbeállítások",
   "reasoningEffort": "Gondolkodási erőfeszítés",
-  "recommendLabel": "AJÁNLÁS",
+  "recommendLabel": "Ajánlás",
   "recordingFromDevice": "Felvétel innen: {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Siker",
   "successLabel": "Siker",
   "suggestion": "Javaslat",
-  "suggestLabel": "JAVASLAT",
+  "suggestLabel": "Javaslat",
   "superseded": "Felülírva",
   "synced": "Szinkronizálva",
   "systemDefault": "Rendszer alapértelmezett",
@@ -3025,7 +3024,7 @@
   "themeLight": "Világos",
   "themeSystem": "Rendszer",
   "thisCannotBeUndone": "Ezt nem lehet visszavonni.",
-  "ticketLabel": "JEGY",
+  "ticketLabel": "Jegy",
   "titleLabel": "Cím",
   "todayLabel": "Ma",
   "toggleTheme": "Téma váltása",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Sablon",
   "prTemplateDefault": "Alapértelmezett",
   "addReviewers": "Átnézők hozzáadása",
-  "addAssignees": "Hozzárendeltek hozzáadása",
+
+  "reRequestReview": "Átnézés újbóli kérése",
+  "reRequestReviewFor": "Átnézés újbóli kérése tőle: {label}",  "addAssignees": "Hozzárendeltek hozzáadása",
   "addLabels": "Címkék hozzáadása",
   "searchLabels": "Címkék keresése…",
   "noMatchingLabels": "Nincs egyező címke",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Vessen fel gyors jegyzeteket — az ügynök a megbeszélés után kibővíti őket.",
   "meetingSpeakerMe": "Ön",
   "meetingStatusRecording": "Felvétel",
+  "meetingStatusPaused": "Szüneteltetve",
   "meetingStatusProcessing": "Feldolgozás",
   "meetingStatusDone": "Kész",
   "meetingStatusFailed": "Sikertelen",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Nincsenek megbeszélések} one{# megbeszélés} other{# megbeszélés}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Nyitott teendők",
-  "meetingsLedgerDecisions": "Döntések",
   "meetingsLiveOpen": "Felvétel megnyitása",
   "meetingTemplateShort": "Sablon",
-  "meetingsStatThisWeek": "Ez a hét",
-  "meetingsStatRecorded": "Rögzítve",
   "meetingsFilterAll": "Mind",
   "meetingsFilterDone": "Kész",
   "meetingsFilterProcessing": "Feldolgozás",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "bővített",
   "meetingsTranscribing": "átírás és összefoglalás…",
   "meetingsOpenAction": "Megnyitás",
   "meetingsStopProcessing": "Leállítás",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Úgy tűnik, megbeszélés van folyamatban. Felvegye?",
-  "meetingDetectedRecord": "Felvétel",
   "meetingDetectedDismiss": "Elvetés",
   "meetingAutoStopTitle": "Ez a megbeszélés véget értnek tűnik. Leállítja a felvételt?",
   "meetingAutoStopStop": "Leállítás",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Soha nem csatlakozott",
+  "deviceAwaitingApproval": "Jóváhagyásra vár",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Hogyan lát a csapat, és hogyan jelenik meg a git commit szerzősége ebben a munkaterületen. Az üres mezők öröklik a fiók nevét és e-mailjét.",
   "displayNameLabel": "Megjelenített név",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Fut",
   "evalsStatusPassed": "Átment",
   "evalsStatusFailed": "Sikertelen",
-  "bannerMeetingJoin": "Csatlakozás",
-  "bannerMeetingRecordAndLink": "Felvétel és összekapcsolás",
   "bannerCalendarReconnect": "Újracsatlakozás",
   "bannerView": "Megtekintés",
   "soundscapeTitle": "Hangtájak",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Nem sikerült elküldeni a megjegyzést: {error}",
   "commentOnLine": "{line}. sor",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Másolás mindig engedélyezése környezetekből",
   "rigClipboardAlwaysCopyDescription": "Vágólaptartalom elhelyezése bármely környezetből ezen az eszközön rákérdezés nélkül.",
   "imageDiffBefore": "Előtte",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Utána",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Kétoszlopos",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Csúsztatás",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Eltérés",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% változott",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Képek",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Forrás",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Törölve",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} nem megtekintettként megjelölve",
   "prLineChangesSemantics": "Hozzáadott sorok: {additions}, eltávolított sorok: {deletions}",
   "closeTabNamed": "{tab} bezárása",
-  "threadCommentCount": "{count, plural, other{{count} megjegyzés}}",
   "notificationAgentAwaitingInput": "Egy ügynök figyelmet igényel",
   "notifyAgentAwaitingInput": "Ha egy ügynök jóváhagyást, választ vagy érvényes hitelesítő adatokat igényel, vagy egy szabályzat blokkol egy műveletet",
   "notificationAgentNeedsApproval": "{agent} az Ön jóváhagyására vár",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Adminisztrátor dönt",
   "improvementNotFound": "Ez a javaslat nem létezik, vagy olyan területen van, amelyet nem nyithat meg.",
   "dispatchSettingsTitle": "Ütemezések",
-  "dispatchSettingsSubtitle": "Korlátok az ütemezésekre és figyelőkre, és az arra nem válaszolt kérésekre vonatkozó szabályok.",
   "dispatchLimitsLabel": "Ütemezési korlátok",
   "dispatchLimitsSubtitle": "Hány ütemezést és figyelőt tarthatnak az ügynökök, és azok alapértékei.",
   "dispatchLimitRange": "1 és {max} között",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "A(z) {zone} időzóna szerint, a fenti időzónában.",
   "dispatchDigestHourRange": "0 és 23 között",
   "goalRecordCrumb": "Cél",
-  "scheduleRecordCrumb": "Ütemezés",
   "improvementRecordCrumb": "Javaslat",
   "goalNodeNeedsAgent": "Válassza ki a célt követő ügynököt.",
   "goalNodeNeedsObjective": "Írja le a célkitűzést.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Ez nem a böngészőben megjelenített kód. {count, plural, one{1 próbálkozás maradt.} other{{count} próbálkozás maradt.}}",
   "mcpServerSignInEnded": "Túl sokáig tartott, a bejelentkezést elutasították, vagy túl sok hibás kódot adtak meg. Indítsa újra, hogy új bejelentkezési oldalt kapjon.",
   "mcpServerSignInStartAgain": "Újraindítás",
-  "mcpServerSignedIn": "Bejelentkezve: {name}."
+  "mcpServerSignedIn": "Bejelentkezve: {name}.",
+  "ccLoading": "Betöltés",
+  "ccProgress": "Folyamat",
+  "ccBreadcrumb": "Navigációs útvonal",
+  "ccDialog": "Párbeszédpanel",
+  "ccResize": "Átméretezés",
+  "ccUnverifiedLabel": "{label} (nem ellenőrzött)",
+  "prRowSelect": "{title} kijelölése",
+  "prTableSelectAll": "Összes pull request kijelölése",
+  "planVersionRewind": "Visszaállítás erre a verzióra: {version}"
 }

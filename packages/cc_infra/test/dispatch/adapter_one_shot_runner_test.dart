@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/run_end_reason.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
@@ -8,6 +13,7 @@ import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
+import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
@@ -35,6 +41,28 @@ void main() {
     OneShotConfinement confinement = const OneShotConfinement(
       gate: HostExecutionGate(posture: HostExecutionPosture.offByOwner),
     ),
+    Future<ClaudeAccountPlan?> Function({
+      String? workspaceId,
+      String? conversationId,
+      String? agentId,
+      String? accountId,
+      String? workingDirectory,
+    })?
+    resolveClaudeConfigDir,
+    Future<AccountPoolOrder> Function({
+      String? workspaceId,
+      String? agentId,
+      required String providerId,
+      required List<String> credentialIds,
+    })?
+    resolveHarnessRotation,
+    Future<void> Function({
+      required String providerId,
+      required String credentialId,
+    })?
+    onHarnessCredentialExhausted,
+    AgentRunLogRepository? runLogRepo,
+    Future<String> Function(String workspaceId, String agentSlug)? agentDir,
   }) => AdapterOneShotRunner(
     credentials: creds,
     confinement: confinement,
@@ -43,18 +71,30 @@ void main() {
     resolveBinary: (cli) async =>
         installed.contains(cli) ? '/usr/local/bin/$cli' : null,
     adapters: [...predefinedAdapters, ...extra],
+    resolveClaudeConfigDir: resolveClaudeConfigDir,
+    resolveHarnessRotation: resolveHarnessRotation,
+    onHarnessCredentialExhausted: onHarnessCredentialExhausted,
+    runLogRepo: runLogRepo,
+    agentDir: agentDir,
   );
 
-  Future<String?> complete(String adapterId, {String? modelId}) =>
-      runner().complete(
-        workspaceId: 'ws-1',
-        requestedByUserId: 'olga',
-        adapterId: adapterId,
-        modelId: modelId,
-        systemPrompt: 'Name it.',
-        prompt: 'How do I rebase?',
-        timeout: const Duration(seconds: 5),
-      );
+  Future<String?> complete(
+    String adapterId, {
+    String? modelId,
+    String? agentId,
+    String? taskFamily,
+    AdapterOneShotRunner? customRunner,
+  }) => (customRunner ?? runner()).complete(
+    workspaceId: 'ws-1',
+    requestedByUserId: 'olga',
+    adapterId: adapterId,
+    modelId: modelId,
+    agentId: agentId,
+    taskFamily: taskFamily,
+    systemPrompt: 'Name it.',
+    prompt: 'How do I rebase?',
+    timeout: const Duration(seconds: 5),
+  );
 
   group('routing', () {
     test('unknown adapter id → null, nothing spawned', () async {
@@ -91,6 +131,111 @@ void main() {
     test('no credential for the provider → null', () async {
       creds.credential = null;
       expect(await complete('cc-harness', modelId: 'anthropic/haiku'), isNull);
+    });
+
+    test(
+      'respects resolveHarnessRotation and falls back on capacity error',
+      () async {
+        const k1 = ProviderCredential(
+          providerId: 'anthropic',
+          method: HarnessAuthMethod.apiKey,
+          apiKey: 'sk-ant-first',
+          accountLabel: 'first',
+        );
+        const k2 = ProviderCredential(
+          providerId: 'anthropic',
+          method: HarnessAuthMethod.apiKey,
+          apiKey: 'sk-ant-second',
+          accountLabel: 'second',
+        );
+        creds.credentials = [k1, k2];
+        creds.credential = k1;
+        factory.scriptedEvents[k1.apiKey!] = [
+          const LlmError(
+            'rate limit reached',
+            code: 'rate_limit_error',
+            retryable: true,
+            kind: LlmErrorKind.rateLimit,
+          ),
+        ];
+        factory.scriptedEvents[k2.apiKey!] = [
+          const LlmTextDelta('Pooled title'),
+        ];
+        final exhausted = <({String providerId, String credentialId})>[];
+        String? rotationAgentId;
+        final r = runner(
+          resolveHarnessRotation:
+              ({
+                workspaceId,
+                agentId,
+                required providerId,
+                required credentialIds,
+              }) async {
+                rotationAgentId = agentId;
+                return (
+                  order: [k2.credentialId, k1.credentialId].reversed.toList(),
+                  refusal: null,
+                );
+              },
+          onHarnessCredentialExhausted:
+              ({required providerId, required credentialId}) async {
+                exhausted.add((
+                  providerId: providerId,
+                  credentialId: credentialId,
+                ));
+              },
+        );
+
+        final out = await complete(
+          'cc-harness',
+          modelId: 'anthropic/haiku',
+          agentId: 'synth-1',
+          customRunner: r,
+        );
+
+        expect(out, 'Pooled title');
+        expect(rotationAgentId, 'synth-1');
+        expect(exhausted, [
+          (providerId: 'anthropic', credentialId: k1.credentialId),
+        ]);
+      },
+    );
+
+    test('throws on harness pool refusal without calling provider', () async {
+      const k1 = ProviderCredential(
+        providerId: 'anthropic',
+        method: HarnessAuthMethod.apiKey,
+        apiKey: 'sk-ant-only',
+      );
+      creds.credentials = [k1];
+      creds.credential = k1;
+      final r = runner(
+        resolveHarnessRotation:
+            ({
+              workspaceId,
+              agentId,
+              required providerId,
+              required credentialIds,
+            }) async => (
+              order: null,
+              refusal: (
+                reason: RunCredentialReason.accountsRemoved,
+                accountIds: ['gone'],
+                earliestReset: null,
+              ),
+            ),
+      );
+
+      await expectLater(
+        complete(
+          'cc-harness',
+          modelId: 'anthropic/haiku',
+          agentId: 'synth-1',
+          customRunner: r,
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(factory.calls, isEmpty);
     });
   });
 
@@ -134,6 +279,328 @@ void main() {
       await complete('claude-code').then<void>((_) {}, onError: (_) {});
 
       expect(launcher.spawns.single.process.killed, isTrue);
+    });
+
+    test(
+      'passes CLAUDE_CONFIG_DIR from resolveClaudeConfigDir with workspaceId and agentId',
+      () async {
+        launcher.stdoutLines = ['Titled'];
+        String? seenWorkspace;
+        String? seenAgent;
+        final r = runner(
+          resolveClaudeConfigDir:
+              ({
+                workspaceId,
+                conversationId,
+                agentId,
+                accountId,
+                workingDirectory,
+              }) async {
+                seenWorkspace = workspaceId;
+                seenAgent = agentId;
+                return const ClaudeAccountPlan(
+                  accounts: [
+                    (accountId: 'acc-1', configDir: '/data/claude-accounts/acc-1'),
+                  ],
+                );
+              },
+        );
+
+        final out = await complete(
+          'claude-code',
+          agentId: 'synth-agent',
+          customRunner: r,
+        );
+
+        expect(out?.trim(), 'Titled');
+        expect(seenWorkspace, 'ws-1');
+        expect(seenAgent, 'synth-agent');
+        expect(
+          launcher.spawns.single.environment?['CLAUDE_CONFIG_DIR'],
+          '/data/claude-accounts/acc-1',
+        );
+      },
+    );
+
+    test(
+      'falls back to next Claude account on weekly limit and records exhaustion',
+      () async {
+        launcher.responses = [
+          (
+            stdoutLines: ["You've hit your weekly limit · resets 5am (Europe/Zurich)"],
+            stderr: '',
+            exitCode: 1,
+          ),
+          (
+            stdoutLines: ['Recovered title'],
+            stderr: '',
+            exitCode: 0,
+          ),
+        ];
+        final exhausted = <String>[];
+        final r = runner(
+          resolveClaudeConfigDir:
+              ({
+                workspaceId,
+                conversationId,
+                agentId,
+                accountId,
+                workingDirectory,
+              }) async => ClaudeAccountPlan(
+                accounts: const [
+                  (accountId: 'acc-1', configDir: '/data/acc-1'),
+                  (accountId: 'acc-2', configDir: '/data/acc-2'),
+                ],
+                onExhausted: ({required accountId, resetsAt}) async {
+                  exhausted.add(accountId);
+                },
+              ),
+        );
+
+        final out = await complete(
+          'claude-code',
+          agentId: 'synth-agent',
+          customRunner: r,
+        );
+
+        expect(out?.trim(), 'Recovered title');
+        expect(exhausted, ['acc-1']);
+        expect(launcher.spawns, hasLength(2));
+        expect(
+          launcher.spawns[0].environment?['CLAUDE_CONFIG_DIR'],
+          '/data/acc-1',
+        );
+        expect(
+          launcher.spawns[1].environment?['CLAUDE_CONFIG_DIR'],
+          '/data/acc-2',
+        );
+      },
+    );
+
+    test(
+      'falls back on logged-out exit-0 trap and records auth failure',
+      () async {
+        launcher.responses = [
+          (
+            stdoutLines: ['Not logged in · Please run /login'],
+            stderr: '',
+            exitCode: 0,
+          ),
+          (
+            stdoutLines: ['Second account title'],
+            stderr: '',
+            exitCode: 0,
+          ),
+        ];
+        final authFailed = <String>[];
+        final r = runner(
+          resolveClaudeConfigDir:
+              ({
+                workspaceId,
+                conversationId,
+                agentId,
+                accountId,
+                workingDirectory,
+              }) async => ClaudeAccountPlan(
+                accounts: const [
+                  (accountId: 'acc-1', configDir: '/data/acc-1'),
+                  (accountId: 'acc-2', configDir: '/data/acc-2'),
+                ],
+                onAuthFailed: ({required accountId, reason}) async {
+                  authFailed.add(accountId);
+                },
+              ),
+        );
+
+        final out = await complete(
+          'claude-code',
+          agentId: 'synth-agent',
+          customRunner: r,
+        );
+
+        expect(out?.trim(), 'Second account title');
+        expect(authFailed, ['acc-1']);
+        expect(launcher.spawns, hasLength(2));
+      },
+    );
+
+    test(
+      'does not retry non-account errors and surfaces redacted stderr/stdout',
+      () async {
+        launcher.responses = [
+          (
+            stdoutLines: const [],
+            stderr: 'Unknown model sk-ant-secret1234567890abcdef',
+            exitCode: 1,
+          ),
+          (stdoutLines: ['Should not run'], stderr: '', exitCode: 0),
+        ];
+        final r = runner(
+          resolveClaudeConfigDir:
+              ({
+                workspaceId,
+                conversationId,
+                agentId,
+                accountId,
+                workingDirectory,
+              }) async => const ClaudeAccountPlan(
+                accounts: [
+                  (accountId: 'acc-1', configDir: '/data/acc-1'),
+                  (accountId: 'acc-2', configDir: '/data/acc-2'),
+                ],
+              ),
+        );
+
+        await expectLater(
+          complete('claude-code', agentId: 'synth-agent', customRunner: r),
+          throwsA(
+            isA<StateError>()
+                .having((e) => e.message, 'message', contains('Unknown model'))
+                .having(
+                  (e) => e.message,
+                  'message',
+                  isNot(contains('sk-ant-secret1234567890abcdef')),
+                ),
+          ),
+        );
+        expect(launcher.spawns, hasLength(1));
+      },
+    );
+
+    test(
+      'throws claudeRefusalDetail without spawning when plan refuses',
+      () async {
+        final r = runner(
+          resolveClaudeConfigDir:
+              ({
+                workspaceId,
+                conversationId,
+                agentId,
+                accountId,
+                workingDirectory,
+              }) async => const ClaudeAccountPlan(
+                accounts: [],
+                refusal: (
+                  reason: RunCredentialReason.planSpent,
+                  accountIds: ['acc-1', 'acc-2'],
+                  earliestReset: null,
+                ),
+              ),
+        );
+
+        await expectLater(
+          complete('claude-code', agentId: 'synth-agent', customRunner: r),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('out of plan headroom'),
+            ),
+          ),
+        );
+        expect(launcher.spawns, isEmpty);
+      },
+    );
+  });
+
+  group('run logging', () {
+    test('records completed AgentRunLog and NDJSON transcript', () async {
+      final tmpDir = await Directory.systemTemp.createTemp('cc-oneshot-log-');
+      addTearDown(() => tmpDir.delete(recursive: true));
+      final repo = _FakeRunLogRepo();
+      launcher.stdoutLines = ['Recorded title'];
+      final r = runner(
+        runLogRepo: repo,
+        agentDir: (ws, slug) async => '${tmpDir.path}/$ws/agents/$slug',
+      );
+
+      final out = await complete(
+        'claude-code',
+        modelId: 'haiku',
+        agentId: 'synth-1',
+        taskFamily: 'title',
+        customRunner: r,
+      );
+
+      expect(out?.trim(), 'Recorded title');
+      expect(repo.rows, hasLength(1));
+      final row = repo.rows.values.single;
+      expect(row.status, RunStatus.completed);
+      expect(row.agentId, 'synth-1');
+      expect(row.workspaceId, 'ws-1');
+      expect(row.spaceId, isNull);
+      expect(row.conversationId, isNull);
+      expect(row.taskFamily, 'title');
+      expect(row.adapter, 'claude-code');
+      expect(row.modelId, 'haiku');
+      expect(row.endReason, RunEndReason.completed);
+      expect(row.logPath, isNotNull);
+
+      final lines = await File(row.logPath!).readAsLines();
+      final decoded = lines.map((l) => jsonDecode(l) as Map<String, dynamic>).toList();
+      expect(decoded.first['type'], 'start');
+      expect(decoded.last['type'], 'end');
+      expect(decoded.last['exitCode'], 0);
+      expect(
+        decoded.any((e) => e['type'] == 'event' && e['eventType'] == 'text'),
+        isTrue,
+      );
+    });
+
+    test('records error AgentRunLog when one-shot fails', () async {
+      final tmpDir = await Directory.systemTemp.createTemp('cc-oneshot-log-');
+      addTearDown(() => tmpDir.delete(recursive: true));
+      final repo = _FakeRunLogRepo();
+      launcher.responses = [
+        (
+          stdoutLines: ["You've hit your weekly limit"],
+          stderr: '',
+          exitCode: 1,
+        ),
+      ];
+      final r = runner(
+        runLogRepo: repo,
+        agentDir: (ws, slug) async => '${tmpDir.path}/$ws/agents/$slug',
+      );
+
+      await expectLater(
+        complete(
+          'claude-code',
+          agentId: 'synth-1',
+          taskFamily: 'title',
+          customRunner: r,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(repo.rows, hasLength(1));
+      final row = repo.rows.values.single;
+      expect(row.status, RunStatus.error);
+      expect(row.endReason, RunEndReason.usageLimit);
+      expect(row.summary, contains('weekly limit'));
+      final lines = await File(row.logPath!).readAsLines();
+      final decoded = lines.map((l) => jsonDecode(l) as Map<String, dynamic>).toList();
+      expect(decoded.last['type'], 'end');
+      expect(decoded.last['exitCode'], 1);
+      expect(
+        decoded.any((e) => e['type'] == 'event' && e['eventType'] == 'error'),
+        isTrue,
+      );
+    });
+
+    test('quiet null skips record no AgentRunLog', () async {
+      final repo = _FakeRunLogRepo();
+      final r = runner(installed: const {}, runLogRepo: repo);
+
+      final out = await complete(
+        'claude-code',
+        agentId: 'synth-1',
+        taskFamily: 'title',
+        customRunner: r,
+      );
+
+      expect(out, isNull);
+      expect(repo.rows, isEmpty);
     });
   });
 
@@ -317,11 +784,12 @@ class _FakeManager extends SandboxManager {
 }
 
 class _Spawn {
-  _Spawn(this.executable, this.arguments, this.process);
+  _Spawn(this.executable, this.arguments, this.process, this.environment);
 
   final String executable;
   final List<String> arguments;
   final _FakeProcess process;
+  final Map<String, String>? environment;
 }
 
 /// Records every spawn and replays canned stdout. With [acpScript] on, it
@@ -330,8 +798,11 @@ class _Spawn {
 class _RecordingLauncher {
   final List<_Spawn> spawns = [];
   List<String> stdoutLines = const [];
+  String stderr = '';
   int exitCode = 0;
   bool acpScript = false;
+  List<({List<String> stdoutLines, String stderr, int exitCode})> responses =
+      [];
 
   Future<OneShotProcess> launch(
     String executable,
@@ -339,12 +810,20 @@ class _RecordingLauncher {
     String? workingDirectory,
     Map<String, String>? environment,
   }) async {
-    final process = _FakeProcess(exitCode: exitCode, acpScript: acpScript);
-    spawns.add(_Spawn(executable, arguments, process));
+    final idx = spawns.length;
+    final scripted = idx < responses.length
+        ? responses[idx]
+        : (stdoutLines: stdoutLines, stderr: stderr, exitCode: exitCode);
+    final process = _FakeProcess(
+      exitCode: scripted.exitCode,
+      stderr: scripted.stderr,
+      acpScript: acpScript,
+    );
+    spawns.add(_Spawn(executable, arguments, process, environment));
     if (!acpScript) {
       // Deliver stdout only once the caller has subscribed.
       scheduleMicrotask(() {
-        for (final line in stdoutLines) {
+        for (final line in scripted.stdoutLines) {
           process.emit(line);
         }
         process.finish();
@@ -355,11 +834,17 @@ class _RecordingLauncher {
 }
 
 class _FakeProcess implements OneShotProcess {
-  _FakeProcess({required this._exitCode, required this._acpScript});
+  _FakeProcess({
+    required this._exitCode,
+    required this.stderr,
+    required this._acpScript,
+  });
 
   final int _exitCode;
+  final String stderr;
   final bool _acpScript;
   final _stdout = StreamController<String>();
+  final _stderrDone = Completer<String>();
   final _done = Completer<int>();
 
   final List<String> stdinWrites = [];
@@ -376,6 +861,9 @@ class _FakeProcess implements OneShotProcess {
     if (!_stdout.isClosed) {
       unawaited(_stdout.close());
     }
+    if (!_stderrDone.isCompleted) {
+      _stderrDone.complete(stderr);
+    }
     if (!_done.isCompleted) {
       _done.complete(_exitCode);
     }
@@ -383,6 +871,9 @@ class _FakeProcess implements OneShotProcess {
 
   @override
   Stream<String> get stdoutLines => _stdout.stream;
+
+  @override
+  Future<String> get stderrOutput => _stderrDone.future;
 
   @override
   void writeStdin(String data) {
@@ -444,10 +935,15 @@ class _FakeCredStore implements ProviderCredentialStore {
     method: HarnessAuthMethod.apiKey,
     apiKey: 'k',
   );
+  List<ProviderCredential> credentials = const [];
 
   @override
   Future<ProviderCredential?> activeCredential(String providerId) async =>
       credential;
+
+  @override
+  Future<List<ProviderCredential>> credentialsFor(String providerId) async =>
+      credentials;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}
@@ -456,6 +952,7 @@ class _FakeCredStore implements ProviderCredentialStore {
 class _FakeFactory implements HarnessProviderFactory {
   final List<({String providerId, String? model})> calls = [];
   String reply = '';
+  final Map<String, List<LlmEvent>> scriptedEvents = {};
 
   @override
   ParsedModel parseModel(
@@ -474,7 +971,9 @@ class _FakeFactory implements HarnessProviderFactory {
     ProviderTokenResolver? tokenResolver,
   }) {
     calls.add((providerId: providerId, model: model));
-    return _FakeProvider(reply);
+    final key = credential?.secret ?? '';
+    final events = scriptedEvents[key];
+    return _FakeProvider(events ?? [LlmTextDelta(reply)]);
   }
 
   @override
@@ -482,9 +981,9 @@ class _FakeFactory implements HarnessProviderFactory {
 }
 
 class _FakeProvider extends LlmProviderPort {
-  _FakeProvider(this.reply);
+  _FakeProvider(this.events);
 
-  final String reply;
+  final List<LlmEvent> events;
 
   @override
   Stream<LlmEvent> complete({
@@ -492,7 +991,34 @@ class _FakeProvider extends LlmProviderPort {
     List<LlmToolSchema> tools = const [],
     LlmCompleteConfig config = const LlmCompleteConfig(),
   }) async* {
-    yield LlmTextDelta(reply);
+    for (final e in events) {
+      yield e;
+    }
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
+}
+
+class _FakeRunLogRepo implements AgentRunLogRepository {
+  final Map<String, AgentRunLog> rows = {};
+
+  @override
+  Future<void> upsert(AgentRunLog log) async {
+    rows[log.id] = log;
+  }
+
+  @override
+  Future<bool> completeIfActive(
+    AgentRunLog completed, {
+    bool writeCost = true,
+  }) async {
+    final existing = rows[completed.id];
+    if (existing == null || existing.completedAt != null) {
+      return false;
+    }
+    rows[completed.id] = completed;
+    return true;
   }
 
   @override

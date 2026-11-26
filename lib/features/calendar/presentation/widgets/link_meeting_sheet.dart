@@ -187,9 +187,11 @@ class _MeetingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
+    return CcTappable(
+      onPressed: onTap,
+      // Rows go inert while a link is saving; focus stays on the one used.
+      focusableWhenDisabled: true,
+      builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.md,

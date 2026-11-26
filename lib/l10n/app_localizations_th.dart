@@ -1076,13 +1076,13 @@ class AppLocalizationsTh extends AppLocalizations {
   String get calendarEmptyNoEvents => 'ไม่มีเหตุการณ์ในช่วงนี้';
 
   @override
-  String get calendarStartRecording => 'เริ่มบันทึก';
-
-  @override
-  String get calendarStartRecordingAndLink => 'เริ่มบันทึกและลิงก์';
-
-  @override
   String get calendarJoinMeet => 'เข้าร่วมการประชุม';
+
+  @override
+  String get calendarJoinAndRecord => 'เข้าร่วมและบันทึก';
+
+  @override
+  String get calendarRecordFailed => 'เริ่มการบันทึกไม่ได้';
 
   @override
   String get calendarFromCalendar => 'จากปฏิทิน';
@@ -1909,9 +1909,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get activity => 'กิจกรรม';
-
-  @override
-  String get activityLabel => 'กิจกรรม';
 
   @override
   String get activitySearchHint => 'ค้นหากิจกรรม';
@@ -7425,6 +7422,14 @@ class AppLocalizationsTh extends AppLocalizations {
   String get addReviewers => 'เพิ่มผู้รีวิว';
 
   @override
+  String get reRequestReview => 'ขอรีวิวอีกครั้ง';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'ขอรีวิวอีกครั้งจาก $label';
+  }
+
+  @override
   String get addAssignees => 'เพิ่มผู้รับมอบหมาย';
 
   @override
@@ -7590,6 +7595,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get meetingStatusRecording => 'กำลังบันทึก';
 
   @override
+  String get meetingStatusPaused => 'หยุดชั่วคราว';
+
+  @override
   String get meetingStatusProcessing => 'กำลังประมวลผล';
 
   @override
@@ -7617,34 +7625,10 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count การประชุม',
-      one: '1 การประชุม',
-      zero: 'ไม่มีการประชุม',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'การดำเนินการที่เปิด';
-
-  @override
-  String get meetingsLedgerDecisions => 'การตัดสินใจ';
-
-  @override
   String get meetingsLiveOpen => 'เปิดการบันทึก';
 
   @override
   String get meetingTemplateShort => 'เทมเพลต';
-
-  @override
-  String get meetingsStatThisWeek => 'สัปดาห์นี้';
-
-  @override
-  String get meetingsStatRecorded => 'บันทึกแล้ว';
 
   @override
   String get meetingsFilterAll => 'ทั้งหมด';
@@ -7688,9 +7672,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return 'รายการดำเนินการ $done / $total';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'เสริมแล้ว';
 
   @override
   String get meetingsTranscribing => 'กำลังถอดเสียงและสรุป…';
@@ -7920,9 +7901,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'ดูเหมือนมีการประชุมเกิดขึ้น บันทึกหรือไม่?';
-
-  @override
-  String get meetingDetectedRecord => 'บันทึก';
 
   @override
   String get meetingDetectedDismiss => 'ปิดทิ้ง';
@@ -9434,6 +9412,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get deviceNeverSeen => 'ไม่เคยเชื่อมต่อ';
 
   @override
+  String get deviceAwaitingApproval => 'รอการอนุมัติ';
+
+  @override
   String get profileSectionLabel => 'โปรไฟล์';
 
   @override
@@ -10254,12 +10235,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'ล้มเหลว';
-
-  @override
-  String get bannerMeetingJoin => 'เข้าร่วม';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'บันทึกและลิงก์';
 
   @override
   String get bannerCalendarReconnect => 'เชื่อมต่ออีกครั้ง';
@@ -13553,6 +13528,11 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'โพสต์ความคิดเห็นไม่ได้: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'บรรทัด $line';
   }
@@ -15016,16 +14996,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'ปิด $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ความคิดเห็น',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21224,10 +21194,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get dispatchSettingsTitle => 'ตารางเวลา';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'ขีดจำกัดของตารางเวลาและการเฝ้าดู และสิ่งที่เกิดขึ้นกับคำขอที่ไม่มีใครตอบ';
-
-  @override
   String get dispatchLimitsLabel => 'ขีดจำกัดตารางเวลา';
 
   @override
@@ -21306,9 +21272,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'เป้าหมาย';
-
-  @override
-  String get scheduleRecordCrumb => 'ตารางเวลา';
 
   @override
   String get improvementRecordCrumb => 'ข้อเสนอ';
@@ -21707,5 +21670,38 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent จาก $cap นับรวมทุกตารางเวลาในห่วงโซ่';
+  }
+
+  @override
+  String get ccLoading => 'กำลังโหลด';
+
+  @override
+  String get ccProgress => 'ความคืบหน้า';
+
+  @override
+  String get ccBreadcrumb => 'เส้นทางการนำทาง';
+
+  @override
+  String get ccDialog => 'กล่องโต้ตอบ';
+
+  @override
+  String get ccResize => 'ปรับขนาด';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (ยังไม่ได้ตรวจสอบ)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'เลือก $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'เลือก Pull request ทั้งหมด';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'ย้อนกลับไปยังเวอร์ชัน $version';
   }
 }

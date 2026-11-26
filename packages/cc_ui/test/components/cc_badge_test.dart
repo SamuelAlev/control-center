@@ -79,5 +79,79 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('An extremely long badge label'), findsWidgets);
     });
+
+    testWidgets('uses square border radius and a 1px hairline border', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ccTestApp(
+          const CcBadge(label: 'Open', variant: CcBadgeVariant.success),
+        ),
+      );
+
+      final box = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byType(CcBadge),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final decoration = box.decoration as BoxDecoration;
+      expect(decoration.borderRadius, AppRadii.brSm);
+      expect(decoration.border, isNotNull);
+    });
+
+    testWidgets('renders cleanly under RTL directionality', (tester) async {
+      await tester.pumpWidget(
+        ccTestApp(
+          textDirection: TextDirection.rtl,
+          const CcBadge(
+            label: 'Done',
+            variant: CcBadgeVariant.info,
+            icon: IconData(0x1, fontFamily: 'test'),
+          ),
+        ),
+      );
+
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.byType(Icon), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('merged variant uses purple merged tokens in light and dark', (
+      tester,
+    ) async {
+      for (final (tokens, brightness) in [
+        (DesignSystemTokens.light(), CcBrightness.light),
+        (DesignSystemTokens.dark(), CcBrightness.dark),
+      ]) {
+        await tester.pumpWidget(
+          ccTestApp(
+            theme: CcThemeData(tokens: tokens, brightness: brightness),
+            const CcBadge(
+              label: 'Merged',
+              variant: CcBadgeVariant.merged,
+              icon: CcIcons.gitMerge,
+            ),
+          ),
+        );
+
+        final box = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(CcBadge),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        final decoration = box.decoration as BoxDecoration;
+        expect(decoration.color, tokens.mergedSoft);
+        expect(
+          decoration.border,
+          Border.all(color: tokens.fgMergedPrimary.withValues(alpha: 0.28)),
+        );
+        final icon = tester.widget<Icon>(find.byIcon(CcIcons.gitMerge));
+        expect(icon.color, tokens.textMergedPrimary);
+        final text = tester.widget<Text>(find.text('Merged'));
+        expect(text.style?.color, tokens.textMergedPrimary);
+      }
+    });
   });
 }

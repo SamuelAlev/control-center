@@ -39,12 +39,9 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
     final l10n = AppLocalizations.of(context);
     final expanded = _expanded;
 
-    final labelStyle = AppFonts.codeDynamic(
-      widget.codeFont,
-      textStyle: CcTypography.caption.copyWith(
-        color: tokens.textTertiary,
-        fontWeight: FontWeight.w500,
-      ),
+    final labelStyle = CcTypography.caption.copyWith(
+      color: tokens.textTertiary,
+      fontWeight: FontWeight.w500,
     );
 
     final durationMs = widget.segment.durationMs;

@@ -119,8 +119,8 @@ class GitHubReviewComment {
   final GitHubReactionSummary? reactions;
 
   /// The active line number this comment should be anchored to in the diff
-  /// viewer (prefers the latest-revision [line] and falls back to [originalLine]).
-  int? get anchorLine => line ?? originalLine;
+  /// viewer; null when outdated (must not fall back to [originalLine]).
+  int? get anchorLine => line;
 
   /// What the comment is on: `line` (a diff line) or `file` (the whole file,
   /// with no line at all).

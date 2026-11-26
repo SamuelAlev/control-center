@@ -60,8 +60,8 @@ class _TeamProfileScreenState extends ConsumerState<TeamProfileScreen> {
     setState(() => _refreshing = true);
     try {
       await Future.wait([
-        ref.refresh(githubTeamProfileProvider(_team).future),
-        ref.refresh(teamProfileActivityProvider(_team).future),
+        refreshGitHubTeamProfile(ref, _team),
+        refreshTeamProfileActivity(ref, _team),
       ]);
     } catch (_) {
       // Each surface retains its last data or renders its own error.

@@ -4,8 +4,10 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
@@ -14,7 +16,9 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail_screen.dart';
+import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/toolbar_chips.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
@@ -82,6 +86,12 @@ PrRef _prRefOf(int number) => (
 );
 
 void main() {
+  setUpAll(() => DiffWorkerPool.debugForceInline = true);
+  tearDownAll(() {
+    DiffWorkerPool.debugForceInline = false;
+    return DiffWorkerPool.instance.shutdown();
+  });
+
   late AppPreferences prefs;
 
   setUp(() async {
@@ -466,6 +476,233 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       },
     );
+
+    testWidgets(
+      'headSha change on Overview before visiting Diff does not show DiffUpdateChip',
+      (tester) async {
+        tester.view.physicalSize = const Size(1600, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final detailController = StreamController<PullRequest?>();
+        addTearDown(detailController.close);
+        var filesLoadCount = 0;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...baseOverrides(),
+              rpcClientProvider.overrideWithValue(
+                (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+              ),
+              prDetailProvider(
+                _prRefOf(42),
+              ).overrideWith((ref) => detailController.stream),
+              githubUserProvider.overrideWith((ref) async => null),
+              forgeConnectionsProvider.overrideWith((ref) async => []),
+              rigCapabilitiesProvider.overrideWith((ref) async => []),
+              reposForWorkspaceProvider.overrideWith(
+                (ref, workspaceId) => Stream.value([
+                  Repo(
+                    id: 'repo-1',
+                    name: 'repo',
+                    path: '/tmp/repo',
+                    remoteOwner: 'owner',
+                    remoteName: 'repo',
+                    createdAt: DateTime.utc(2026),
+                    updatedAt: DateTime.utc(2026),
+                  ),
+                ]),
+              ),
+              prFileIndexProvider(_prRefOf(42)).overrideWith(
+                (ref) => Stream.value([
+                  PrFile(
+                    filename: 'a.dart',
+                    status: PrFileStatus.modified,
+                    additions: 1,
+                    deletions: 0,
+                    patch: '',
+                  ),
+                ]),
+              ),
+              prFilesLoadProvider(_prRefOf(42)).overrideWith((ref) {
+                filesLoadCount++;
+                return Stream.value(
+                  PrFilesLoad(
+                    files: [
+                      PrFile(
+                        filename: 'file_v$filesLoadCount.dart',
+                        status: PrFileStatus.modified,
+                        additions: 1,
+                        deletions: 0,
+                        patch: '@@ -1 +1 @@\n-old\n+new',
+                      ),
+                    ],
+                    isComplete: true,
+                  ),
+                );
+              }),
+              prDiffProvider(_prRefOf(42)).overrideWith(
+                (ref) => Stream.value('diff'),
+              ),
+            ],
+            child: _wrap(
+              CcTheme(
+                data: CcThemeData.light(),
+                child: const PullRequestDetailScreen(
+                  workspaceId: 'ws',
+                  owner: 'owner',
+                  repo: 'repo',
+                  prNumber: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        detailController.add(_samplePr(headSha: 'sha-1'));
+        await tester.pump();
+        await tester.pump();
+
+        detailController.add(_samplePr(headSha: 'sha-2'));
+        await tester.pump();
+        await tester.pump();
+
+        // Switch from Overview to Diff for the first time.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(1);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.byType(DiffUpdateChip), findsNothing);
+        expect(filesLoadCount, 1);
+        expect(find.textContaining('file_v1.dart'), findsWidgets);
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'switching back from Overview to previously visited Diff after headSha change auto-refreshes',
+      (tester) async {
+        tester.view.physicalSize = const Size(1600, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final detailController = StreamController<PullRequest?>();
+        addTearDown(detailController.close);
+        var filesLoadCount = 0;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...baseOverrides(),
+              rpcClientProvider.overrideWithValue(
+                (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+              ),
+              prDetailProvider(
+                _prRefOf(42),
+              ).overrideWith((ref) => detailController.stream),
+              githubUserProvider.overrideWith((ref) async => null),
+              forgeConnectionsProvider.overrideWith((ref) async => []),
+              rigCapabilitiesProvider.overrideWith((ref) async => []),
+              reposForWorkspaceProvider.overrideWith(
+                (ref, workspaceId) => Stream.value([
+                  Repo(
+                    id: 'repo-1',
+                    name: 'repo',
+                    path: '/tmp/repo',
+                    remoteOwner: 'owner',
+                    remoteName: 'repo',
+                    createdAt: DateTime.utc(2026),
+                    updatedAt: DateTime.utc(2026),
+                  ),
+                ]),
+              ),
+              prFileIndexProvider(_prRefOf(42)).overrideWith(
+                (ref) => Stream.value([
+                  PrFile(
+                    filename: 'file_v$filesLoadCount.dart',
+                    status: PrFileStatus.modified,
+                    additions: 1,
+                    deletions: 0,
+                    patch: '',
+                  ),
+                ]),
+              ),
+              prFilesLoadProvider(_prRefOf(42)).overrideWith((ref) {
+                filesLoadCount++;
+                return Stream.value(
+                  PrFilesLoad(
+                    files: [
+                      PrFile(
+                        filename: 'file_v$filesLoadCount.dart',
+                        status: PrFileStatus.modified,
+                        additions: 1,
+                        deletions: 0,
+                        patch: '@@ -1 +1 @@\n-old\n+new',
+                      ),
+                    ],
+                    isComplete: true,
+                  ),
+                );
+              }),
+              prDiffProvider(_prRefOf(42)).overrideWith(
+                (ref) => Stream.value('diff'),
+              ),
+            ],
+            child: _wrap(
+              CcTheme(
+                data: CcThemeData.light(),
+                child: const PullRequestDetailScreen(
+                  workspaceId: 'ws',
+                  owner: 'owner',
+                  repo: 'repo',
+                  prNumber: 42,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        detailController.add(_samplePr(headSha: 'sha-1'));
+        await tester.pump();
+        await tester.pump();
+
+        // Visit Diff tab first.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(1);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(filesLoadCount, 1);
+
+        // Switch back to Overview.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(0);
+        await tester.pump();
+        await tester.pump();
+
+        // A new commit pushes while the user is on Overview.
+        detailController.add(_samplePr(headSha: 'sha-2'));
+        await tester.pump();
+        await tester.pump();
+
+        // Switch back to Diff: it should auto-refresh without requiring the chip button.
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).onTabSelected(1);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.byType(DiffUpdateChip), findsNothing);
+        expect(filesLoadCount, 2);
+        expect(find.textContaining('file_v2.dart'), findsWidgets);
+
+        await tester.pumpWidget(Container());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }
 
@@ -493,7 +730,7 @@ class _CommitScopeHostState extends State<_CommitScopeHost> {
   }
 }
 
-PullRequest _samplePr() {
+PullRequest _samplePr({String headSha = ''}) {
   return PullRequest(
     id: 1,
     number: 42,
@@ -501,6 +738,7 @@ PullRequest _samplePr() {
     body: '',
     state: PrState.open,
     isDraft: false,
+    headSha: headSha,
     author: const PrUser(login: 'octocat', avatarUrl: ''),
     createdAt: DateTime.utc(2026, 9, 1),
     updatedAt: DateTime.utc(2026, 9, 2),

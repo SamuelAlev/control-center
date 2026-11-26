@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
+import 'package:cc_domain/features/agents/domain/services/content_synthesizer.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_command.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_harness/loop.dart';
@@ -91,6 +92,9 @@ class GuidedGoalService {
         requestedByUserId: requestedByUserId,
         adapterId: synthesizer.adapterId,
         modelId: synthesizer.modelId,
+        agentId: synthesizer.agentId,
+        agentSlug: kContentSynthesizerSlug,
+        taskFamily: 'guided_goal',
         systemPrompt: synthesizer.systemPromptFor(guidedGoalSystemPrompt),
         prompt: guidedGoalTurnPrompt(
           roughObjective: roughObjective,

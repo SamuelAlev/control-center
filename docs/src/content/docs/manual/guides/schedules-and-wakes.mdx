@@ -32,7 +32,7 @@ Type one of these in a conversation's composer:
 
 The composer helps you write them. After `/loop` or `/schedule` and a space, the suggestion list offers when it fires and narrows as you type; type `--` after the time for the limits. Enter or Tab takes a row and sends nothing. A line above your text then reads the command back: when it fires, when it ends, and what is still missing. If you press Enter on a command that cannot be read, that line says what is wrong and your draft stays.
 
-You can also create a schedule from the **Schedules** page with **New schedule**: pick the space, conversation and agent, when it fires, what each run starts from, an end, a run cap and a cost cap. **If the agent is busy** chooses between skipping that fire and waiting until the agent is free. **Each fire** chooses between starting a run and only notifying you with the note.
+You can also create a schedule under **Settings → Workspace → Schedules** with **New schedule**: pick the space, conversation and agent, when it fires, what each run starts from, an end, a run cap and a cost cap. **If the agent is busy** chooses between skipping that fire and waiting until the agent is free. **Each fire** chooses between starting a run and only notifying you with the note.
 
 ## What agents set up
 
@@ -65,7 +65,7 @@ Agents use the `wake_me` tool for the same things, and for watches:
 
 A wake that was not delivered leaves one row in the conversation saying why, such as **The agent is paused.** or **A budget blocks a run.**
 
-**The Schedules page.** Sidebar → **Schedules** lists every schedule and watch you can see, grouped by status; a cron schedule shows its next three times in your time zone. Open one to see its note, owner, next fires, runs, skips, spend and end, and **Recent wakes and runs**. Each schedule has its own address (`/workspaces/<workspace>/schedules/<id>`).
+**The Schedules page.** **Settings → Workspace → Schedules** lists every schedule and watch you can see, grouped by status; a cron schedule shows its next three times in your time zone. Open one to see its note, owner, next fires, runs, skips, spend and end, and **Recent wakes and runs**. Each schedule has its own address (`/workspaces/<workspace>/settings/workspace/schedules/<id>`).
 
 | Action | Who can |
 | --- | --- |
@@ -93,7 +93,7 @@ On the phone, **Repeat** on the goals screen starts a repeating prompt (every so
 
 ## Workspace limits
 
-A workspace admin sets the limits under **Settings → Workspace → Schedules**:
+A workspace admin sets the limits on the same page, under the list:
 
 - **Schedule limits**: how many active or paused schedules one agent may hold in one conversation (10), across the workspace (50), and in the whole workspace (500); the default cost cap of a schedule (50 dollars); and the time zone cron schedules and the daily digest use (UTC to start with).
 - **When nobody answers**: how long a run the server started waits for a person's answer or approval (72 hours by default, 1 hour to 7 days) before an approval counts as denied and a question as unanswered (after that, anything else the same run asks is refused at once), and the hour of the daily digest of what waits for you in goals, schedules and other runs the server started.

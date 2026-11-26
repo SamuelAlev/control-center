@@ -408,9 +408,9 @@
   "calendarDisconnect": "Desconectar",
   "calendarReconnect": "Volver a conectar",
   "calendarEmptyNoEvents": "No hay eventos en este intervalo",
-  "calendarStartRecording": "Empezar a grabar",
-  "calendarStartRecordingAndLink": "Grabar y vincular",
   "calendarJoinMeet": "Unirse a la reunión",
+  "calendarJoinAndRecord": "Unirse y grabar",
+  "calendarRecordFailed": "No se pudo iniciar la grabación",
   "calendarFromCalendar": "Desde el calendario",
   "calendarLinkedMeeting": "Reunión vinculada",
   "calendarToday": "Hoy",
@@ -649,7 +649,6 @@
     "description": "Button to activate a policy"
   },
   "activity": "Actividad",
-  "activityLabel": "ACTIVIDAD",
   "activitySearchHint": "Buscar en la actividad",
   "activityNoMatches": "Ninguna actividad coincide con tus filtros",
   "activityPageRange": "{start}–{end} de {total}",
@@ -1077,7 +1076,7 @@
   "articlesSubscribed": "Artículos de tus fuentes suscritas.",
   "askAi": "Ask AI",
   "askAiReviewDescription": "Pedir a la IA que revise esta PR",
-  "assignees": "ASIGNADOS",
+  "assignees": "Asignados",
   "attachImage": "Adjuntar imagen",
   "attachedAgents": "Agentes adjuntos",
   "audioInput": "Entrada de audio",
@@ -1102,7 +1101,7 @@
   "blocking": "Bloqueando",
   "bookmarkLabel": "Marcador",
   "briefDescription": "Descripción breve",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "Predefinidos incluidos - nunca actualizados",
   "@bundledDefaultsNeverUpdated": {
     "description": "Locale string for bundledDefaultsNeverUpdated"
@@ -2238,7 +2237,7 @@
   "published": "Publicado",
   "pullRequestApproved": "Pull request aprobada",
   "pullRequests": "Pull requests",
-  "questionLabel": "PREGUNTA",
+  "questionLabel": "Pregunta",
   "queued": "En cola",
   "react": "Reaccionar",
   "readerPreferences": "Preferencias del lector",
@@ -2246,7 +2245,7 @@
   "@reasoningEffort": {
     "description": "Locale string for reasoningEffort"
   },
-  "recommendLabel": "RECOMENDAR",
+  "recommendLabel": "Recomendar",
   "recordingFromDevice": "Grabando desde {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -2328,7 +2327,7 @@
     }
   },
   "reviewedByMe": "Revisadas por mí",
-  "reviewers": "REVISORES",
+  "reviewers": "Revisores",
   "roleLabel": "Rol",
   "@roleLabel": {
     "description": "Table header for role column in access matrix"
@@ -2747,7 +2746,7 @@
   "success": "Éxito",
   "successLabel": "Éxito",
   "suggestion": "Sugerencia",
-  "suggestLabel": "SUGERIR",
+  "suggestLabel": "Sugerir",
   "superseded": "Sustituido",
   "@superseded": {
     "description": "Label for superseded facts"
@@ -2780,7 +2779,7 @@
     "description": "Locale string for themeSystem"
   },
   "thisCannotBeUndone": "Esta acción no se puede deshacer.",
-  "ticketLabel": "TICKET",
+  "ticketLabel": "Ticket",
   "titleLabel": "Título",
   "todayLabel": "Hoy",
   "toggleTheme": "Cambiar tema",
@@ -3808,7 +3807,9 @@
   "prTemplateLabel": "Plantilla",
   "prTemplateDefault": "Predeterminada",
   "addReviewers": "Añadir revisores",
-  "addAssignees": "Añadir asignados",
+
+  "reRequestReview": "Volver a solicitar revisión",
+  "reRequestReviewFor": "Volver a solicitar revisión a {label}",  "addAssignees": "Añadir asignados",
   "addLabels": "Añadir etiquetas",
   "searchLabels": "Buscar etiquetas…",
   "noMatchingLabels": "No hay etiquetas coincidentes",
@@ -3857,19 +3858,15 @@
   "meetingNotesHint": "Anota notas rápidas: el agente las ampliará tras la reunión.",
   "meetingSpeakerMe": "Tú",
   "meetingStatusRecording": "Grabando",
+  "meetingStatusPaused": "En pausa",
   "meetingStatusProcessing": "Procesando",
   "meetingStatusDone": "Listo",
   "meetingStatusFailed": "Error",
   "meetingsSubtitle": "Capturado y transcrito en este dispositivo, y luego resumido por un agente.",
   "meetingsRecordMeeting": "Grabar reunión",
   "meetingsProcessingNow": "{count, plural, =1{1 procesándose ahora} other{{count} procesándose ahora}}",
-  "meetingsCountLabel": "{count, plural, =0{Ninguna reunión} =1{1 reunión} other{{count} reuniones}}",
-  "meetingsLedgerOpenActions": "Tareas abiertas",
-  "meetingsLedgerDecisions": "Decisiones",
   "meetingsLiveOpen": "Abrir la grabación",
   "meetingTemplateShort": "Plantilla",
-  "meetingsStatThisWeek": "Esta semana",
-  "meetingsStatRecorded": "Grabado",
   "meetingsFilterAll": "Todas",
   "meetingsFilterDone": "Completadas",
   "meetingsFilterProcessing": "En proceso",
@@ -3881,7 +3878,6 @@
   "meetingsBucketOlder": "Más antiguas",
   "meetingsDecisionsCount": "{count, plural, =1{1 decisión} other{{count} decisiones}}",
   "meetingsActionItemsProgress": "{done} / {total} tareas",
-  "meetingsEnhancedPill": "mejorada",
   "meetingsTranscribing": "transcribiendo y resumiendo…",
   "meetingsOpenAction": "Abrir",
   "meetingsStopProcessing": "Detener",
@@ -3958,7 +3954,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Parece que hay una reunión en curso. ¿Grabarla?",
-  "meetingDetectedRecord": "Grabar",
   "meetingDetectedDismiss": "Descartar",
   "meetingAutoStopTitle": "Esta reunión parece haber terminado. ¿Detener la grabación?",
   "meetingAutoStopStop": "Detener",
@@ -4559,6 +4554,7 @@
     }
   },
   "deviceNeverSeen": "Nunca conectado",
+  "deviceAwaitingApproval": "Pendiente de aprobación",
   "profileSectionLabel": "Perfil",
   "profileSectionDescription": "Cómo te ven el equipo y la autoría de commits git en este espacio. Los campos vacíos heredan el nombre y el correo de tu cuenta.",
   "displayNameLabel": "Nombre visible",
@@ -5216,8 +5212,6 @@
   "evalsStatusRunning": "En ejecución",
   "evalsStatusPassed": "Aprobado",
   "evalsStatusFailed": "Fallido",
-  "bannerMeetingJoin": "Unirse",
-  "bannerMeetingRecordAndLink": "Grabar y vincular",
   "bannerCalendarReconnect": "Reconectar",
   "bannerView": "Ver",
   "soundscapeTitle": "Paisajes sonoros",
@@ -7064,6 +7058,7 @@
   "agentAccountsDescription": "Qué cuentas usan las ejecuciones de este agente. Cada bloque hereda al principio la elección del espacio de trabajo.",
   "agentAccountsNothingToRotate": "Nada que rotar: conecta primero una segunda cuenta o clave.",
   "failedToPostReply": "No se pudo publicar la respuesta: {error}",
+  "failedToPostComment": "No se pudo publicar el comentario: {error}",
   "commentOnLine": "Línea {line}",
   "viewInDiff": "Ver en el diff",
   "subscriptionUsagePreviousAccount": "Cuenta anterior",
@@ -7642,27 +7637,27 @@
   "rigClipboardAlwaysCopyTitle": "Permitir siempre copiar desde entornos",
   "rigClipboardAlwaysCopyDescription": "Colocar contenido del portapapeles de cualquier entorno en este dispositivo sin preguntar.",
   "imageDiffBefore": "Antes",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Después",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Dos columnas",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Deslizar",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Diferencia",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% cambiado",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -7671,11 +7666,11 @@
     }
   },
   "imageDiffPictures": "Imágenes",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Fuente",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Eliminado",
@@ -7769,7 +7764,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} marcado como no visto",
   "prLineChangesSemantics": "Líneas añadidas: {additions}, líneas eliminadas: {deletions}",
   "closeTabNamed": "Cerrar {tab}",
-  "threadCommentCount": "{count, plural, =1{1 comentario} other{{count} comentarios}}",
   "notificationAgentAwaitingInput": "Un agente necesita tu atención",
   "notifyAgentAwaitingInput": "Cuando un agente necesita aprobación, una respuesta o credenciales válidas, o una política bloquea una acción",
   "notificationAgentNeedsApproval": "{agent} necesita tu aprobación",
@@ -9459,7 +9453,6 @@
   "improvementRowNeedsAdmin": "Decide un admin",
   "improvementNotFound": "Esta propuesta no existe, o está en un espacio que no puedes abrir.",
   "dispatchSettingsTitle": "Programaciones",
-  "dispatchSettingsSubtitle": "Límites de programaciones y vigilancias, y qué pasa con las solicitudes que nadie responde.",
   "dispatchLimitsLabel": "Límites de programaciones",
   "dispatchLimitsSubtitle": "Topes de cuántas programaciones y vigilancias pueden tener los agentes, y sus valores predeterminados.",
   "dispatchLimitRange": "De 1 a {max}",
@@ -9482,7 +9475,6 @@
   "dispatchDigestHourHelp": "En {zone}, la zona horaria de arriba.",
   "dispatchDigestHourRange": "De 0 a 23",
   "goalRecordCrumb": "Objetivo",
-  "scheduleRecordCrumb": "Programación",
   "improvementRecordCrumb": "Propuesta",
   "goalNodeNeedsAgent": "Elige el agente que persigue el objetivo.",
   "goalNodeNeedsObjective": "Escribe el objetivo.",
@@ -9603,5 +9595,14 @@
   "mcpServerSignInWrongCode": "Ese no es el código que mostró tu navegador. {count, plural, one{Queda 1 intento.} other{Quedan {count} intentos.}}",
   "mcpServerSignInEnded": "Se agotó el tiempo, se rechazó el inicio de sesión o introdujiste demasiados códigos incorrectos. Vuelve a empezar para obtener una nueva página de inicio de sesión.",
   "mcpServerSignInStartAgain": "Empezar de nuevo",
-  "mcpServerSignedIn": "Has iniciado sesión en {name}."
+  "mcpServerSignedIn": "Has iniciado sesión en {name}.",
+  "ccLoading": "Cargando",
+  "ccProgress": "Progreso",
+  "ccBreadcrumb": "Ruta de navegación",
+  "ccDialog": "Cuadro de diálogo",
+  "ccResize": "Cambiar tamaño",
+  "ccUnverifiedLabel": "{label} (sin verificar)",
+  "prRowSelect": "Seleccionar {title}",
+  "prTableSelectAll": "Seleccionar todos los pull requests",
+  "planVersionRewind": "Restaurar la versión {version}"
 }

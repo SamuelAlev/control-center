@@ -318,41 +318,45 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
     final chrome = widget.chrome;
     final tabs = _c.tabs;
     final selected = _c.selectedIndex;
-    return Column(
-      children: [
-        EditorTabBar(
-          leafId: widget.leafId,
-          tabs: tabs,
-          labels: [for (final t in tabs) chrome._label(t)],
-          icons: [for (final t in tabs) chrome._icon(t) ?? AppIcons.fileCode],
-          leadings: chrome.leadingFor == null
-              ? null
-              : [for (final t in tabs) chrome._leading(t)],
-          trailings: chrome.trailingFor == null
-              ? null
-              : [for (final t in tabs) chrome._trailing(t)],
-          dirty: [for (final t in tabs) chrome._dirty(t)],
-          scrambling: chrome.scramblingFor == null
-              ? null
-              : [for (final t in tabs) chrome._scrambling(t)],
-          selectedIndex: selected,
-          onTabSelected: (i) {
-            widget.layout.setActiveLeaf(widget.leafId);
-            _c.selectedIndex = i;
-          },
-          onTabClosed: _closeTab,
-          onTabContextMenu: (index, position) =>
-              _showTabMenu(l10n, index, position),
-          onReorderDrop: (data, insertIndex) =>
-              widget.layout.moveTab(data, widget.leafId, insertIndex),
-          onUntitledDraft: chrome.onUntitledDraft,
-          // The `[+]` new-tab menu scrolls inline next to the last tab.
-          inlineActions: _buildInlineActions(l10n),
-          // Split / close-group / sidebar-toggle stay pinned on the right.
-          actions: _buildTrailingActions(l10n),
-        ),
-        Expanded(child: _buildBodyArea(l10n, tabs, selected)),
-      ],
+    // One Tab region per pane: Tab walks this pane's strip and body before
+    // moving on to the next pane, instead of interleaving by geometry.
+    return FocusTraversalGroup(
+      child: Column(
+        children: [
+          EditorTabBar(
+            leafId: widget.leafId,
+            tabs: tabs,
+            labels: [for (final t in tabs) chrome._label(t)],
+            icons: [for (final t in tabs) chrome._icon(t) ?? AppIcons.fileCode],
+            leadings: chrome.leadingFor == null
+                ? null
+                : [for (final t in tabs) chrome._leading(t)],
+            trailings: chrome.trailingFor == null
+                ? null
+                : [for (final t in tabs) chrome._trailing(t)],
+            dirty: [for (final t in tabs) chrome._dirty(t)],
+            scrambling: chrome.scramblingFor == null
+                ? null
+                : [for (final t in tabs) chrome._scrambling(t)],
+            selectedIndex: selected,
+            onTabSelected: (i) {
+              widget.layout.setActiveLeaf(widget.leafId);
+              _c.selectedIndex = i;
+            },
+            onTabClosed: _closeTab,
+            onTabContextMenu: (index, position) =>
+                _showTabMenu(l10n, index, position),
+            onReorderDrop: (data, insertIndex) =>
+                widget.layout.moveTab(data, widget.leafId, insertIndex),
+            onUntitledDraft: chrome.onUntitledDraft,
+            // The `[+]` new-tab menu scrolls inline next to the last tab.
+            inlineActions: _buildInlineActions(l10n),
+            // Split / close-group / sidebar-toggle stay pinned on the right.
+            actions: _buildTrailingActions(l10n),
+          ),
+          Expanded(child: _buildBodyArea(l10n, tabs, selected)),
+        ],
+      ),
     );
   }
 

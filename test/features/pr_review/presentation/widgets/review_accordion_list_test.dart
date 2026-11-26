@@ -268,14 +268,14 @@ void main() {
     );
     await tester.pump();
     // Only the open item is visible initially — one BUG badge.
-    expect(find.text('BUG'), findsOneWidget);
-    expect(find.text('SUGGEST'), findsNothing);
+    expect(find.text('Bug'), findsOneWidget);
+    expect(find.text('Suggest'), findsNothing);
 
     // Tap toggle
     await tester.tap(find.textContaining('Show'));
     await tester.pumpAndSettle();
     // Now the dismissed suggestion item is visible.
-    expect(find.text('SUGGEST'), findsOneWidget);
+    expect(find.text('Suggest'), findsOneWidget);
     expect(find.textContaining('Hide'), findsOneWidget);
   });
 

@@ -195,7 +195,7 @@ class ProgressRun extends StatelessWidget {
                     child: Text(
                       progressPreview(output),
                       style: CcFonts.code(
-                        textStyle: CcTypography.monoNum.copyWith(
+                        textStyle: CcTypography.numeric.copyWith(
                           color: t.textSecondary,
                         ),
                       ),

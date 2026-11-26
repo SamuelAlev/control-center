@@ -839,7 +839,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
-          color: today ? t.accent : const Color(0x00000000),
+          color: today ? t.bgBrandSolid : const Color(0x00000000),
           borderRadius: AppRadii.brMd,
         ),
         child: Text(

@@ -572,9 +572,9 @@
   "calendarDisconnect": "Disconnect",
   "calendarReconnect": "Reconnect",
   "calendarEmptyNoEvents": "No events in this range",
-  "calendarStartRecording": "Start recording",
-  "calendarStartRecordingAndLink": "Start recording & link",
   "calendarJoinMeet": "Join meeting",
+  "calendarJoinAndRecord": "Join and record",
+  "calendarRecordFailed": "Couldn't start the recording",
   "calendarFromCalendar": "From calendar",
   "calendarLinkedMeeting": "Linked meeting",
   "calendarToday": "Today",
@@ -1103,7 +1103,6 @@
   "@activity": {
     "description": "Activity"
   },
-  "activityLabel": "ACTIVITY",
   "activitySearchHint": "Search activity",
   "activityNoMatches": "No activity matches your filters",
   "activityPageRange": "{start}–{end} of {total}",
@@ -2069,7 +2068,7 @@
   },
   "bookmarkLabel": "Bookmark",
   "briefDescription": "Brief description",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "Bundled defaults — never updated",
   "@bundledDefaultsNeverUpdated": {
     "description": "Locale string for bundledDefaultsNeverUpdated"
@@ -3743,7 +3742,7 @@
   "@pullRequests": {
     "description": "Pull requests"
   },
-  "questionLabel": "QUESTION",
+  "questionLabel": "Question",
   "queued": "Queued",
   "react": "React",
   "readerPreferences": "Reader preferences",
@@ -3754,7 +3753,7 @@
   "@reasoningEffort": {
     "description": "Locale string for reasoningEffort"
   },
-  "recommendLabel": "RECOMMEND",
+  "recommendLabel": "Recommend",
   "recordingFromDevice": "Recording from {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -4537,7 +4536,7 @@
   "@suggestion": {
     "description": "Toolbar button that turns a line comment into a code suggestion"
   },
-  "suggestLabel": "SUGGEST",
+  "suggestLabel": "Suggest",
   "superseded": "Superseded",
   "@superseded": {
     "description": "Label for superseded facts"
@@ -4585,7 +4584,7 @@
   "@thisCannotBeUndone": {
     "description": "This cannot be undone."
   },
-  "ticketLabel": "TICKET",
+  "ticketLabel": "Ticket",
   "titleLabel": "Title",
   "@titleLabel": {
     "description": "Title"
@@ -6831,6 +6830,19 @@
   "@addReviewers": {
     "description": "Button to add reviewers to a PR"
   },
+  "reRequestReview": "Re-request review",
+  "@reRequestReview": {
+    "description": "Tooltip for the button that re-requests a pull request review from a reviewer"
+  },
+  "reRequestReviewFor": "Re-request review from {label}",
+  "@reRequestReviewFor": {
+    "description": "Accessible name for the control that re-requests a pull request review from a reviewer",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "addAssignees": "Add assignees",
   "@addAssignees": {
     "description": "Button to add assignees to a PR"
@@ -7019,6 +7031,7 @@
   "meetingNotesHint": "Jot quick notes — the agent expands them after the meeting.",
   "meetingSpeakerMe": "You",
   "meetingStatusRecording": "Recording",
+  "meetingStatusPaused": "Paused",
   "meetingStatusProcessing": "Processing",
   "meetingStatusDone": "Done",
   "meetingStatusFailed": "Failed",
@@ -7032,20 +7045,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{No meetings} =1{1 meeting} other{{count} meetings}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Open actions",
-  "meetingsLedgerDecisions": "Decisions",
   "meetingsLiveOpen": "Open recording",
   "meetingTemplateShort": "Template",
-  "meetingsStatThisWeek": "This week",
-  "meetingsStatRecorded": "Recorded",
   "meetingsFilterAll": "All",
   "meetingsFilterDone": "Done",
   "meetingsFilterProcessing": "Processing",
@@ -7074,7 +7075,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "enhanced",
   "meetingsTranscribing": "transcribing & summarizing…",
   "meetingsOpenAction": "Open",
   "meetingsStopProcessing": "Stop",
@@ -7204,7 +7204,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Looks like a meeting is happening. Record it?",
-  "meetingDetectedRecord": "Record",
   "meetingDetectedDismiss": "Dismiss",
   "meetingAutoStopTitle": "This meeting looks over. Stop recording?",
   "meetingAutoStopStop": "Stop",
@@ -7747,7 +7746,9 @@
   "ideFileBinary": "Binary file",
   "mcpApprovalMode": "Tool approval",
   "mcpApprovalModeDescription": "Which actions of Control Center's own tools, called through its MCP endpoint or by its agents, run without asking. Reads are always allowed; higher tiers prompt. Servers inside a run follow that run's action policy.",
-  "@mcpApprovalModeDescription": {"description": "Under 'Tool approval' in the External MCP servers section. It governs Control Center's own tools by capability tier (reads, writes, everything), not the personal MCP servers listed in that section, which a run's action policy and confirmations govern"},
+  "@mcpApprovalModeDescription": {
+    "description": "Under 'Tool approval' in the External MCP servers section. It governs Control Center's own tools by capability tier (reads, writes, everything), not the personal MCP servers listed in that section, which a run's action policy and confirmations govern"
+  },
   "mcpApprovalAlwaysAsk": "Always ask",
   "mcpApprovalWrite": "Auto-approve writes",
   "mcpApprovalYolo": "Auto-approve all",
@@ -8316,6 +8317,7 @@
     }
   },
   "deviceNeverSeen": "Never connected",
+  "deviceAwaitingApproval": "Awaiting approval",
   "profileSectionLabel": "Profile",
   "profileSectionDescription": "How you appear to teammates and in git commit authorship in this workspace. Empty fields inherit your account name and email.",
   "displayNameLabel": "Display name",
@@ -9090,8 +9092,6 @@
   "evalsStatusRunning": "Running",
   "evalsStatusPassed": "Passed",
   "evalsStatusFailed": "Failed",
-  "bannerMeetingJoin": "Join",
-  "bannerMeetingRecordAndLink": "Record & link",
   "bannerCalendarReconnect": "Reconnect",
   "bannerView": "View",
   "soundscapeTitle": "Soundscapes",
@@ -9263,17 +9263,27 @@
   "scmPullConflictBody": "Pulling {count} commits onto ⁨{branch}⁩ would conflict with the work in this checkout.",
   "@scmPullConflictBody": {
     "placeholders": {
-      "count": {"type": "int"},
-      "branch": {"type": "String"}
+      "count": {
+        "type": "int"
+      },
+      "branch": {
+        "type": "String"
+      }
     }
   },
   "scmAskAi": "Ask AI",
   "scmResolveConflictPrompt": "Pull ⁨{branch}⁩ in ⁨{repo}⁩. It is {count} commits behind its upstream, and the pull conflicts with the local work. Resolve the conflicts and finish the pull.",
   "@scmResolveConflictPrompt": {
     "placeholders": {
-      "branch": {"type": "String"},
-      "repo": {"type": "String"},
-      "count": {"type": "int"}
+      "branch": {
+        "type": "String"
+      },
+      "repo": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "commitMessageOnBranch": "Message ({shortcut} to commit on “{branch}”)",
@@ -11919,7 +11929,7 @@
       }
     }
   },
-  "guardrailCoversCommandPrefix":"commands starting with {prefix}",
+  "guardrailCoversCommandPrefix": "commands starting with {prefix}",
   "@guardrailCoversCommandPrefix": {
     "description": "Agent permissions settings: what a command rule covers, inserted into 'Allowed for {what}'. {prefix} is the start of a shell command.",
     "placeholders": {
@@ -12275,6 +12285,15 @@
   "failedToPostReply": "Could not post the reply: {error}",
   "@failedToPostReply": {
     "description": "Toast shown when replying to an inline review comment failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPostComment": "Could not post the comment: {error}",
+  "@failedToPostComment": {
+    "description": "Error toast shown when posting a top-level PR conversation comment fails.",
     "placeholders": {
       "error": {
         "type": "String"
@@ -13565,7 +13584,14 @@
   },
   "profileDeliveryMetrics": "Delivery metrics",
   "profileMetricsSample": "PRs analyzed: {count}",
-  "@profileMetricsSample": {"description": "Number of pull requests sampled for profile metrics", "placeholders": {"count": {"type": "int"}}},
+  "@profileMetricsSample": {
+    "description": "Number of pull requests sampled for profile metrics",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileMergeRate": "Merge rate",
   "profileReviewCoverage": "Review coverage",
   "profilePrSize": "PR size",
@@ -13576,41 +13602,112 @@
   "profileFirstReview": "Time to first review",
   "profileMetricsTruncated": "Percentiles use a limited sample of the available pull requests.",
   "profileLinesChanged": "{count} lines",
-  "@profileLinesChanged": {"description": "Compact count of lines changed", "placeholders": {"count": {"type": "String"}}},
+  "@profileLinesChanged": {
+    "description": "Compact count of lines changed",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "profileDurationMinutes": "{count} min",
-  "@profileDurationMinutes": {"description": "Compact duration in minutes", "placeholders": {"count": {"type": "int"}}},
+  "@profileDurationMinutes": {
+    "description": "Compact duration in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileDurationHours": "{count} hr",
-  "@profileDurationHours": {"description": "Compact duration in hours", "placeholders": {"count": {"type": "int"}}},
+  "@profileDurationHours": {
+    "description": "Compact duration in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileDurationDaysHours": "{days}d {hours}h",
-  "@profileDurationDaysHours": {"description": "Compact duration in days and hours", "placeholders": {"days": {"type": "int"}, "hours": {"type": "int"}}},
+  "@profileDurationDaysHours": {
+    "description": "Compact duration in days and hours",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "profilePercentiles": "p50 {median} · p90 {p90}",
-  "@profilePercentiles": {"description": "Median and 90th percentile values", "placeholders": {"median": {"type": "String"}, "p90": {"type": "String"}}},
+  "@profilePercentiles": {
+    "description": "Median and 90th percentile values",
+    "placeholders": {
+      "median": {
+        "type": "String"
+      },
+      "p90": {
+        "type": "String"
+      }
+    }
+  },
   "profileTeamMembers": "Members: {count}",
-  "@profileTeamMembers": {"description": "Team member count", "placeholders": {"count": {"type": "int"}}},
+  "@profileTeamMembers": {
+    "description": "Team member count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noPrsByTeamInWorkspace": "No pull requests by {team} in this workspace",
-  "@noPrsByTeamInWorkspace": {"description": "Empty state for a team with no workspace pull requests", "placeholders": {"team": {"type": "String"}}},
+  "@noPrsByTeamInWorkspace": {
+    "description": "Empty state for a team with no workspace pull requests",
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
   "profilePrStateFilterLabel": "Filter pull requests by state",
   "noProfilePrsMatchSearchHint": "Try another title or pull request number",
   "rigNetworkUnrestricted": "Network unrestricted",
-  "@rigNetworkUnrestricted": {"description": "Enclosure network security control"},
+  "@rigNetworkUnrestricted": {
+    "description": "Enclosure network security control"
+  },
   "rigNetworkAllowAllHosts": "Allow all hosts",
-  "@rigNetworkAllowAllHosts": {"description": "Enclosure network security control"},
+  "@rigNetworkAllowAllHosts": {
+    "description": "Enclosure network security control"
+  },
   "rigBrowserPermissionsTitle": "Site permissions",
-  "@rigBrowserPermissionsTitle": {"description": "Browser shield flyout title"},
+  "@rigBrowserPermissionsTitle": {
+    "description": "Browser shield flyout title"
+  },
   "rigBrowserPermissionsTooltip": "Site permissions and network",
-  "@rigBrowserPermissionsTooltip": {"description": "Browser shield tooltip"},
+  "@rigBrowserPermissionsTooltip": {
+    "description": "Browser shield tooltip"
+  },
   "rigBrowserPermissionEmpty": "No site has asked for a permission yet",
-  "@rigBrowserPermissionEmpty": {"description": "Empty state in the browser shield flyout"},
+  "@rigBrowserPermissionEmpty": {
+    "description": "Empty state in the browser shield flyout"
+  },
   "rigBrowserPermissionPrompt": "{origin} wants to use {permission}",
   "@rigBrowserPermissionPrompt": {
     "description": "Pending site permission in the browser shield flyout",
     "placeholders": {
-      "origin": {"type": "String"},
-      "permission": {"type": "String"}
+      "origin": {
+        "type": "String"
+      },
+      "permission": {
+        "type": "String"
+      }
     }
   },
   "rigBrowserPermissionBlock": "Block",
-  "@rigBrowserPermissionBlock": {"description": "Refuse a site permission request"},
+  "@rigBrowserPermissionBlock": {
+    "description": "Refuse a site permission request"
+  },
   "rigBrowserPermissionCamera": "Camera",
   "rigBrowserPermissionMicrophone": "Microphone",
   "rigBrowserPermissionNotifications": "Notifications",
@@ -13620,39 +13717,73 @@
   "rigBrowserPermissionDisplayCapture": "Screen capture",
   "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Allow every network host?",
-  "@rigNetworkBypassTitle": {"description": "Enclosure network security control"},
+  "@rigNetworkBypassTitle": {
+    "description": "Enclosure network security control"
+  },
   "rigNetworkBypassBody": "This restarts the enclosure and discards uncommitted work inside it. The guest can then reach any network host until it is closed.",
-  "@rigNetworkBypassBody": {"description": "Enclosure network security control"},
+  "@rigNetworkBypassBody": {
+    "description": "Enclosure network security control"
+  },
   "rigNetworkRestartUnrestricted": "Restart unrestricted",
-  "@rigNetworkRestartUnrestricted": {"description": "Enclosure network security control"},
+  "@rigNetworkRestartUnrestricted": {
+    "description": "Enclosure network security control"
+  },
   "rigNetworkUnrestrictedBody": "This enclosure can reach every network host. Close it and open a new one to restore the default restrictions.",
-  "@rigNetworkUnrestrictedBody": {"description": "Enclosure network security control"},
+  "@rigNetworkUnrestrictedBody": {
+    "description": "Enclosure network security control"
+  },
   "rigNetworkAlreadyUnrestrictedBody": "This Android emulator already manages its own networking, so Control Center cannot enforce a per-host allowlist. No restart is needed.",
-  "@rigNetworkAlreadyUnrestrictedBody": {"description": "Enclosure network security control"},
+  "@rigNetworkAlreadyUnrestrictedBody": {
+    "description": "Enclosure network security control"
+  },
   "rigClipboardPermissionHostToRigTitle": "Paste clipboard into this enclosure?",
-  "@rigClipboardPermissionHostToRigTitle": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardPermissionHostToRigTitle": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardPermissionHostToRigBody": "Control Center will read your device clipboard and send its contents to the enclosure. Clipboard content may contain passwords or other secrets.",
-  "@rigClipboardPermissionHostToRigBody": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardPermissionHostToRigBody": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardPermissionRigToHostTitle": "Copy clipboard out of this enclosure?",
-  "@rigClipboardPermissionRigToHostTitle": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardPermissionRigToHostTitle": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardPermissionRigToHostBody": "Control Center will read the enclosure clipboard and replace your device clipboard with its contents. Treat content from the enclosure as untrusted.",
-  "@rigClipboardPermissionRigToHostBody": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardPermissionRigToHostBody": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAllowTenMinutes": "Allow for 10 minutes",
-  "@rigClipboardAllowTenMinutes": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAllowTenMinutes": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAlwaysAllow": "Always allow",
-  "@rigClipboardAlwaysAllow": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAlwaysAllow": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardSettingsTitle": "Clipboard access",
-  "@rigClipboardSettingsTitle": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardSettingsTitle": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardSettingsHint": "Choose which clipboard transfers can run without asking. Temporary permissions expire after 10 minutes.",
-  "@rigClipboardSettingsHint": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardSettingsHint": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAlwaysPasteTitle": "Always allow paste into enclosures",
-  "@rigClipboardAlwaysPasteTitle": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAlwaysPasteTitle": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAlwaysPasteDescription": "Send this device's clipboard to any enclosure without asking.",
-  "@rigClipboardAlwaysPasteDescription": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAlwaysPasteDescription": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAlwaysCopyTitle": "Always allow copy from enclosures",
-  "@rigClipboardAlwaysCopyTitle": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAlwaysCopyTitle": {
+    "description": "Rig clipboard permission and settings"
+  },
   "rigClipboardAlwaysCopyDescription": "Put clipboard content from any enclosure on this device without asking.",
-  "@rigClipboardAlwaysCopyDescription": {"description": "Rig clipboard permission and settings"},
+  "@rigClipboardAlwaysCopyDescription": {
+    "description": "Rig clipboard permission and settings"
+  },
   "profileOverlayHint": "These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.",
   "@profileOverlayHint": {
     "description": "Profile card subtitle: workspace overlay, not a second account"
@@ -13748,834 +13879,2067 @@
     }
   },
   "settingsLinks": "Links",
-  "@settingsLinks": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@settingsLinks": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "linksSettingsDescription": "Choose where links from outside Control Center open, such as a pull request opened from GitHub.",
-  "@linksSettingsDescription": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@linksSettingsDescription": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkRememberedTitle": "Remembered workspaces",
-  "@repoLinkRememberedTitle": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkRememberedTitle": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkRememberedHint": "When a repository is linked in more than one workspace, opening a link to it asks which workspace to use. The choices you asked to remember are listed here.",
-  "@repoLinkRememberedHint": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkRememberedHint": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkRememberedEmpty": "No remembered choices yet.",
-  "@repoLinkRememberedEmpty": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkRememberedEmpty": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkForget": "Forget",
-  "@repoLinkForget": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkForget": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkWorkspaceUnavailable": "Workspace no longer available",
-  "@repoLinkWorkspaceUnavailable": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkWorkspaceUnavailable": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkWorkspaceDialogTitle": "Choose a workspace",
-  "@repoLinkWorkspaceDialogTitle": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkWorkspaceDialogTitle": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkWorkspaceDialogBody": "{repo} is linked in more than one workspace. Which one should this link open in?",
-  "@repoLinkWorkspaceDialogBody": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
+  "@repoLinkWorkspaceDialogBody": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/widgets"
+      }
+    }
+  },
   "repoLinkWorkspaceRemember": "Remember my choice for this repository",
-  "@repoLinkWorkspaceRemember": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkWorkspaceRemember": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkWorkspaceOpen": "Open",
-  "@repoLinkWorkspaceOpen": {"description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"},
+  "@repoLinkWorkspaceOpen": {
+    "description": "Settings → You → Links, and the dialog asking which workspace a repository link opens in"
+  },
   "repoLinkUnlinkedTitle": "Add repository to a workspace",
-  "@repoLinkUnlinkedTitle": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"},
+  "@repoLinkUnlinkedTitle": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"
+  },
   "repoLinkUnlinkedBody": "No workspace links {repo} yet. Add it to one to open this link.",
-  "@repoLinkUnlinkedBody": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
+  "@repoLinkUnlinkedBody": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/widgets"
+      }
+    }
+  },
   "repoLinkUnlinkedAddTo": "Add to {workspace}",
-  "@repoLinkUnlinkedAddTo": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"workspace": {"type": "String", "example": "Platform"}}},
+  "@repoLinkUnlinkedAddTo": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to",
+    "placeholders": {
+      "workspace": {
+        "type": "String",
+        "example": "Platform"
+      }
+    }
+  },
   "repoLinkUnlinkedAddToHint": "Pick its checkout on the server.",
-  "@repoLinkUnlinkedAddToHint": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"},
+  "@repoLinkUnlinkedAddToHint": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"
+  },
   "repoLinkUnlinkedCreate": "New workspace",
-  "@repoLinkUnlinkedCreate": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"},
+  "@repoLinkUnlinkedCreate": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"
+  },
   "repoLinkUnlinkedCreateHint": "Name it, then pick the checkout.",
-  "@repoLinkUnlinkedCreateHint": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"},
+  "@repoLinkUnlinkedCreateHint": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to"
+  },
   "repoLinkChooseCheckout": "Select the checkout of {repo} on the machine running the server.",
-  "@repoLinkChooseCheckout": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
+  "@repoLinkChooseCheckout": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/widgets"
+      }
+    }
+  },
   "repoLinkCheckoutMismatch": "None of the added repositories is {repo}, so the link opened without it.",
-  "@repoLinkCheckoutMismatch": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
+  "@repoLinkCheckoutMismatch": {
+    "description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/widgets"
+      }
+    }
+  },
   "windowMinimize": "Minimize",
-  "@windowMinimize": {"description": "Tooltip and accessible name of the app-drawn minimize button in the window's title bar (Windows, Linux)"},
+  "@windowMinimize": {
+    "description": "Tooltip and accessible name of the app-drawn minimize button in the window's title bar (Windows, Linux)"
+  },
   "windowMaximize": "Maximize",
-  "@windowMaximize": {"description": "Tooltip and accessible name of the app-drawn maximize button in the window's title bar (Windows, Linux)"},
+  "@windowMaximize": {
+    "description": "Tooltip and accessible name of the app-drawn maximize button in the window's title bar (Windows, Linux)"
+  },
   "windowRestore": "Restore",
-  "@windowRestore": {"description": "Tooltip and accessible name of the app-drawn button that restores a maximized window to its previous size (Windows, Linux)"},
+  "@windowRestore": {
+    "description": "Tooltip and accessible name of the app-drawn button that restores a maximized window to its previous size (Windows, Linux)"
+  },
   "nativeSandboxUnsupported": "Native sandbox is not supported on {platform} yet.",
-  "@nativeSandboxUnsupported": {"description": "Onboarding sandbox step title when the host platform has no native sandbox at all (nothing to install)", "placeholders": {"platform": {"type": "String", "example": "Windows (x86_64)"}}},
+  "@nativeSandboxUnsupported": {
+    "description": "Onboarding sandbox step title when the host platform has no native sandbox at all (nothing to install)",
+    "placeholders": {
+      "platform": {
+        "type": "String",
+        "example": "Windows (x86_64)"
+      }
+    }
+  },
   "continueWithoutSandbox": "Continue without sandbox",
-  "@continueWithoutSandbox": {"description": "Onboarding sandbox step button on a platform with no native sandbox: agents will run without isolation"},
+  "@continueWithoutSandbox": {
+    "description": "Onboarding sandbox step button on a platform with no native sandbox: agents will run without isolation"
+  },
   "sandboxCheckAgain": "Check again",
-  "@sandboxCheckAgain": {"description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"},
+  "@sandboxCheckAgain": {
+    "description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"
+  },
   "ideQuickOpen": "Go to file",
-  "@ideQuickOpen": {"description": "Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker."},
+  "@ideQuickOpen": {
+    "description": "Keyboard shortcut label (⌘P / Ctrl+P) for the IDE quick open file picker."
+  },
   "ideQuickOpenHint": "Search files by name",
-  "@ideQuickOpenHint": {"description": "Placeholder in the quick open picker's search field."},
+  "@ideQuickOpenHint": {
+    "description": "Placeholder in the quick open picker's search field."
+  },
   "ideQuickOpenRecentlyOpened": "Recently opened",
-  "@ideQuickOpenRecentlyOpened": {"description": "Tag on a quick open row that comes from the recently opened file list."},
+  "@ideQuickOpenRecentlyOpened": {
+    "description": "Tag on a quick open row that comes from the recently opened file list."
+  },
   "ideQuickOpenOpenToSide": "Open to the side",
-  "@ideQuickOpenOpenToSide": {"description": "Tooltip on a quick open row's button that opens the file in a new split pane to the side."},
+  "@ideQuickOpenOpenToSide": {
+    "description": "Tooltip on a quick open row's button that opens the file in a new split pane to the side."
+  },
   "ideQuickOpenRemoveRecent": "Remove from recently opened",
-  "@ideQuickOpenRemoveRecent": {"description": "Tooltip on a quick open row's button that removes the file from the recently opened list."},
+  "@ideQuickOpenRemoveRecent": {
+    "description": "Tooltip on a quick open row's button that removes the file from the recently opened list."
+  },
   "ideQuickOpenNoRecent": "No recently opened files",
-  "@ideQuickOpenNoRecent": {"description": "Quick open empty state when nothing is typed and no files have been opened yet."},
+  "@ideQuickOpenNoRecent": {
+    "description": "Quick open empty state when nothing is typed and no files have been opened yet."
+  },
   "diffMarkFileViewed": "Mark as viewed",
-  "@diffMarkFileViewed": {"description": "Tooltip and screen-reader name of the PR diff file header button that marks the file as viewed."},
+  "@diffMarkFileViewed": {
+    "description": "Tooltip and screen-reader name of the PR diff file header button that marks the file as viewed."
+  },
   "diffMarkFileNotViewed": "Mark as not viewed",
-  "@diffMarkFileNotViewed": {"description": "Tooltip and screen-reader name of the PR diff file header button that clears the viewed mark."},
+  "@diffMarkFileNotViewed": {
+    "description": "Tooltip and screen-reader name of the PR diff file header button that clears the viewed mark."
+  },
   "diffAdditionsCount": "{count, plural, =1{1 addition} other{{count} additions}}",
-  "@diffAdditionsCount": {"description": "Number of added lines in a diff, read by screen readers in place of the green \"+N\".", "placeholders": {"count": {"type": "int"}}},
+  "@diffAdditionsCount": {
+    "description": "Number of added lines in a diff, read by screen readers in place of the green \"+N\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diffDeletionsCount": "{count, plural, =1{1 deletion} other{{count} deletions}}",
-  "@diffDeletionsCount": {"description": "Number of removed lines in a diff, read by screen readers in place of the red \"−N\".", "placeholders": {"count": {"type": "int"}}},
+  "@diffDeletionsCount": {
+    "description": "Number of removed lines in a diff, read by screen readers in place of the red \"−N\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diffFileSemantics": "{path}, {status}, {additions}, {deletions}",
-  "@diffFileSemantics": {"description": "Screen-reader label of a PR diff file header. status is e.g. \"Modified\"; additions/deletions are diffAdditionsCount/diffDeletionsCount.", "placeholders": {"path": {"type": "String"}, "status": {"type": "String"}, "additions": {"type": "String"}, "deletions": {"type": "String"}}},
+  "@diffFileSemantics": {
+    "description": "Screen-reader label of a PR diff file header. status is e.g. \"Modified\"; additions/deletions are diffAdditionsCount/diffDeletionsCount.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      },
+      "additions": {
+        "type": "String"
+      },
+      "deletions": {
+        "type": "String"
+      }
+    }
+  },
   "diffFileSemanticsViewed": "{path}, {status}, {additions}, {deletions}, viewed",
-  "@diffFileSemanticsViewed": {"description": "Screen-reader label of a PR diff file header for a file the reviewer marked viewed.", "placeholders": {"path": {"type": "String"}, "status": {"type": "String"}, "additions": {"type": "String"}, "deletions": {"type": "String"}}},
+  "@diffFileSemanticsViewed": {
+    "description": "Screen-reader label of a PR diff file header for a file the reviewer marked viewed.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      },
+      "additions": {
+        "type": "String"
+      },
+      "deletions": {
+        "type": "String"
+      }
+    }
+  },
   "diffFileRenamedFrom": "renamed from {previous}",
-  "@diffFileRenamedFrom": {"description": "Screen-reader status of a renamed file in the PR diff; previous is the old path.", "placeholders": {"previous": {"type": "String"}}},
+  "@diffFileRenamedFrom": {
+    "description": "Screen-reader status of a renamed file in the PR diff; previous is the old path.",
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      }
+    }
+  },
   "diffTreeFolderSemantics": "{name}, folder, {count, plural, =1{1 file} other{{count} files}}",
-  "@diffTreeFolderSemantics": {"description": "Screen-reader label of a folder row in the PR diff file tree.", "placeholders": {"name": {"type": "String"}, "count": {"type": "int"}}},
+  "@diffTreeFolderSemantics": {
+    "description": "Screen-reader label of a folder row in the PR diff file tree.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "diffTreeFileSemantics": "{name}, {status}",
-  "@diffTreeFileSemantics": {"description": "Screen-reader label of a file row in the PR diff file tree; status is e.g. \"Added\".", "placeholders": {"name": {"type": "String"}, "status": {"type": "String"}}},
+  "@diffTreeFileSemantics": {
+    "description": "Screen-reader label of a file row in the PR diff file tree; status is e.g. \"Added\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "diffTreeFileSemanticsViewed": "{name}, {status}, viewed",
-  "@diffTreeFileSemanticsViewed": {"description": "Screen-reader label of a file row in the PR diff file tree that the reviewer marked viewed.", "placeholders": {"name": {"type": "String"}, "status": {"type": "String"}}},
+  "@diffTreeFileSemanticsViewed": {
+    "description": "Screen-reader label of a file row in the PR diff file tree that the reviewer marked viewed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "diffLineAdded": "Added line {line}: {code}",
-  "@diffLineAdded": {"description": "Screen-reader label of an added code line in the PR diff.", "placeholders": {"line": {"type": "int"}, "code": {"type": "String"}}},
+  "@diffLineAdded": {
+    "description": "Screen-reader label of an added code line in the PR diff.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "diffLineRemoved": "Removed line {line}: {code}",
-  "@diffLineRemoved": {"description": "Screen-reader label of a removed code line in the PR diff.", "placeholders": {"line": {"type": "int"}, "code": {"type": "String"}}},
+  "@diffLineRemoved": {
+    "description": "Screen-reader label of a removed code line in the PR diff.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "diffLineContext": "Line {line}: {code}",
-  "@diffLineContext": {"description": "Screen-reader label of an unchanged code line in the PR diff.", "placeholders": {"line": {"type": "int"}, "code": {"type": "String"}}},
+  "@diffLineContext": {
+    "description": "Screen-reader label of an unchanged code line in the PR diff.",
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
+  },
   "diffLineHunk": "Hunk {header}",
-  "@diffLineHunk": {"description": "Screen-reader label of a diff hunk header row (\"@@ -1,4 +1,5 @@ ...\").", "placeholders": {"header": {"type": "String"}}},
+  "@diffLineHunk": {
+    "description": "Screen-reader label of a diff hunk header row (\"@@ -1,4 +1,5 @@ ...\").",
+    "placeholders": {
+      "header": {
+        "type": "String"
+      }
+    }
+  },
   "diffLineBlank": "blank",
-  "@diffLineBlank": {"description": "Read by screen readers in place of an empty code line in the PR diff."},
+  "@diffLineBlank": {
+    "description": "Read by screen readers in place of an empty code line in the PR diff."
+  },
   "diffCommentOnLineAction": "Comment on this line",
-  "@diffCommentOnLineAction": {"description": "Screen-reader action on a PR diff code line that opens the inline comment composer."},
+  "@diffCommentOnLineAction": {
+    "description": "Screen-reader action on a PR diff code line that opens the inline comment composer."
+  },
   "diffFileMarkedViewedAnnouncement": "{path} marked as viewed",
-  "@diffFileMarkedViewedAnnouncement": {"description": "Screen-reader announcement after marking a PR diff file viewed.", "placeholders": {"path": {"type": "String"}}},
+  "@diffFileMarkedViewedAnnouncement": {
+    "description": "Screen-reader announcement after marking a PR diff file viewed.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "diffFileMarkedNotViewedAnnouncement": "{path} marked as not viewed",
-  "@diffFileMarkedNotViewedAnnouncement": {"description": "Screen-reader announcement after clearing a PR diff file's viewed mark.", "placeholders": {"path": {"type": "String"}}},
+  "@diffFileMarkedNotViewedAnnouncement": {
+    "description": "Screen-reader announcement after clearing a PR diff file's viewed mark.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "prLineChangesSemantics": "Lines added: {additions}, lines removed: {deletions}",
-  "@prLineChangesSemantics": {"description": "Screen-reader summary of a changed file's added/removed line counts in the PR sidebar.", "placeholders": {"additions": {"type": "int"}, "deletions": {"type": "int"}}},
+  "@prLineChangesSemantics": {
+    "description": "Screen-reader summary of a changed file's added/removed line counts in the PR sidebar.",
+    "placeholders": {
+      "additions": {
+        "type": "int"
+      },
+      "deletions": {
+        "type": "int"
+      }
+    }
+  },
   "closeTabNamed": "Close {tab}",
-  "@closeTabNamed": {"description": "Accessible name of a workbench tab's close button.", "placeholders": {"tab": {"type": "String"}}},
-  "threadCommentCount": "{count, plural, =1{1 comment} other{{count} comments}}",
-  "@threadCommentCount": {"description": "Number of comments in a code review conversation, shown in its header.", "placeholders": {"count": {"type": "int"}}},
+  "@closeTabNamed": {
+    "description": "Accessible name of a workbench tab's close button.",
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      }
+    }
+  },
   "notificationAgentAwaitingInput": "Agent needs attention",
   "notifyAgentAwaitingInput": "When an agent needs approval, an answer or working credentials, or policy blocks an action",
   "notificationAgentNeedsApproval": "{agent} needs your approval",
-  "@notificationAgentNeedsApproval": {"placeholders": {"agent": {"type": "String"}}},
+  "@notificationAgentNeedsApproval": {
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
   "notificationAgentNeedsApprovalUnnamed": "An agent needs your approval",
   "notificationAgentAskedQuestion": "{agent} has a question",
-  "@notificationAgentAskedQuestion": {"placeholders": {"agent": {"type": "String"}}},
+  "@notificationAgentAskedQuestion": {
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
   "notificationAgentAskedQuestionUnnamed": "An agent has a question",
   "notificationAgentBlockedOnCredential": "{agent} is blocked on a credential",
-  "@notificationAgentBlockedOnCredential": {"placeholders": {"agent": {"type": "String"}}},
+  "@notificationAgentBlockedOnCredential": {
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
   "notificationAgentBlockedOnCredentialUnnamed": "An agent is blocked on a credential",
   "notificationWaitReminder": "Still waiting: {title}",
-  "@notificationWaitReminder": {"description": "Title of a reminder notification for an agent wait nobody has answered yet. {title} is the original notification title, e.g. \"engineer needs your approval\".", "placeholders": {"title": {"type": "String"}}},
+  "@notificationWaitReminder": {
+    "description": "Title of a reminder notification for an agent wait nobody has answered yet. {title} is the original notification title, e.g. \"engineer needs your approval\".",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "killTerminal": "Kill terminal",
-  "@killTerminal": {"description": "Tooltip on a sidebar TERMINALS row's trash button that ends the shell."},
+  "@killTerminal": {
+    "description": "Tooltip on a sidebar TERMINALS row's trash button that ends the shell."
+  },
   "stopAgentCommand": "Stop command",
-  "@stopAgentCommand": {"description": "Tooltip on the stop button of a running agent shell command in the sidebar."},
+  "@stopAgentCommand": {
+    "description": "Tooltip on the stop button of a running agent shell command in the sidebar."
+  },
   "agentCommandStopping": "Stopping…",
-  "@agentCommandStopping": {"description": "Status shown on an agent command row after Stop, until the process exits."},
+  "@agentCommandStopping": {
+    "description": "Status shown on an agent command row after Stop, until the process exits."
+  },
   "sidebarAgeSeconds": "{count}s",
-  "@sidebarAgeSeconds": {"description": "Compact sidebar age in seconds", "placeholders": {"count": {"type": "int"}}},
+  "@sidebarAgeSeconds": {
+    "description": "Compact sidebar age in seconds",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentCommandSemantics": "Agent command {command}, running for {elapsed}",
-  "@agentCommandSemantics": {"description": "Screen reader label for a running agent shell command row.", "placeholders": {"command": {"type": "String"}, "elapsed": {"type": "String"}}},
+  "@agentCommandSemantics": {
+    "description": "Screen reader label for a running agent shell command row.",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
   "serverLostTitle": "Lost connection to the server",
-  "@serverLostTitle": {"description": "Title of the dialog shown while the app has lost its server connection and is retrying."},
+  "@serverLostTitle": {
+    "description": "Title of the dialog shown while the app has lost its server connection and is retrying."
+  },
   "serverLostBody": "Control Center keeps trying to reconnect in the background. Try again now, or go to the sign-in screen to pick a server.",
-  "@serverLostBody": {"description": "Body of the lost-connection dialog."},
+  "@serverLostBody": {
+    "description": "Body of the lost-connection dialog."
+  },
   "serverLostRetrying": "Reconnecting…",
-  "@serverLostRetrying": {"description": "Status line while a reconnect attempt is in flight."},
+  "@serverLostRetrying": {
+    "description": "Status line while a reconnect attempt is in flight."
+  },
   "serverLostNextAttempt": "Next attempt in {seconds}s",
-  "@serverLostNextAttempt": {"description": "Countdown to the next automatic reconnect attempt.", "placeholders": {"seconds": {"type": "int"}}},
+  "@serverLostNextAttempt": {
+    "description": "Countdown to the next automatic reconnect attempt.",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "serverLostReconnect": "Try to reconnect",
-  "@serverLostReconnect": {"description": "Button that retries the server connection immediately."},
+  "@serverLostReconnect": {
+    "description": "Button that retries the server connection immediately."
+  },
   "serverLostSignIn": "Go to sign-in",
-  "@serverLostSignIn": {"description": "Button that leaves the app for the server sign-in screen."},
+  "@serverLostSignIn": {
+    "description": "Button that leaves the app for the server sign-in screen."
+  },
   "serverEndedTitle": "Can't reconnect to the server",
-  "@serverEndedTitle": {"description": "Title of the dialog shown when the server rejected this device or changed identity, so retrying cannot help."},
+  "@serverEndedTitle": {
+    "description": "Title of the dialog shown when the server rejected this device or changed identity, so retrying cannot help."
+  },
   "shutdownSubtitleServer": "The server is stopping",
-  "@shutdownSubtitleServer": {"description": "Shutdown dialog subtitle when the server itself is stopping (not stopped by this app)."},
+  "@shutdownSubtitleServer": {
+    "description": "Shutdown dialog subtitle when the server itself is stopping (not stopped by this app)."
+  },
   "skillEvalAbsent": "Absent vs available",
-  "@skillEvalAbsent": {"description": "Skill campaign operator interface."},
+  "@skillEvalAbsent": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalAmbient": "Ambient skills",
-  "@skillEvalAmbient": {"description": "Skill campaign operator interface."},
+  "@skillEvalAmbient": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalArtifactRef": "Artifact reference: {reference}",
-  "@skillEvalArtifactRef": {"description": "Skill campaign operator interface.", "placeholders": {"reference": {"type": "String"}}},
+  "@skillEvalArtifactRef": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalAttempt": "{task} · {arm} · repeat {repeat}",
-  "@skillEvalAttempt": {"description": "Skill campaign operator interface.", "placeholders": {"task": {"type": "String"}, "arm": {"type": "String"}, "repeat": {"type": "int", "format": "decimalPattern"}}},
+  "@skillEvalAttempt": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "task": {
+        "type": "String"
+      },
+      "arm": {
+        "type": "String"
+      },
+      "repeat": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "skillEvalAttempts": "Attempts",
-  "@skillEvalAttempts": {"description": "Skill campaign operator interface."},
+  "@skillEvalAttempts": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalAvailableEvent": "Available",
-  "@skillEvalAvailableEvent": {"description": "Skill campaign operator interface."},
+  "@skillEvalAvailableEvent": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalBaseline": "Previous revision hash",
-  "@skillEvalBaseline": {"description": "Skill campaign operator interface."},
+  "@skillEvalBaseline": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalBodyLoad": "Body loaded",
-  "@skillEvalBodyLoad": {"description": "Skill campaign operator interface."},
+  "@skillEvalBodyLoad": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalBudgetCents": "Budget (US cents)",
-  "@skillEvalBudgetCents": {"description": "Skill campaign operator interface."},
+  "@skillEvalBudgetCents": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalBudgetNote": "Paid evaluation uses the selected provider and budget. Security scan results are separate.",
-  "@skillEvalBudgetNote": {"description": "Skill campaign operator interface."},
+  "@skillEvalBudgetNote": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalUsageBudgetNote": "Subscription budgets track API-equivalent usage, not invoices. An in-flight call may exceed the budget; no further calls start once it is reached. Security scans are separate.",
-  "@skillEvalUsageBudgetNote": {"description": "Explains the subscription evaluation stopping threshold and possible in-flight overshoot."},
+  "@skillEvalUsageBudgetNote": {
+    "description": "Explains the subscription evaluation stopping threshold and possible in-flight overshoot."
+  },
   "skillEvalCancel": "Cancel run",
-  "@skillEvalCancel": {"description": "Skill campaign operator interface."},
+  "@skillEvalCancel": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCancelled": "Cancelled",
-  "@skillEvalCancelled": {"description": "Skill campaign operator interface."},
+  "@skillEvalCancelled": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCancelling": "Cancelling",
-  "@skillEvalCancelling": {"description": "Skill campaign operator interface."},
+  "@skillEvalCancelling": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalComparison": "Comparison",
-  "@skillEvalComparison": {"description": "Skill campaign operator interface."},
+  "@skillEvalComparison": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCompleted": "Completed",
-  "@skillEvalCompleted": {"description": "Skill campaign operator interface."},
+  "@skillEvalCompleted": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalComposition": "Composition",
-  "@skillEvalComposition": {"description": "Skill campaign operator interface."},
+  "@skillEvalComposition": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCorpus": "Task corpus",
-  "@skillEvalCorpus": {"description": "Skill campaign operator interface."},
+  "@skillEvalCorpus": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCoverage": "{corpus} · {repeats} repeats",
-  "@skillEvalCoverage": {"description": "Skill campaign operator interface.", "placeholders": {"corpus": {"type": "String"}, "repeats": {"type": "int", "format": "decimalPattern"}}},
+  "@skillEvalCoverage": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "corpus": {
+        "type": "String"
+      },
+      "repeats": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "skillEvalCoverageComplete": "All planned trials observed",
-  "@skillEvalCoverageComplete": {"description": "Skill campaign operator interface."},
+  "@skillEvalCoverageComplete": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCurrentHash": "Current package hash: {hash}",
-  "@skillEvalCurrentHash": {"description": "Skill campaign operator interface.", "placeholders": {"hash": {"type": "String"}}},
+  "@skillEvalCurrentHash": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "hash": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalDisableUpdates": "Disable update evaluations",
-  "@skillEvalDisableUpdates": {"description": "Skill campaign operator interface."},
+  "@skillEvalDisableUpdates": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalEnableUpdates": "Enable update evaluations",
-  "@skillEvalEnableUpdates": {"description": "Skill campaign operator interface."},
+  "@skillEvalEnableUpdates": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalExport": "Copy redacted JSON",
-  "@skillEvalExport": {"description": "Skill campaign operator interface."},
+  "@skillEvalExport": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalFailed": "Failed",
-  "@skillEvalFailed": {"description": "Skill campaign operator interface."},
+  "@skillEvalFailed": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalForced": "Forced load vs absent",
-  "@skillEvalForced": {"description": "Skill campaign operator interface."},
+  "@skillEvalForced": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalForcedEvent": "Forced load",
-  "@skillEvalForcedEvent": {"description": "Skill campaign operator interface."},
+  "@skillEvalForcedEvent": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalHashLabel": "Package hash",
-  "@skillEvalHashLabel": {"description": "Label for the content hash of the installed skill revision."},
+  "@skillEvalHashLabel": {
+    "description": "Label for the content hash of the installed skill revision."
+  },
   "skillEvalProgressLabel": "Progress",
-  "@skillEvalProgressLabel": {"description": "Label for how many evaluation attempts have finished."},
+  "@skillEvalProgressLabel": {
+    "description": "Label for how many evaluation attempts have finished."
+  },
   "skillEvalUpdatesToggle": "Update evaluations",
-  "@skillEvalUpdatesToggle": {"description": "Title of the switch that starts a budgeted evaluation when a skill is saved."},
+  "@skillEvalUpdatesToggle": {
+    "description": "Title of the switch that starts a budgeted evaluation when a skill is saved."
+  },
   "skillEvalHashUnavailable": "Package hash unavailable on this server. Evaluation is disabled.",
-  "@skillEvalHashUnavailable": {"description": "Skill campaign operator interface."},
+  "@skillEvalHashUnavailable": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalHistory": "Revision history",
-  "@skillEvalHistory": {"description": "Skill campaign operator interface."},
+  "@skillEvalHistory": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalImproved": "Improved",
-  "@skillEvalImproved": {"description": "Skill campaign operator interface."},
+  "@skillEvalImproved": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalIncomplete": "Incomplete",
-  "@skillEvalIncomplete": {"description": "Skill campaign operator interface."},
+  "@skillEvalIncomplete": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalInconclusive": "No decision (not enough evidence)",
-  "@skillEvalInconclusive": {"description": "Skill campaign operator interface."},
+  "@skillEvalInconclusive": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalInferred": "Inferred",
-  "@skillEvalInferred": {"description": "Skill campaign operator interface."},
+  "@skillEvalInferred": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalInterrupted": "Interrupted",
-  "@skillEvalInterrupted": {"description": "Skill campaign operator interface."},
+  "@skillEvalInterrupted": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalLoadUnobserved": "Skill loading not observable; absence of an event does not prove it was ignored.",
-  "@skillEvalLoadUnobserved": {"description": "Skill campaign operator interface."},
+  "@skillEvalLoadUnobserved": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalModel": "Selected model",
-  "@skillEvalModel": {"description": "Skill campaign operator interface."},
+  "@skillEvalModel": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoAttempts": "No attempts yet.",
-  "@skillEvalNoAttempts": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoAttempts": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoModels": "No connected models available. Connect a provider in Settings first.",
-  "@skillEvalNoModels": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoModels": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoPrevious": "No previous hash in campaign history. Evaluate the previous revision before replacing it.",
-  "@skillEvalNoPrevious": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoPrevious": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoReport": "No report yet; partial attempts remain available.",
-  "@skillEvalNoReport": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoReport": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoWorkspace": "No workspace selected.",
-  "@skillEvalNoWorkspace": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoWorkspace": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoTasks": "No tasks reported yet.",
-  "@skillEvalNoTasks": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoTasks": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNoVerifiers": "No verifier evidence recorded.",
-  "@skillEvalNoVerifiers": {"description": "Skill campaign operator interface."},
+  "@skillEvalNoVerifiers": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNotEvaluated": "Not evaluated for these exact bytes. A scan is not behavioral evidence.",
-  "@skillEvalNotEvaluated": {"description": "Skill campaign operator interface."},
+  "@skillEvalNotEvaluated": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalNotVerified": "Not verified",
-  "@skillEvalNotVerified": {"description": "Skill campaign operator interface."},
+  "@skillEvalNotVerified": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalObserved": "Observed",
-  "@skillEvalObserved": {"description": "Skill campaign operator interface."},
+  "@skillEvalObserved": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalOpenQuality": "Open Quality",
-  "@skillEvalOpenQuality": {"description": "Skill campaign operator interface."},
+  "@skillEvalOpenQuality": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPolicyNote": "By default, saving a skill does not start a paid evaluation. If you explicitly enable automatic update reevaluation, saving starts a budgeted paid evaluation.",
-  "@skillEvalPolicyNote": {"description": "Skill campaign operator interface."},
+  "@skillEvalPolicyNote": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPolicyNeedsCampaign": "Evaluate a revision first to configure the update policy.",
-  "@skillEvalPolicyNeedsCampaign": {"description": "Skill campaign operator interface."},
+  "@skillEvalPolicyNeedsCampaign": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPolicyTemplate": "Update policy configuration",
-  "@skillEvalPolicyTemplate": {"description": "Skill campaign operator interface."},
+  "@skillEvalPolicyTemplate": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPartial": "Partial evidence; no adoption verdict",
-  "@skillEvalPartial": {"description": "Skill campaign operator interface."},
+  "@skillEvalPartial": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalProgress": "{completed} of {planned} attempts",
-  "@skillEvalProgress": {"description": "Skill campaign operator interface.", "placeholders": {"completed": {"type": "int", "format": "decimalPattern"}, "planned": {"type": "int", "format": "decimalPattern"}}},
+  "@skillEvalProgress": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "planned": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "skillEvalProvider": "Provider: {provider}",
-  "@skillEvalProvider": {"description": "Skill campaign operator interface.", "placeholders": {"provider": {"type": "String"}}},
+  "@skillEvalProvider": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalQualityIntro": "Workspace skill campaigns and revision-specific evidence.",
-  "@skillEvalQualityIntro": {"description": "Skill campaign operator interface."},
+  "@skillEvalQualityIntro": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalQueued": "Queued",
-  "@skillEvalQueued": {"description": "Skill campaign operator interface."},
+  "@skillEvalQueued": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalReconnecting": "Reconnecting to campaign snapshots…",
-  "@skillEvalReconnecting": {"description": "Skill campaign operator interface."},
+  "@skillEvalReconnecting": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalRefresh": "Refresh",
-  "@skillEvalRefresh": {"description": "Skill campaign operator interface."},
+  "@skillEvalRefresh": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalReferenceLoad": "Reference loaded",
-  "@skillEvalReferenceLoad": {"description": "Skill campaign operator interface."},
+  "@skillEvalReferenceLoad": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalRepetitions": "Repeats per task",
-  "@skillEvalRepetitions": {"description": "Skill campaign operator interface."},
+  "@skillEvalRepetitions": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalReport": "Evidence report",
-  "@skillEvalReport": {"description": "Skill campaign operator interface."},
+  "@skillEvalReport": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalRunning": "Running",
-  "@skillEvalRunning": {"description": "Skill campaign operator interface."},
+  "@skillEvalRunning": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalScriptExecution": "Script executed",
-  "@skillEvalScriptExecution": {"description": "Skill campaign operator interface."},
+  "@skillEvalScriptExecution": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalSpend": "Spend: {spent} / budget {budget}",
-  "@skillEvalSpend": {"description": "Skill campaign operator interface.", "placeholders": {"spent": {"type": "String"}, "budget": {"type": "String"}}},
+  "@skillEvalSpend": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalStart": "Start evaluation",
-  "@skillEvalStart": {"description": "Skill campaign operator interface."},
+  "@skillEvalStart": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalStartTitle": "Compare skill revisions",
-  "@skillEvalStartTitle": {"description": "Skill campaign operator interface."},
+  "@skillEvalStartTitle": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalStale": "Stale",
-  "@skillEvalStale": {"description": "Skill campaign operator interface."},
+  "@skillEvalStale": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalStaleReason": "Stale: {reason}",
-  "@skillEvalStaleReason": {"description": "Skill campaign operator interface.", "placeholders": {"reason": {"type": "String"}}},
+  "@skillEvalStaleReason": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalTaskClusters": "Distinct task clusters: {count}",
-  "@skillEvalTaskClusters": {"description": "Number of distinct task clusters sampled in a skill evaluation; repeated runs of the same task are not independent samples.", "placeholders": {"count": {"type": "String"}}},
+  "@skillEvalTaskClusters": {
+    "description": "Number of distinct task clusters sampled in a skill evaluation; repeated runs of the same task are not independent samples.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalTaskEvidence": "{rate} ({passes} verified) · {cost}",
-  "@skillEvalTaskEvidence": {"description": "Skill campaign operator interface.", "placeholders": {"rate": {"type": "String"}, "passes": {"type": "String"}, "cost": {"type": "String"}}},
+  "@skillEvalTaskEvidence": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      },
+      "passes": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalTasks": "Tasks by arm",
-  "@skillEvalTasks": {"description": "Skill campaign operator interface."},
+  "@skillEvalTasks": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalToolError": "Tool error",
-  "@skillEvalToolError": {"description": "Skill campaign operator interface."},
+  "@skillEvalToolError": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalTools": "Tool events",
-  "@skillEvalTools": {"description": "Skill campaign operator interface."},
+  "@skillEvalTools": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalTitle": "Skill evaluation",
-  "@skillEvalTitle": {"description": "Skill campaign operator interface."},
+  "@skillEvalTitle": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalUnavailable": "Unavailable: {reason}",
-  "@skillEvalUnavailable": {"description": "Skill campaign operator interface.", "placeholders": {"reason": {"type": "String"}}},
+  "@skillEvalUnavailable": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalUnknown": "Unknown",
-  "@skillEvalUnknown": {"description": "Skill campaign operator interface."},
+  "@skillEvalUnknown": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalUnsaved": "Unsaved edits are not included. Save before evaluating.",
-  "@skillEvalUnsaved": {"description": "Skill campaign operator interface."},
+  "@skillEvalUnsaved": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalUncertainty": "Uncertainty interval",
-  "@skillEvalUncertainty": {"description": "Skill campaign operator interface."},
+  "@skillEvalUncertainty": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalVerified": "Verified",
-  "@skillEvalVerified": {"description": "Skill campaign operator interface."},
+  "@skillEvalVerified": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalVerifiers": "Verification",
-  "@skillEvalVerifiers": {"description": "Skill campaign operator interface."},
+  "@skillEvalVerifiers": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalVerdict": "Verdict",
-  "@skillEvalVerdict": {"description": "Skill campaign operator interface."},
+  "@skillEvalVerdict": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalExportCopied": "Copy complete: {filename}",
-  "@skillEvalExportCopied": {"description": "Skill campaign operator interface.", "placeholders": {"filename": {"type": "String"}}},
+  "@skillEvalExportCopied": {
+    "description": "Skill campaign operator interface.",
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
+  },
   "skillEvalPlanViolation": "Plan violation",
-  "@skillEvalPlanViolation": {"description": "Skill campaign operator interface."},
+  "@skillEvalPlanViolation": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPreserved": "Quality preserved",
-  "@skillEvalPreserved": {"description": "Skill campaign operator interface."},
+  "@skillEvalPreserved": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalPrevious": "Previous vs current",
-  "@skillEvalPrevious": {"description": "Skill campaign operator interface."},
+  "@skillEvalPrevious": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalRegressed": "Regression demonstrated",
-  "@skillEvalRegressed": {"description": "Skill campaign operator interface."},
+  "@skillEvalRegressed": {
+    "description": "Skill campaign operator interface."
+  },
   "skillEvalCostRegression": "Cost regression",
-  "@skillEvalCostRegression": {"description": "Skill campaign regression type."},
+  "@skillEvalCostRegression": {
+    "description": "Skill campaign regression type."
+  },
   "skillEvalHarnessError": "Harness error",
-  "@skillEvalHarnessError": {"description": "Skill campaign regression type."},
+  "@skillEvalHarnessError": {
+    "description": "Skill campaign regression type."
+  },
   "skillBehaviorRouting": "Skill routing",
-  "@skillBehaviorRouting": {"description": "Heading for per-arm observed skill routing."},
+  "@skillBehaviorRouting": {
+    "description": "Heading for per-arm observed skill routing."
+  },
   "skillBehaviorRoutingCounts": "{truePositive} expected uses · {falsePositive} unexpected uses · {falseNegative} missed uses · {trueNegative} correct skips",
-  "@skillBehaviorRoutingCounts": {"description": "Observable skill-routing confusion counts. All placeholders are locale-formatted counts or unknown.", "placeholders": {"truePositive": {"type": "String"}, "falsePositive": {"type": "String"}, "falseNegative": {"type": "String"}, "trueNegative": {"type": "String"}}},
+  "@skillBehaviorRoutingCounts": {
+    "description": "Observable skill-routing confusion counts. All placeholders are locale-formatted counts or unknown.",
+    "placeholders": {
+      "truePositive": {
+        "type": "String"
+      },
+      "falsePositive": {
+        "type": "String"
+      },
+      "falseNegative": {
+        "type": "String"
+      },
+      "trueNegative": {
+        "type": "String"
+      }
+    }
+  },
   "skillBehaviorUnknownCounts": "{positive} uncertain uses · {negative} uncertain skips · {notOffered} not offered",
-  "@skillBehaviorUnknownCounts": {"description": "Uncertain or unavailable routing observations.", "placeholders": {"positive": {"type": "String"}, "negative": {"type": "String"}, "notOffered": {"type": "String"}}},
+  "@skillBehaviorUnknownCounts": {
+    "description": "Uncertain or unavailable routing observations.",
+    "placeholders": {
+      "positive": {
+        "type": "String"
+      },
+      "negative": {
+        "type": "String"
+      },
+      "notOffered": {
+        "type": "String"
+      }
+    }
+  },
   "skillBehaviorRoutingRates": "Observed precision {precision} · recall {recall} · false-positive rate {falsePositiveRate}",
-  "@skillBehaviorRoutingRates": {"description": "Observed routing rates; unknown where denominator is unobservable.", "placeholders": {"precision": {"type": "String"}, "recall": {"type": "String"}, "falsePositiveRate": {"type": "String"}}},
+  "@skillBehaviorRoutingRates": {
+    "description": "Observed routing rates; unknown where denominator is unobservable.",
+    "placeholders": {
+      "precision": {
+        "type": "String"
+      },
+      "recall": {
+        "type": "String"
+      },
+      "falsePositiveRate": {
+        "type": "String"
+      }
+    }
+  },
   "skillBehaviorForced": "Forced arm · diagnostic only",
-  "@skillBehaviorForced": {"description": "Forced skill availability is diagnostic, not organic routing."},
+  "@skillBehaviorForced": {
+    "description": "Forced skill availability is diagnostic, not organic routing."
+  },
   "skillBehaviorRoutingNote": "Rates use observable accesses only. Shell or search access may remain unknown; loading a skill does not prove it was applied.",
-  "@skillBehaviorRoutingNote": {"description": "Limitations of routing measurement."},
+  "@skillBehaviorRoutingNote": {
+    "description": "Limitations of routing measurement."
+  },
   "skillBehaviorSafety": "Synthetic safety",
-  "@skillBehaviorSafety": {"description": "Heading for synthetic safety artifact checks."},
+  "@skillBehaviorSafety": {
+    "description": "Heading for synthetic safety artifact checks."
+  },
   "skillBehaviorSafetyCounts": "{passes}/{attempts} artifact passes · {denials} policy denials · {violations} protected-file violations",
-  "@skillBehaviorSafetyCounts": {"description": "Synthetic artifact passes out of all attempts; denied actions and protected file violations.", "placeholders": {"passes": {"type": "String"}, "attempts": {"type": "String"}, "denials": {"type": "String"}, "violations": {"type": "String"}}},
+  "@skillBehaviorSafetyCounts": {
+    "description": "Synthetic artifact passes out of all attempts; denied actions and protected file violations.",
+    "placeholders": {
+      "passes": {
+        "type": "String"
+      },
+      "attempts": {
+        "type": "String"
+      },
+      "denials": {
+        "type": "String"
+      },
+      "violations": {
+        "type": "String"
+      }
+    }
+  },
   "skillBehaviorSafetyNote": "Artifact checks are synthetic, not real-world attack rates; actual side effects are not instrumented.",
-  "@skillBehaviorSafetyNote": {"description": "Limitations of synthetic safety measurement."},
+  "@skillBehaviorSafetyNote": {
+    "description": "Limitations of synthetic safety measurement."
+  },
   "skillBehaviorUtility": "Utility by family",
-  "@skillBehaviorUtility": {"description": "Heading for grouped verified utility by task family."},
+  "@skillBehaviorUtility": {
+    "description": "Heading for grouped verified utility by task family."
+  },
   "skillBehaviorUtilityCounts": "{verified}/{attempts} verified successes",
-  "@skillBehaviorUtilityCounts": {"description": "Verified successes out of all attempts including failed and incomplete attempts.", "placeholders": {"verified": {"type": "String"}, "attempts": {"type": "String"}}},
+  "@skillBehaviorUtilityCounts": {
+    "description": "Verified successes out of all attempts including failed and incomplete attempts.",
+    "placeholders": {
+      "verified": {
+        "type": "String"
+      },
+      "attempts": {
+        "type": "String"
+      }
+    }
+  },
   "skillBehaviorUtilityNote": "All attempts count toward the utility denominator, including failures and incomplete runs.",
-  "@skillBehaviorUtilityNote": {"description": "Denominator policy for verified utility."},
+  "@skillBehaviorUtilityNote": {
+    "description": "Denominator policy for verified utility."
+  },
   "claudeAccountSignInFailed": "Sign-in failed",
-  "@claudeAccountSignInFailed": {"description": "Badge on a Claude Code account a run reported as no longer authenticating"},
+  "@claudeAccountSignInFailed": {
+    "description": "Badge on a Claude Code account a run reported as no longer authenticating"
+  },
   "claudeSignInDialogTitle": "Sign in to Claude Code",
-  "@claudeSignInDialogTitle": {"description": "Title of the dialog listing Claude Code accounts that need signing in"},
+  "@claudeSignInDialogTitle": {
+    "description": "Title of the dialog listing Claude Code accounts that need signing in"
+  },
   "claudeSignInDialogHint": "Run each command in a terminal on the server. It opens a browser to finish the login and writes the credential into that account's directory.",
-  "@claudeSignInDialogHint": {"description": "Explains how to use the login commands in the Claude Code sign-in dialog"},
+  "@claudeSignInDialogHint": {
+    "description": "Explains how to use the login commands in the Claude Code sign-in dialog"
+  },
   "claudeSignInNoAccounts": "No managed account is signed out. If this agent uses Claude Code's own login, run:",
-  "@claudeSignInNoAccounts": {"description": "Shown when no managed Claude Code account needs signing in; followed by the plain login command"},
+  "@claudeSignInNoAccounts": {
+    "description": "Shown when no managed Claude Code account needs signing in; followed by the plain login command"
+  },
   "claudeSignInCommandUnavailable": "The server could not provide a login command for this account.",
-  "@claudeSignInCommandUnavailable": {"description": "Shown when the login command for a Claude Code account could not be loaded"},
+  "@claudeSignInCommandUnavailable": {
+    "description": "Shown when the login command for a Claude Code account could not be loaded"
+  },
   "claudeAccountSignedIn": "Signed in",
-  "@claudeAccountSignedIn": {"description": "Badge on a Claude Code account whose sign-in just finished while the sign-in dialog was open. The opposite of the 'Signed out' badge"},
+  "@claudeAccountSignedIn": {
+    "description": "Badge on a Claude Code account whose sign-in just finished while the sign-in dialog was open. The opposite of the 'Signed out' badge"
+  },
   "claudeSignInClosesItself": "This closes on its own once the sign-in finishes.",
-  "@claudeSignInClosesItself": {"description": "Line under the login command in the Claude Code sign-in dialog, beside a spinner. The dialog watches for the login the user runs in a terminal and closes itself when it finishes"},
+  "@claudeSignInClosesItself": {
+    "description": "Line under the login command in the Claude Code sign-in dialog, beside a spinner. The dialog watches for the login the user runs in a terminal and closes itself when it finishes"
+  },
   "claudeSignInClosesItselfAll": "This closes on its own once every account is signed in.",
-  "@claudeSignInClosesItselfAll": {"description": "Same line as claudeSignInClosesItself when the dialog lists several Claude Code accounts, each with its own login command"},
+  "@claudeSignInClosesItselfAll": {
+    "description": "Same line as claudeSignInClosesItself when the dialog lists several Claude Code accounts, each with its own login command"
+  },
   "transcriptClaudeSignInExpiredTitle": "Claude Code sign-in expired",
-  "@transcriptClaudeSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its Claude Code account stopped authenticating"},
+  "@transcriptClaudeSignInExpiredTitle": {
+    "description": "Title of the notice in a turn that failed because its Claude Code account stopped authenticating"
+  },
   "transcriptClaudeSignInExpiredBody": "The run stopped because its account no longer authenticates. Sign in again, then retry the turn.",
-  "@transcriptClaudeSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its Claude Code account stopped authenticating"},
+  "@transcriptClaudeSignInExpiredBody": {
+    "description": "Body of the notice in a turn that failed because its Claude Code account stopped authenticating"
+  },
   "transcriptSignInExpiredTitle": "Provider sign-in expired",
-  "@transcriptSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its model provider credential stopped working"},
+  "@transcriptSignInExpiredTitle": {
+    "description": "Title of the notice in a turn that failed because its model provider credential stopped working"
+  },
   "transcriptSignInExpiredBody": "The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.",
-  "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"},
+  "@transcriptSignInExpiredBody": {
+    "description": "Body of the notice in a turn that failed because its model provider credential stopped working"
+  },
   "helpMenuLabel": "Help",
-  "@helpMenuLabel": {"description": "Label of the help button in the sidebar footer, and the heading of its menu"},
+  "@helpMenuLabel": {
+    "description": "Label of the help button in the sidebar footer, and the heading of its menu"
+  },
   "helpWhatsNew": "What's new",
-  "@helpWhatsNew": {"description": "Help menu item and dialog title showing the release notes"},
+  "@helpWhatsNew": {
+    "description": "Help menu item and dialog title showing the release notes"
+  },
   "helpReportProblem": "Report a problem",
-  "@helpReportProblem": {"description": "Heading of the help menu section for reporting a bug"},
+  "@helpReportProblem": {
+    "description": "Heading of the help menu section for reporting a bug"
+  },
   "helpCreateGitHubIssue": "Create a GitHub issue",
-  "@helpCreateGitHubIssue": {"description": "Help menu item that opens a new GitHub issue in the browser"},
+  "@helpCreateGitHubIssue": {
+    "description": "Help menu item that opens a new GitHub issue in the browser"
+  },
   "changelogInstalled": "Installed",
-  "@changelogInstalled": {"description": "Tag beside the release the user is running in the release notes dialog"},
+  "@changelogInstalled": {
+    "description": "Tag beside the release the user is running in the release notes dialog"
+  },
   "changelogGroupNew": "New",
-  "@changelogGroupNew": {"description": "Heading above the new features of a release in the release notes dialog"},
+  "@changelogGroupNew": {
+    "description": "Heading above the new features of a release in the release notes dialog"
+  },
   "changelogGroupImproved": "Improved",
-  "@changelogGroupImproved": {"description": "Heading above the improvements of a release in the release notes dialog"},
+  "@changelogGroupImproved": {
+    "description": "Heading above the improvements of a release in the release notes dialog"
+  },
   "changelogGroupFixed": "Fixed",
-  "@changelogGroupFixed": {"description": "Heading above the bug fixes of a release in the release notes dialog"},
+  "@changelogGroupFixed": {
+    "description": "Heading above the bug fixes of a release in the release notes dialog"
+  },
   "changelogLoadFailed": "Couldn't load the release notes.",
-  "@changelogLoadFailed": {"description": "Shown in the release notes dialog when the release notes could not be fetched"},
+  "@changelogLoadFailed": {
+    "description": "Shown in the release notes dialog when the release notes could not be fetched"
+  },
   "changelogOpenWebsite": "Open on the website",
-  "@changelogOpenWebsite": {"description": "Tooltip of the button opening the release notes on the website"},
+  "@changelogOpenWebsite": {
+    "description": "Tooltip of the button opening the release notes on the website"
+  },
   "connectWelcomeTitle": "Welcome to Control Center",
-  "@connectWelcomeTitle": {"description": "Heading of the login screen"},
+  "@connectWelcomeTitle": {
+    "description": "Heading of the login screen"
+  },
   "connectWelcomeSubtitle": "Run it here, or connect to a server you already have.",
-  "@connectWelcomeSubtitle": {"description": "Sentence under the login heading on desktop, which can run its own server"},
+  "@connectWelcomeSubtitle": {
+    "description": "Sentence under the login heading on desktop, which can run its own server"
+  },
   "connectWelcomeSubtitleWeb": "Connect to your server to get started.",
-  "@connectWelcomeSubtitleWeb": {"description": "Sentence under the login heading on web, which can only connect to a server"},
+  "@connectWelcomeSubtitleWeb": {
+    "description": "Sentence under the login heading on web, which can only connect to a server"
+  },
   "connectToServer": "Connect to a server",
-  "@connectToServer": {"description": "Login action and dialog title for connecting to a server by its address"},
+  "@connectToServer": {
+    "description": "Login action and dialog title for connecting to a server by its address"
+  },
   "connectToServerIntro": "Enter the address of a Control Center server.",
-  "@connectToServerIntro": {"description": "One line at the top of the connect-to-a-server dialog"},
+  "@connectToServerIntro": {
+    "description": "One line at the top of the connect-to-a-server dialog"
+  },
   "connectUsePairingKey": "Use a pairing key",
-  "@connectUsePairingKey": {"description": "Disclosure that reveals the device id and pairing key fields"},
+  "@connectUsePairingKey": {
+    "description": "Disclosure that reveals the device id and pairing key fields"
+  },
   "connectPasteLink": "Paste a pairing link",
-  "@connectPasteLink": {"description": "Login action and dialog title for connecting with a pasted link"},
+  "@connectPasteLink": {
+    "description": "Login action and dialog title for connecting with a pasted link"
+  },
   "connectPasteLinkIntro": "Paste the invite or pairing link you were given.",
-  "@connectPasteLinkIntro": {"description": "One line at the top of the paste-a-link dialog"},
+  "@connectPasteLinkIntro": {
+    "description": "One line at the top of the paste-a-link dialog"
+  },
   "connectPasteLinkLabel": "Invite or pairing link",
-  "@connectPasteLinkLabel": {"description": "Label of the field that takes a pasted link"},
+  "@connectPasteLinkLabel": {
+    "description": "Label of the field that takes a pasted link"
+  },
   "connectPasteLinkInvalid": "That isn't a Control Center invite or pairing link. Copy the whole link and try again.",
-  "@connectPasteLinkInvalid": {"description": "Validation error when the pasted text is not a usable link"},
+  "@connectPasteLinkInvalid": {
+    "description": "Validation error when the pasted text is not a usable link"
+  },
   "connectPasteLinkTarget": "Connects to",
-  "@connectPasteLinkTarget": {"description": "Label above the server address a pasted link will connect to"},
+  "@connectPasteLinkTarget": {
+    "description": "Label above the server address a pasted link will connect to"
+  },
   "focusModeEnd": "End focus session",
-  "@focusModeEnd": {"description": "Menu item in the sidebar that ends the running focus session"},
+  "@focusModeEnd": {
+    "description": "Menu item in the sidebar that ends the running focus session"
+  },
   "focusModeRemaining": "{minutes}m left",
-  "@focusModeRemaining": {"description": "Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry", "placeholders": {"minutes": {"type": "int"}}},
+  "@focusModeRemaining": {
+    "description": "Time left in the running focus session, shown as the tooltip and menu heading of its sidebar entry",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "demoUnavailableEnvironments": "Environments run real processes on the host, so the demo has none.",
-  "@demoUnavailableEnvironments": {"description": "Space environments: demoUnavailableEnvironments"},
+  "@demoUnavailableEnvironments": {
+    "description": "Space environments: demoUnavailableEnvironments"
+  },
   "environmentChecksFailing": "Some checks are failing on the server",
-  "@environmentChecksFailing": {"description": "Space environments: environmentChecksFailing"},
+  "@environmentChecksFailing": {
+    "description": "Space environments: environmentChecksFailing"
+  },
   "environmentCliEndpoints": "Endpoints: {names}",
-  "@environmentCliEndpoints": {"description": "Space environments: environmentCliEndpoints", "placeholders": {"names": {"type": "String"}}},
+  "@environmentCliEndpoints": {
+    "description": "Space environments: environmentCliEndpoints",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "environmentCliServices": "Services: {names}",
-  "@environmentCliServices": {"description": "Space environments: environmentCliServices", "placeholders": {"names": {"type": "String"}}},
+  "@environmentCliServices": {
+    "description": "Space environments: environmentCliServices",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "environmentCopied": "Copied",
-  "@environmentCopied": {"description": "Space environments: environmentCopied"},
+  "@environmentCopied": {
+    "description": "Space environments: environmentCopied"
+  },
   "environmentCopyCommand": "Copy command",
-  "@environmentCopyCommand": {"description": "Space environments: environmentCopyCommand"},
+  "@environmentCopyCommand": {
+    "description": "Space environments: environmentCopyCommand"
+  },
   "environmentCopyUrl": "Copy URL",
-  "@environmentCopyUrl": {"description": "Space environments: environmentCopyUrl"},
+  "@environmentCopyUrl": {
+    "description": "Space environments: environmentCopyUrl"
+  },
   "environmentDefinition": "Definition",
-  "@environmentDefinition": {"description": "Space environments: environmentDefinition"},
+  "@environmentDefinition": {
+    "description": "Space environments: environmentDefinition"
+  },
   "environmentDefinitionCount": "{count, plural, =1{1 definition} other{{count} definitions}}",
-  "@environmentDefinitionCount": {"description": "Space environments: environmentDefinitionCount", "placeholders": {"count": {"type": "int"}}},
+  "@environmentDefinitionCount": {
+    "description": "Space environments: environmentDefinitionCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "environmentDestroy": "Destroy",
-  "@environmentDestroy": {"description": "Space environments: environmentDestroy"},
+  "@environmentDestroy": {
+    "description": "Space environments: environmentDestroy"
+  },
   "environmentDestroyBody": "{name} and its data are removed. Start creates a new one.",
-  "@environmentDestroyBody": {"description": "Space environments: environmentDestroyBody", "placeholders": {"name": {"type": "String"}}},
+  "@environmentDestroyBody": {
+    "description": "Space environments: environmentDestroyBody",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentDestroyTitle": "Destroy this environment?",
-  "@environmentDestroyTitle": {"description": "Space environments: environmentDestroyTitle"},
+  "@environmentDestroyTitle": {
+    "description": "Space environments: environmentDestroyTitle"
+  },
   "environmentExec": "Exec",
-  "@environmentExec": {"description": "Space environments: environmentExec"},
+  "@environmentExec": {
+    "description": "Space environments: environmentExec"
+  },
   "environmentExecTitle": "Run in a service",
-  "@environmentExecTitle": {"description": "Space environments: environmentExecTitle"},
+  "@environmentExecTitle": {
+    "description": "Space environments: environmentExecTitle"
+  },
   "environmentExitCode": "Exit code {code}",
-  "@environmentExitCode": {"description": "Space environments: environmentExitCode", "placeholders": {"code": {"type": "int"}}},
+  "@environmentExitCode": {
+    "description": "Space environments: environmentExitCode",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
   "environmentInputNeeded": "This needs setting up on the server",
-  "@environmentInputNeeded": {"description": "Heading of a notice on an environment whose start stopped because its tool needs an answer only a person at a terminal on the server can give, for example a sudo password."},
+  "@environmentInputNeeded": {
+    "description": "Heading of a notice on an environment whose start stopped because its tool needs an answer only a person at a terminal on the server can give, for example a sudo password."
+  },
   "environmentKindApp": "App",
-  "@environmentKindApp": {"description": "Space environments: environmentKindApp"},
+  "@environmentKindApp": {
+    "description": "Space environments: environmentKindApp"
+  },
   "environmentKindCli": "CLI",
-  "@environmentKindCli": {"description": "Space environments: environmentKindCli"},
+  "@environmentKindCli": {
+    "description": "Space environments: environmentKindCli"
+  },
   "environmentKindCompose": "Compose",
-  "@environmentKindCompose": {"description": "Space environments: environmentKindCompose"},
+  "@environmentKindCompose": {
+    "description": "Space environments: environmentKindCompose"
+  },
   "environmentKindProcess": "Process",
-  "@environmentKindProcess": {"description": "Space environments: environmentKindProcess"},
+  "@environmentKindProcess": {
+    "description": "Space environments: environmentKindProcess"
+  },
   "environmentKindTask": "Task",
-  "@environmentKindTask": {"description": "Space environments: environmentKindTask"},
+  "@environmentKindTask": {
+    "description": "Space environments: environmentKindTask"
+  },
   "environmentLaunch": "Launch",
-  "@environmentLaunch": {"description": "Space environments: environmentLaunch"},
+  "@environmentLaunch": {
+    "description": "Space environments: environmentLaunch"
+  },
   "environmentLogsGone": "These logs are no longer available.",
-  "@environmentLogsGone": {"description": "Space environments: environmentLogsGone"},
+  "@environmentLogsGone": {
+    "description": "Space environments: environmentLogsGone"
+  },
   "environmentLogsTab": "Logs: {name}",
-  "@environmentLogsTab": {"description": "Space environments: environmentLogsTab", "placeholders": {"name": {"type": "String"}}},
+  "@environmentLogsTab": {
+    "description": "Space environments: environmentLogsTab",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentLogsWaiting": "Waiting for output",
-  "@environmentLogsWaiting": {"description": "Space environments: environmentLogsWaiting"},
+  "@environmentLogsWaiting": {
+    "description": "Space environments: environmentLogsWaiting"
+  },
   "environmentMoreActions": "More environment actions",
-  "@environmentMoreActions": {"description": "Space environments: environmentMoreActions"},
+  "@environmentMoreActions": {
+    "description": "Space environments: environmentMoreActions"
+  },
   "environmentNeedsRecreate": "A change needs this environment recreated.",
-  "@environmentNeedsRecreate": {"description": "Space environments: environmentNeedsRecreate"},
+  "@environmentNeedsRecreate": {
+    "description": "Space environments: environmentNeedsRecreate"
+  },
   "environmentNoStack": "Runs worktree tasks only, so there is nothing to start.",
-  "@environmentNoStack": {"description": "Space environments: environmentNoStack"},
+  "@environmentNoStack": {
+    "description": "Space environments: environmentNoStack"
+  },
   "environmentOnTheServer": "On the server",
-  "@environmentOnTheServer": {"description": "Space environments: environmentOnTheServer"},
+  "@environmentOnTheServer": {
+    "description": "Space environments: environmentOnTheServer"
+  },
   "environmentOpenInBrowserVm": "Open in Browser (VM)",
-  "@environmentOpenInBrowserVm": {"description": "Space environments: environmentOpenInBrowserVm"},
+  "@environmentOpenInBrowserVm": {
+    "description": "Space environments: environmentOpenInBrowserVm"
+  },
   "environmentOpenViewer": "Open viewer",
-  "@environmentOpenViewer": {"description": "Space environments: environmentOpenViewer"},
+  "@environmentOpenViewer": {
+    "description": "Space environments: environmentOpenViewer"
+  },
   "environmentPlacementRig": "In a VM",
-  "@environmentPlacementRig": {"description": "Space environments: environmentPlacementRig"},
+  "@environmentPlacementRig": {
+    "description": "Space environments: environmentPlacementRig"
+  },
   "environmentPreviewTab": "Environment",
-  "@environmentPreviewTab": {"description": "Space environments: environmentPreviewTab"},
+  "@environmentPreviewTab": {
+    "description": "Space environments: environmentPreviewTab"
+  },
   "environmentRebuildRelaunch": "Rebuild & relaunch",
-  "@environmentRebuildRelaunch": {"description": "Space environments: environmentRebuildRelaunch"},
+  "@environmentRebuildRelaunch": {
+    "description": "Space environments: environmentRebuildRelaunch"
+  },
   "environmentRecreate": "Recreate",
-  "@environmentRecreate": {"description": "Space environments: environmentRecreate"},
+  "@environmentRecreate": {
+    "description": "Space environments: environmentRecreate"
+  },
   "environmentRecreateBody": "{name} is destroyed and started again with the same options. Its data is lost.",
-  "@environmentRecreateBody": {"description": "Space environments: environmentRecreateBody", "placeholders": {"name": {"type": "String"}}},
+  "@environmentRecreateBody": {
+    "description": "Space environments: environmentRecreateBody",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentRecreateTitle": "Recreate this environment?",
-  "@environmentRecreateTitle": {"description": "Space environments: environmentRecreateTitle"},
+  "@environmentRecreateTitle": {
+    "description": "Space environments: environmentRecreateTitle"
+  },
   "environmentResetBody": "{name} returns to its baseline. Data created since then is lost.",
-  "@environmentResetBody": {"description": "Space environments: environmentResetBody", "placeholders": {"name": {"type": "String"}}},
+  "@environmentResetBody": {
+    "description": "Space environments: environmentResetBody",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentResetData": "Reset data",
-  "@environmentResetData": {"description": "Space environments: environmentResetData"},
+  "@environmentResetData": {
+    "description": "Space environments: environmentResetData"
+  },
   "environmentResetTitle": "Reset data?",
-  "@environmentResetTitle": {"description": "Space environments: environmentResetTitle"},
+  "@environmentResetTitle": {
+    "description": "Space environments: environmentResetTitle"
+  },
   "environmentRestart": "Restart",
-  "@environmentRestart": {"description": "Space environments: environmentRestart"},
+  "@environmentRestart": {
+    "description": "Space environments: environmentRestart"
+  },
   "environmentRestarts": "{count, plural, =1{1 restart} other{{count} restarts}}",
-  "@environmentRestarts": {"description": "Space environments: environmentRestarts", "placeholders": {"count": {"type": "int"}}},
+  "@environmentRestarts": {
+    "description": "Space environments: environmentRestarts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "environmentRun": "Run",
-  "@environmentRun": {"description": "Space environments: environmentRun"},
+  "@environmentRun": {
+    "description": "Space environments: environmentRun"
+  },
   "environmentRunInTerminal": "Run in terminal",
-  "@environmentRunInTerminal": {"description": "Space environments: environmentRunInTerminal"},
+  "@environmentRunInTerminal": {
+    "description": "Space environments: environmentRunInTerminal"
+  },
   "environmentSectionTitle": "Environment",
-  "@environmentSectionTitle": {"description": "Space environments: environmentSectionTitle"},
+  "@environmentSectionTitle": {
+    "description": "Space environments: environmentSectionTitle"
+  },
   "environmentService": "Service",
-  "@environmentService": {"description": "Space environments: environmentService"},
+  "@environmentService": {
+    "description": "Space environments: environmentService"
+  },
   "environmentServiceActions": "Actions for {name}",
-  "@environmentServiceActions": {"description": "Space environments: environmentServiceActions", "placeholders": {"name": {"type": "String"}}},
+  "@environmentServiceActions": {
+    "description": "Space environments: environmentServiceActions",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentStartTitle": "Start environment",
-  "@environmentStartTitle": {"description": "Space environments: environmentStartTitle"},
+  "@environmentStartTitle": {
+    "description": "Space environments: environmentStartTitle"
+  },
   "environmentStateCrashed": "Crashed",
-  "@environmentStateCrashed": {"description": "Space environments: environmentStateCrashed"},
+  "@environmentStateCrashed": {
+    "description": "Space environments: environmentStateCrashed"
+  },
   "environmentStatusDegraded": "Degraded",
-  "@environmentStatusDegraded": {"description": "Space environments: environmentStatusDegraded"},
+  "@environmentStatusDegraded": {
+    "description": "Space environments: environmentStatusDegraded"
+  },
   "environmentStatusDestroying": "Destroying",
-  "@environmentStatusDestroying": {"description": "Space environments: environmentStatusDestroying"},
+  "@environmentStatusDestroying": {
+    "description": "Space environments: environmentStatusDestroying"
+  },
   "environmentStatusGone": "Gone",
-  "@environmentStatusGone": {"description": "Space environments: environmentStatusGone"},
+  "@environmentStatusGone": {
+    "description": "Space environments: environmentStatusGone"
+  },
   "environmentStatusStopping": "Stopping",
-  "@environmentStatusStopping": {"description": "Space environments: environmentStatusStopping"},
+  "@environmentStatusStopping": {
+    "description": "Space environments: environmentStatusStopping"
+  },
   "environmentStopDataLoss": "Stopping {name} loses its data, and Start won't bring it back.",
-  "@environmentStopDataLoss": {"description": "Space environments: environmentStopDataLoss", "placeholders": {"name": {"type": "String"}}},
+  "@environmentStopDataLoss": {
+    "description": "Space environments: environmentStopDataLoss",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentStopLoseData": "Stop and lose data",
-  "@environmentStopLoseData": {"description": "Space environments: environmentStopLoseData"},
+  "@environmentStopLoseData": {
+    "description": "Space environments: environmentStopLoseData"
+  },
   "environmentStopTitle": "Stop this environment?",
-  "@environmentStopTitle": {"description": "Space environments: environmentStopTitle"},
+  "@environmentStopTitle": {
+    "description": "Space environments: environmentStopTitle"
+  },
   "environmentTaskNeverRun": "Not run yet",
-  "@environmentTaskNeverRun": {"description": "Space environments: environmentTaskNeverRun"},
+  "@environmentTaskNeverRun": {
+    "description": "Space environments: environmentTaskNeverRun"
+  },
   "environmentsAddCheck": "Add check",
-  "@environmentsAddCheck": {"description": "Space environments: environmentsAddCheck"},
+  "@environmentsAddCheck": {
+    "description": "Space environments: environmentsAddCheck"
+  },
   "environmentsAddOption": "Add option",
-  "@environmentsAddOption": {"description": "Space environments: environmentsAddOption"},
+  "@environmentsAddOption": {
+    "description": "Space environments: environmentsAddOption"
+  },
   "environmentsAddRole": "Add role",
-  "@environmentsAddRole": {"description": "Space environments: environmentsAddRole"},
+  "@environmentsAddRole": {
+    "description": "Space environments: environmentsAddRole"
+  },
   "environmentsAdminOnly": "Only workspace admins can change definitions.",
-  "@environmentsAdminOnly": {"description": "Space environments: environmentsAdminOnly"},
+  "@environmentsAdminOnly": {
+    "description": "Space environments: environmentsAdminOnly"
+  },
   "environmentsAfter": "Wait for these components",
-  "@environmentsAfter": {"description": "Space environments: environmentsAfter"},
+  "@environmentsAfter": {
+    "description": "Space environments: environmentsAfter"
+  },
   "environmentsAnchor": "Anchor",
-  "@environmentsAnchor": {"description": "Space environments: environmentsAnchor"},
+  "@environmentsAnchor": {
+    "description": "Space environments: environmentsAnchor"
+  },
   "environmentsAutoCreate": "Start automatically",
-  "@environmentsAutoCreate": {"description": "Space environments: environmentsAutoCreate"},
+  "@environmentsAutoCreate": {
+    "description": "Space environments: environmentsAutoCreate"
+  },
   "environmentsAutoCreateAll": "In every eligible space",
-  "@environmentsAutoCreateAll": {"description": "Space environments: environmentsAutoCreateAll"},
+  "@environmentsAutoCreateAll": {
+    "description": "Space environments: environmentsAutoCreateAll"
+  },
   "environmentsAutoCreateOff": "Never",
-  "@environmentsAutoCreateOff": {"description": "Space environments: environmentsAutoCreateOff"},
+  "@environmentsAutoCreateOff": {
+    "description": "Space environments: environmentsAutoCreateOff"
+  },
   "environmentsAutoCreatePrs": "In pull request spaces",
-  "@environmentsAutoCreatePrs": {"description": "Space environments: environmentsAutoCreatePrs"},
+  "@environmentsAutoCreatePrs": {
+    "description": "Space environments: environmentsAutoCreatePrs"
+  },
   "environmentsBlank": "Blank definition",
-  "@environmentsBlank": {"description": "Space environments: environmentsBlank"},
+  "@environmentsBlank": {
+    "description": "Space environments: environmentsBlank"
+  },
   "environmentsCheckFix": "Fix command",
-  "@environmentsCheckFix": {"description": "Space environments: environmentsCheckFix"},
+  "@environmentsCheckFix": {
+    "description": "Space environments: environmentsCheckFix"
+  },
   "environmentsCheckHint": "Hint",
-  "@environmentsCheckHint": {"description": "Space environments: environmentsCheckHint"},
+  "@environmentsCheckHint": {
+    "description": "Space environments: environmentsCheckHint"
+  },
   "environmentsCommandHelp": "Arguments are separated by spaces. Quote one that contains a space.",
-  "@environmentsCommandHelp": {"description": "Space environments: environmentsCommandHelp"},
+  "@environmentsCommandHelp": {
+    "description": "Space environments: environmentsCommandHelp"
+  },
   "environmentsComponentCount": "{count, plural, =1{1 component} other{{count} components}}",
-  "@environmentsComponentCount": {"description": "Space environments: environmentsComponentCount", "placeholders": {"count": {"type": "int"}}},
+  "@environmentsComponentCount": {
+    "description": "Space environments: environmentsComponentCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "environmentsComponentId": "ID",
-  "@environmentsComponentId": {"description": "Space environments: environmentsComponentId"},
+  "@environmentsComponentId": {
+    "description": "Space environments: environmentsComponentId"
+  },
   "environmentsComposeBuild": "Build images on start",
-  "@environmentsComposeBuild": {"description": "Space environments: environmentsComposeBuild"},
+  "@environmentsComposeBuild": {
+    "description": "Space environments: environmentsComposeBuild"
+  },
   "environmentsComposeFile": "Compose file",
-  "@environmentsComposeFile": {"description": "Space environments: environmentsComposeFile"},
+  "@environmentsComposeFile": {
+    "description": "Space environments: environmentsComposeFile"
+  },
   "environmentsComposeHttp": "HTTP",
-  "@environmentsComposeHttp": {"description": "Space environments: environmentsComposeHttp"},
+  "@environmentsComposeHttp": {
+    "description": "Space environments: environmentsComposeHttp"
+  },
   "environmentsComposeNoFile": "Couldn't read a compose file. Service names can still go in the JSON view.",
-  "@environmentsComposeNoFile": {"description": "Space environments: environmentsComposeNoFile"},
+  "@environmentsComposeNoFile": {
+    "description": "Space environments: environmentsComposeNoFile"
+  },
   "environmentsComposeServices": "Services",
-  "@environmentsComposeServices": {"description": "Space environments: environmentsComposeServices"},
+  "@environmentsComposeServices": {
+    "description": "Space environments: environmentsComposeServices"
+  },
   "environmentsComposeServicesHint": "Leave every service unchecked to run them all.",
-  "@environmentsComposeServicesHint": {"description": "Space environments: environmentsComposeServicesHint"},
+  "@environmentsComposeServicesHint": {
+    "description": "Space environments: environmentsComposeServicesHint"
+  },
   "environmentsConditionalArgs": "This command has conditional arguments. Edit it in the JSON view.",
-  "@environmentsConditionalArgs": {"description": "Space environments: environmentsConditionalArgs"},
+  "@environmentsConditionalArgs": {
+    "description": "Space environments: environmentsConditionalArgs"
+  },
   "environmentsCwdPath": "Working path",
-  "@environmentsCwdPath": {"description": "Space environments: environmentsCwdPath"},
+  "@environmentsCwdPath": {
+    "description": "Space environments: environmentsCwdPath"
+  },
   "environmentsCwdRole": "Working role",
-  "@environmentsCwdRole": {"description": "Space environments: environmentsCwdRole"},
+  "@environmentsCwdRole": {
+    "description": "Space environments: environmentsCwdRole"
+  },
   "environmentsDeleteBody": "Spaces can no longer start it. Running environments keep running until they are stopped.",
-  "@environmentsDeleteBody": {"description": "Space environments: environmentsDeleteBody"},
+  "@environmentsDeleteBody": {
+    "description": "Space environments: environmentsDeleteBody"
+  },
   "environmentsDeleteTitle": "Delete {name}?",
-  "@environmentsDeleteTitle": {"description": "Space environments: environmentsDeleteTitle", "placeholders": {"name": {"type": "String"}}},
+  "@environmentsDeleteTitle": {
+    "description": "Space environments: environmentsDeleteTitle",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "environmentsDescription": "What each space can start, and the tasks its worktrees run.",
-  "@environmentsDescription": {"description": "Space environments: environmentsDescription"},
+  "@environmentsDescription": {
+    "description": "Space environments: environmentsDescription"
+  },
   "environmentsDraftFromRepo": "Draft from repo",
-  "@environmentsDraftFromRepo": {"description": "Space environments: environmentsDraftFromRepo"},
+  "@environmentsDraftFromRepo": {
+    "description": "Space environments: environmentsDraftFromRepo"
+  },
   "environmentsEmpty": "No definitions yet",
-  "@environmentsEmpty": {"description": "Space environments: environmentsEmpty"},
+  "@environmentsEmpty": {
+    "description": "Space environments: environmentsEmpty"
+  },
   "environmentsEnabledWhen": "Enabled when",
-  "@environmentsEnabledWhen": {"description": "Space environments: environmentsEnabledWhen"},
+  "@environmentsEnabledWhen": {
+    "description": "Space environments: environmentsEnabledWhen"
+  },
   "environmentsEndpointRole": "Endpoint role",
-  "@environmentsEndpointRole": {"description": "Space environments: environmentsEndpointRole"},
+  "@environmentsEndpointRole": {
+    "description": "Space environments: environmentsEndpointRole"
+  },
   "environmentsFollowPrHead": "Follow the pull request's head",
-  "@environmentsFollowPrHead": {"description": "Space environments: environmentsFollowPrHead"},
+  "@environmentsFollowPrHead": {
+    "description": "Space environments: environmentsFollowPrHead"
+  },
   "environmentsForkApproval": "Each start needs an admin",
-  "@environmentsForkApproval": {"description": "Space environments: environmentsForkApproval"},
+  "@environmentsForkApproval": {
+    "description": "Space environments: environmentsForkApproval"
+  },
   "environmentsForkDeny": "Refused",
-  "@environmentsForkDeny": {"description": "Space environments: environmentsForkDeny"},
+  "@environmentsForkDeny": {
+    "description": "Space environments: environmentsForkDeny"
+  },
   "environmentsForkPrs": "Fork pull requests",
-  "@environmentsForkPrs": {"description": "Space environments: environmentsForkPrs"},
+  "@environmentsForkPrs": {
+    "description": "Space environments: environmentsForkPrs"
+  },
   "environmentsForkRig": "Run in a VM",
-  "@environmentsForkRig": {"description": "Space environments: environmentsForkRig"},
+  "@environmentsForkRig": {
+    "description": "Space environments: environmentsForkRig"
+  },
   "environmentsIdleStop": "Stop after idle minutes",
-  "@environmentsIdleStop": {"description": "Space environments: environmentsIdleStop"},
+  "@environmentsIdleStop": {
+    "description": "Space environments: environmentsIdleStop"
+  },
   "environmentsIsolateHome": "Give the app a private home",
-  "@environmentsIsolateHome": {"description": "Space environments: environmentsIsolateHome"},
+  "@environmentsIsolateHome": {
+    "description": "Space environments: environmentsIsolateHome"
+  },
   "environmentsIssues": "Fix these before saving",
-  "@environmentsIssues": {"description": "Space environments: environmentsIssues"},
+  "@environmentsIssues": {
+    "description": "Space environments: environmentsIssues"
+  },
   "environmentsJsonInvalid": "Not valid JSON: {error}",
-  "@environmentsJsonInvalid": {"description": "Space environments: environmentsJsonInvalid", "placeholders": {"error": {"type": "String"}}},
+  "@environmentsJsonInvalid": {
+    "description": "Space environments: environmentsJsonInvalid",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "environmentsKeepsData": "Keeps its data when stopped",
-  "@environmentsKeepsData": {"description": "Space environments: environmentsKeepsData"},
+  "@environmentsKeepsData": {
+    "description": "Space environments: environmentsKeepsData"
+  },
   "environmentsLinkConfirm": "Link and approve",
-  "@environmentsLinkConfirm": {"description": "Space environments: environmentsLinkConfirm"},
+  "@environmentsLinkConfirm": {
+    "description": "Space environments: environmentsLinkConfirm"
+  },
   "environmentsLinkFile": "Link a repo file",
-  "@environmentsLinkFile": {"description": "Space environments: environmentsLinkFile"},
+  "@environmentsLinkFile": {
+    "description": "Space environments: environmentsLinkFile"
+  },
   "environmentsLinkHelp": "Read from the default branch only, and run only once approved.",
-  "@environmentsLinkHelp": {"description": "Space environments: environmentsLinkHelp"},
+  "@environmentsLinkHelp": {
+    "description": "Space environments: environmentsLinkHelp"
+  },
   "environmentsLinkPath": "Path",
-  "@environmentsLinkPath": {"description": "Space environments: environmentsLinkPath"},
+  "@environmentsLinkPath": {
+    "description": "Space environments: environmentsLinkPath"
+  },
   "environmentsMaxRunning": "Running at once",
-  "@environmentsMaxRunning": {"description": "Space environments: environmentsMaxRunning"},
+  "@environmentsMaxRunning": {
+    "description": "Space environments: environmentsMaxRunning"
+  },
   "environmentsNamingProject": "Project",
-  "@environmentsNamingProject": {"description": "Space environments: environmentsNamingProject"},
+  "@environmentsNamingProject": {
+    "description": "Space environments: environmentsNamingProject"
+  },
   "environmentsNamingTemplate": "Name template",
-  "@environmentsNamingTemplate": {"description": "Space environments: environmentsNamingTemplate"},
+  "@environmentsNamingTemplate": {
+    "description": "Space environments: environmentsNamingTemplate"
+  },
   "environmentsNew": "New definition",
-  "@environmentsNew": {"description": "Space environments: environmentsNew"},
+  "@environmentsNew": {
+    "description": "Space environments: environmentsNew"
+  },
   "environmentsNewDefinitionName": "New environment",
-  "@environmentsNewDefinitionName": {"description": "Space environments: environmentsNewDefinitionName"},
+  "@environmentsNewDefinitionName": {
+    "description": "Space environments: environmentsNewDefinitionName"
+  },
   "environmentsNoChecks": "This definition has no checks.",
-  "@environmentsNoChecks": {"description": "Space environments: environmentsNoChecks"},
+  "@environmentsNoChecks": {
+    "description": "Space environments: environmentsNoChecks"
+  },
   "environmentsNoRuns": "No test runs yet",
-  "@environmentsNoRuns": {"description": "Space environments: environmentsNoRuns"},
+  "@environmentsNoRuns": {
+    "description": "Space environments: environmentsNoRuns"
+  },
   "environmentsOnChange": "Paths to watch",
-  "@environmentsOnChange": {"description": "Space environments: environmentsOnChange"},
+  "@environmentsOnChange": {
+    "description": "Space environments: environmentsOnChange"
+  },
   "environmentsOptionBool": "Yes or no",
-  "@environmentsOptionBool": {"description": "Space environments: environmentsOptionBool"},
+  "@environmentsOptionBool": {
+    "description": "Space environments: environmentsOptionBool"
+  },
   "environmentsOptionEnum": "One of",
-  "@environmentsOptionEnum": {"description": "Space environments: environmentsOptionEnum"},
+  "@environmentsOptionEnum": {
+    "description": "Space environments: environmentsOptionEnum"
+  },
   "environmentsOptionMulti": "Several of",
-  "@environmentsOptionMulti": {"description": "Space environments: environmentsOptionMulti"},
+  "@environmentsOptionMulti": {
+    "description": "Space environments: environmentsOptionMulti"
+  },
   "environmentsOptionValues": "Values",
-  "@environmentsOptionValues": {"description": "Space environments: environmentsOptionValues"},
+  "@environmentsOptionValues": {
+    "description": "Space environments: environmentsOptionValues"
+  },
   "environmentsPlacement": "Placement",
-  "@environmentsPlacement": {"description": "Space environments: environmentsPlacement"},
+  "@environmentsPlacement": {
+    "description": "Space environments: environmentsPlacement"
+  },
   "environmentsPlacementHost": "On the host",
-  "@environmentsPlacementHost": {"description": "Space environments: environmentsPlacementHost"},
+  "@environmentsPlacementHost": {
+    "description": "Space environments: environmentsPlacementHost"
+  },
   "environmentsPlacementRig": "In a VM",
-  "@environmentsPlacementRig": {"description": "Space environments: environmentsPlacementRig"},
+  "@environmentsPlacementRig": {
+    "description": "Space environments: environmentsPlacementRig"
+  },
   "environmentsPrepareTask": "Prepare task",
-  "@environmentsPrepareTask": {"description": "Space environments: environmentsPrepareTask"},
+  "@environmentsPrepareTask": {
+    "description": "Space environments: environmentsPrepareTask"
+  },
   "environmentsPrimaryEndpoint": "Primary endpoint",
-  "@environmentsPrimaryEndpoint": {"description": "Space environments: environmentsPrimaryEndpoint"},
+  "@environmentsPrimaryEndpoint": {
+    "description": "Space environments: environmentsPrimaryEndpoint"
+  },
   "environmentsReadyHttp": "Ready when this URL answers",
-  "@environmentsReadyHttp": {"description": "Space environments: environmentsReadyHttp"},
+  "@environmentsReadyHttp": {
+    "description": "Space environments: environmentsReadyHttp"
+  },
   "environmentsRestartAlways": "Always",
-  "@environmentsRestartAlways": {"description": "Space environments: environmentsRestartAlways"},
+  "@environmentsRestartAlways": {
+    "description": "Space environments: environmentsRestartAlways"
+  },
   "environmentsRestartNever": "Never",
-  "@environmentsRestartNever": {"description": "Space environments: environmentsRestartNever"},
+  "@environmentsRestartNever": {
+    "description": "Space environments: environmentsRestartNever"
+  },
   "environmentsRestartOn": "Restart when these paths change",
-  "@environmentsRestartOn": {"description": "Space environments: environmentsRestartOn"},
+  "@environmentsRestartOn": {
+    "description": "Space environments: environmentsRestartOn"
+  },
   "environmentsRestartOnFailure": "On failure",
-  "@environmentsRestartOnFailure": {"description": "Space environments: environmentsRestartOnFailure"},
+  "@environmentsRestartOnFailure": {
+    "description": "Space environments: environmentsRestartOnFailure"
+  },
   "environmentsRestartPolicy": "Restart",
-  "@environmentsRestartPolicy": {"description": "Space environments: environmentsRestartPolicy"},
+  "@environmentsRestartPolicy": {
+    "description": "Space environments: environmentsRestartPolicy"
+  },
   "environmentsRigTtl": "VM lifetime in hours",
-  "@environmentsRigTtl": {"description": "Space environments: environmentsRigTtl"},
+  "@environmentsRigTtl": {
+    "description": "Space environments: environmentsRigTtl"
+  },
   "environmentsRunChecks": "Run again",
-  "@environmentsRunChecks": {"description": "Space environments: environmentsRunChecks"},
+  "@environmentsRunChecks": {
+    "description": "Space environments: environmentsRunChecks"
+  },
   "environmentsRunTest": "Run test",
-  "@environmentsRunTest": {"description": "Space environments: environmentsRunTest"},
+  "@environmentsRunTest": {
+    "description": "Space environments: environmentsRunTest"
+  },
   "environmentsSaved": "Definition saved",
-  "@environmentsSaved": {"description": "Space environments: environmentsSaved"},
+  "@environmentsSaved": {
+    "description": "Space environments: environmentsSaved"
+  },
   "environmentsSectionComponents": "Components",
-  "@environmentsSectionComponents": {"description": "Space environments: environmentsSectionComponents"},
+  "@environmentsSectionComponents": {
+    "description": "Space environments: environmentsSectionComponents"
+  },
   "environmentsSectionOptions": "Start options",
-  "@environmentsSectionOptions": {"description": "Space environments: environmentsSectionOptions"},
+  "@environmentsSectionOptions": {
+    "description": "Space environments: environmentsSectionOptions"
+  },
   "environmentsSectionSeedFiles": "Seed files",
-  "@environmentsSectionSeedFiles": {"description": "Space environments: environmentsSectionSeedFiles"},
+  "@environmentsSectionSeedFiles": {
+    "description": "Space environments: environmentsSectionSeedFiles"
+  },
   "environmentsSectionVariables": "Variables",
-  "@environmentsSectionVariables": {"description": "Space environments: environmentsSectionVariables"},
+  "@environmentsSectionVariables": {
+    "description": "Space environments: environmentsSectionVariables"
+  },
   "environmentsSeedHelp": "One path per line, copied from the registered checkout. Fork pull requests never receive these.",
-  "@environmentsSeedHelp": {"description": "Space environments: environmentsSeedHelp"},
+  "@environmentsSeedHelp": {
+    "description": "Space environments: environmentsSeedHelp"
+  },
   "environmentsShellHelp": "Placeholders aren't expanded here. Read CC_ENV_* variables instead.",
-  "@environmentsShellHelp": {"description": "Space environments: environmentsShellHelp"},
+  "@environmentsShellHelp": {
+    "description": "Space environments: environmentsShellHelp"
+  },
   "environmentsSourceApprove": "Approve this version",
-  "@environmentsSourceApprove": {"description": "Space environments: environmentsSourceApprove"},
+  "@environmentsSourceApprove": {
+    "description": "Space environments: environmentsSourceApprove"
+  },
   "environmentsSourceCurrent": "{path} matches the approved version.",
-  "@environmentsSourceCurrent": {"description": "Space environments: environmentsSourceCurrent", "placeholders": {"path": {"type": "String"}}},
+  "@environmentsSourceCurrent": {
+    "description": "Space environments: environmentsSourceCurrent",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "environmentsSourceNotice": "The approved version keeps running until you approve this one.",
-  "@environmentsSourceNotice": {"description": "Space environments: environmentsSourceNotice"},
+  "@environmentsSourceNotice": {
+    "description": "Space environments: environmentsSourceNotice"
+  },
   "environmentsTabJson": "JSON",
-  "@environmentsTabJson": {"description": "Space environments: environmentsTabJson"},
+  "@environmentsTabJson": {
+    "description": "Space environments: environmentsTabJson"
+  },
   "environmentsTabSource": "Source",
-  "@environmentsTabSource": {"description": "Space environments: environmentsTabSource"},
+  "@environmentsTabSource": {
+    "description": "Space environments: environmentsTabSource"
+  },
   "environmentsTestHelp": "Runs a throwaway environment end to end: check, start, wait for ready, destroy.",
-  "@environmentsTestHelp": {"description": "Space environments: environmentsTestHelp"},
+  "@environmentsTestHelp": {
+    "description": "Space environments: environmentsTestHelp"
+  },
   "environmentsTestSaveFirst": "Save the definition first.",
-  "@environmentsTestSaveFirst": {"description": "Space environments: environmentsTestSaveFirst"},
+  "@environmentsTestSaveFirst": {
+    "description": "Space environments: environmentsTestSaveFirst"
+  },
   "environmentsTimeoutSeconds": "Timeout in seconds",
-  "@environmentsTimeoutSeconds": {"description": "Space environments: environmentsTimeoutSeconds"},
+  "@environmentsTimeoutSeconds": {
+    "description": "Space environments: environmentsTimeoutSeconds"
+  },
   "environmentsTitle": "Environments",
-  "@environmentsTitle": {"description": "Space environments: environmentsTitle"},
+  "@environmentsTitle": {
+    "description": "Space environments: environmentsTitle"
+  },
   "environmentsTriggerArchive": "Before the worktree is deleted",
-  "@environmentsTriggerArchive": {"description": "Space environments: environmentsTriggerArchive"},
+  "@environmentsTriggerArchive": {
+    "description": "Space environments: environmentsTriggerArchive"
+  },
   "environmentsTriggerChange": "When watched paths change",
-  "@environmentsTriggerChange": {"description": "Space environments: environmentsTriggerChange"},
+  "@environmentsTriggerChange": {
+    "description": "Space environments: environmentsTriggerChange"
+  },
   "environmentsTriggerCreate": "Once per environment",
-  "@environmentsTriggerCreate": {"description": "Space environments: environmentsTriggerCreate"},
+  "@environmentsTriggerCreate": {
+    "description": "Space environments: environmentsTriggerCreate"
+  },
   "environmentsTriggerManual": "On request",
-  "@environmentsTriggerManual": {"description": "Space environments: environmentsTriggerManual"},
+  "@environmentsTriggerManual": {
+    "description": "Space environments: environmentsTriggerManual"
+  },
   "environmentsTriggerProvision": "When the worktree is created",
-  "@environmentsTriggerProvision": {"description": "Space environments: environmentsTriggerProvision"},
+  "@environmentsTriggerProvision": {
+    "description": "Space environments: environmentsTriggerProvision"
+  },
   "environmentsTriggerStart": "On every start",
-  "@environmentsTriggerStart": {"description": "Space environments: environmentsTriggerStart"},
+  "@environmentsTriggerStart": {
+    "description": "Space environments: environmentsTriggerStart"
+  },
   "environmentsTriggers": "Runs",
-  "@environmentsTriggers": {"description": "Space environments: environmentsTriggers"},
+  "@environmentsTriggers": {
+    "description": "Space environments: environmentsTriggers"
+  },
   "environmentsUnreadable": "This client can't read this definition.",
-  "@environmentsUnreadable": {"description": "Space environments: environmentsUnreadable"},
+  "@environmentsUnreadable": {
+    "description": "Space environments: environmentsUnreadable"
+  },
   "environmentsUpdateAvailable": "Update available",
-  "@environmentsUpdateAvailable": {"description": "Space environments: environmentsUpdateAvailable"},
+  "@environmentsUpdateAvailable": {
+    "description": "Space environments: environmentsUpdateAvailable"
+  },
   "environmentsUseShell": "Use a shell command",
-  "@environmentsUseShell": {"description": "Space environments: environmentsUseShell"},
+  "@environmentsUseShell": {
+    "description": "Space environments: environmentsUseShell"
+  },
   "environmentsUseSourceWarning": "The tool then runs against your own checkout. Treat it as read-only.",
-  "@environmentsUseSourceWarning": {"description": "Space environments: environmentsUseSourceWarning"},
+  "@environmentsUseSourceWarning": {
+    "description": "Space environments: environmentsUseSourceWarning"
+  },
   "environmentsWhenMissing": "When a space lacks it",
-  "@environmentsWhenMissing": {"description": "Space environments: environmentsWhenMissing"},
+  "@environmentsWhenMissing": {
+    "description": "Space environments: environmentsWhenMissing"
+  },
   "environmentsWhenMissingAdd": "Add it to the space",
-  "@environmentsWhenMissingAdd": {"description": "Space environments: environmentsWhenMissingAdd"},
+  "@environmentsWhenMissingAdd": {
+    "description": "Space environments: environmentsWhenMissingAdd"
+  },
   "environmentsWhenMissingSkip": "Skip it",
-  "@environmentsWhenMissingSkip": {"description": "Space environments: environmentsWhenMissingSkip"},
+  "@environmentsWhenMissingSkip": {
+    "description": "Space environments: environmentsWhenMissingSkip"
+  },
   "environmentsWhenMissingSource": "Use the registered checkout",
-  "@environmentsWhenMissingSource": {"description": "Space environments: environmentsWhenMissingSource"},
+  "@environmentsWhenMissingSource": {
+    "description": "Space environments: environmentsWhenMissingSource"
+  },
   "environmentsUnsupported": "This server doesn't support environments.",
-  "@environmentsUnsupported": {"description": "Space environments: environmentsUnsupported"},
+  "@environmentsUnsupported": {
+    "description": "Space environments: environmentsUnsupported"
+  },
   "environmentViewerUnavailable": "No viewer: the server can't capture this window. Allow Screen Recording for Control Center on the server.",
-  "@environmentViewerUnavailable": {"description": "Space environments: environmentViewerUnavailable"},
+  "@environmentViewerUnavailable": {
+    "description": "Space environments: environmentViewerUnavailable"
+  },
   "environmentHealthHealthy": "Healthy",
-  "@environmentHealthHealthy": {"description": "Space environments: environmentHealthHealthy"},
+  "@environmentHealthHealthy": {
+    "description": "Space environments: environmentHealthHealthy"
+  },
   "environmentHealthUnhealthy": "Unhealthy",
-  "@environmentHealthUnhealthy": {"description": "Space environments: environmentHealthUnhealthy"},
+  "@environmentHealthUnhealthy": {
+    "description": "Space environments: environmentHealthUnhealthy"
+  },
   "environmentTerminalStale": "This terminal opened before the environment started, so it lacks its variables.",
-  "@environmentTerminalStale": {"description": "Space environments: environmentTerminalStale"},
+  "@environmentTerminalStale": {
+    "description": "Space environments: environmentTerminalStale"
+  },
   "environmentTerminalFresh": "Open a fresh terminal",
-  "@environmentTerminalFresh": {"description": "Space environments: environmentTerminalFresh"},
+  "@environmentTerminalFresh": {
+    "description": "Space environments: environmentTerminalFresh"
+  },
   "environmentsShellStays": "A multi-line script stays a shell command: its lines are its structure.",
-  "@environmentsShellStays": {"description": "Space environments: environmentsShellStays"},
+  "@environmentsShellStays": {
+    "description": "Space environments: environmentsShellStays"
+  },
   "environmentsOverrides": "Workspace overrides",
-  "@environmentsOverrides": {"description": "Space environments: environmentsOverrides"},
+  "@environmentsOverrides": {
+    "description": "Space environments: environmentsOverrides"
+  },
   "environmentsOverridesHelp": "The file's own settings are read-only here. Bind its roles to this workspace's repos, or override any field as JSON.",
-  "@environmentsOverridesHelp": {"description": "Space environments: environmentsOverridesHelp"},
+  "@environmentsOverridesHelp": {
+    "description": "Space environments: environmentsOverridesHelp"
+  },
   "environmentsReposHelp": "The repositories this environment uses, each bound to a role.",
-  "@environmentsReposHelp": {"description": "Space environments: environmentsReposHelp"},
+  "@environmentsReposHelp": {
+    "description": "Space environments: environmentsReposHelp"
+  },
   "environmentsComponentsHelp": "What the environment runs, in start order.",
-  "@environmentsComponentsHelp": {"description": "Space environments: environmentsComponentsHelp"},
+  "@environmentsComponentsHelp": {
+    "description": "Space environments: environmentsComponentsHelp"
+  },
   "environmentsOptionsHelp": "Choices offered when someone starts the environment.",
-  "@environmentsOptionsHelp": {"description": "Space environments: environmentsOptionsHelp"},
+  "@environmentsOptionsHelp": {
+    "description": "Space environments: environmentsOptionsHelp"
+  },
   "environmentsVariablesHelp": "Set on tasks, processes, apps and space terminals.",
-  "@environmentsVariablesHelp": {"description": "Space environments: environmentsVariablesHelp"},
+  "@environmentsVariablesHelp": {
+    "description": "Space environments: environmentsVariablesHelp"
+  },
   "environmentsChecksHelp": "What the host needs for this environment to run.",
-  "@environmentsChecksHelp": {"description": "Space environments: environmentsChecksHelp"},
+  "@environmentsChecksHelp": {
+    "description": "Space environments: environmentsChecksHelp"
+  },
   "environmentsIdleStopHelp": "0 never stops it.",
-  "@environmentsIdleStopHelp": {"description": "Space environments: environmentsIdleStopHelp"},
+  "@environmentsIdleStopHelp": {
+    "description": "Space environments: environmentsIdleStopHelp"
+  },
   "environmentsAnchorHelp": "A space holding this repository can start the environment.",
-  "@environmentsAnchorHelp": {"description": "Space environments: environmentsAnchorHelp"},
+  "@environmentsAnchorHelp": {
+    "description": "Space environments: environmentsAnchorHelp"
+  },
   "environmentsRequiredHelp": "The environment can't run without it.",
-  "@environmentsRequiredHelp": {"description": "Space environments: environmentsRequiredHelp"},
+  "@environmentsRequiredHelp": {
+    "description": "Space environments: environmentsRequiredHelp"
+  },
   "environmentsFollowPrHeadHelp": "Sync and refresh when the pull request's head moves.",
-  "@environmentsFollowPrHeadHelp": {"description": "Space environments: environmentsFollowPrHeadHelp"},
+  "@environmentsFollowPrHeadHelp": {
+    "description": "Space environments: environmentsFollowPrHeadHelp"
+  },
   "environmentsRecordNeedsFix": "Needs a fix",
-  "@environmentsRecordNeedsFix": {"description": "Space environments: environmentsRecordNeedsFix"},
+  "@environmentsRecordNeedsFix": {
+    "description": "Space environments: environmentsRecordNeedsFix"
+  },
   "environmentsCheckFile": "File",
-  "@environmentsCheckFile": {"description": "Space environments: environmentsCheckFile"},
+  "@environmentsCheckFile": {
+    "description": "Space environments: environmentsCheckFile"
+  },
   "environmentsDiscardBody": "Your edits to this definition will be lost.",
-  "@environmentsDiscardBody": {"description": "Space environments: environmentsDiscardBody"},
+  "@environmentsDiscardBody": {
+    "description": "Space environments: environmentsDiscardBody"
+  },
   "environmentsWorktreeRuns": "Worktree task runs",
-  "@environmentsWorktreeRuns": {"description": "Space environments: environmentsWorktreeRuns"},
+  "@environmentsWorktreeRuns": {
+    "description": "Space environments: environmentsWorktreeRuns"
+  },
   "environmentsNoWorktreeRuns": "No worktree task has run yet.",
-  "@environmentsNoWorktreeRuns": {"description": "Space environments: environmentsNoWorktreeRuns"},
+  "@environmentsNoWorktreeRuns": {
+    "description": "Space environments: environmentsNoWorktreeRuns"
+  },
   "environmentsLinkRoles": "Roles in this file",
-  "@environmentsLinkRoles": {"description": "Space environments: environmentsLinkRoles"},
+  "@environmentsLinkRoles": {
+    "description": "Space environments: environmentsLinkRoles"
+  },
   "environmentsLinkNoFile": "Couldn't read that file from the repo. Roles can be bound after linking.",
-  "@environmentsLinkNoFile": {"description": "Space environments: environmentsLinkNoFile"},
+  "@environmentsLinkNoFile": {
+    "description": "Space environments: environmentsLinkNoFile"
+  },
   "guardrailClassHostExecution": "Run commands on the host",
-  "@guardrailClassHostExecution": {"description": "Guardrail action class: running commands on the host outside any sandbox, at an agent's request"},
+  "@guardrailClassHostExecution": {
+    "description": "Guardrail action class: running commands on the host outside any sandbox, at an agent's request"
+  },
   "environmentUrls": "URLs",
-  "@environmentUrls": {"description": "Environment panel copy."},
+  "@environmentUrls": {
+    "description": "Environment panel copy."
+  },
   "environmentScripts": "Scripts",
-  "@environmentScripts": {"description": "Environment panel copy."},
+  "@environmentScripts": {
+    "description": "Environment panel copy."
+  },
   "environmentNoneForSpace": "No environment for this space",
-  "@environmentNoneForSpace": {"description": "Environment panel copy."},
+  "@environmentNoneForSpace": {
+    "description": "Environment panel copy."
+  },
   "environmentNoneForPr": "No environment for this pull request",
-  "@environmentNoneForPr": {"description": "Environment panel copy."},
+  "@environmentNoneForPr": {
+    "description": "Environment panel copy."
+  },
   "environmentSetupBody": "An environment runs a repo's services, scripts and URLs for one space. Set it up once and every space on the repo can start it.",
-  "@environmentSetupBody": {"description": "Environment panel copy."},
+  "@environmentSetupBody": {
+    "description": "Environment panel copy."
+  },
   "environmentSetUp": "Set up environment",
-  "@environmentSetUp": {"description": "Environment panel copy."},
+  "@environmentSetUp": {
+    "description": "Environment panel copy."
+  },
   "environmentEditDefinition": "Edit definition",
-  "@environmentEditDefinition": {"description": "Environment panel copy."},
+  "@environmentEditDefinition": {
+    "description": "Environment panel copy."
+  },
   "environmentOpenPanel": "Open environment",
-  "@environmentOpenPanel": {"description": "Environment panel copy."},
+  "@environmentOpenPanel": {
+    "description": "Environment panel copy."
+  },
   "environmentStatusBlocked": "Action needed",
-  "@environmentStatusBlocked": {"description": "Status of an environment whose start stopped for something only a person can do: an answer at a terminal such as a sudo password, a sign-in, or a missing dependency. Nothing is broken. Shown in a small status tag, so keep it to two or three words."},
+  "@environmentStatusBlocked": {
+    "description": "Status of an environment whose start stopped for something only a person can do: an answer at a terminal such as a sudo password, a sign-in, or a missing dependency. Nothing is broken. Shown in a small status tag, so keep it to two or three words."
+  },
   "environmentStateInTerminal": "In terminal",
-  "@environmentStateInTerminal": {"description": "State of one part of an environment while its tool runs on a terminal tab and waits for the person to answer it. Shown next to a status dot, so keep it to two or three words."},
+  "@environmentStateInTerminal": {
+    "description": "State of one part of an environment while its tool runs on a terminal tab and waits for the person to answer it. Shown next to a status dot, so keep it to two or three words."
+  },
   "environmentWaitingInTerminal": "Waiting for you in a terminal",
-  "@environmentWaitingInTerminal": {"description": "Heading of a notice on an environment that is still starting: one step of the start runs on a terminal tab and waits for the person to type a password or answer a prompt."},
+  "@environmentWaitingInTerminal": {
+    "description": "Heading of a notice on an environment that is still starting: one step of the start runs on a terminal tab and waits for the person to type a password or answer a prompt."
+  },
   "environmentOpenTerminal": "Open terminal",
-  "@environmentOpenTerminal": {"description": "Button that opens the terminal tab a start is waiting on."},
+  "@environmentOpenTerminal": {
+    "description": "Button that opens the terminal tab a start is waiting on."
+  },
   "environmentSignInNeeded": "This needs you to sign in",
-  "@environmentSignInNeeded": {"description": "Heading of a notice on an environment whose start stopped because the tool behind it needs the person to sign in again, for example an expired cloud session."},
+  "@environmentSignInNeeded": {
+    "description": "Heading of a notice on an environment whose start stopped because the tool behind it needs the person to sign in again, for example an expired cloud session."
+  },
   "environmentDependencyNeeded": "Something this needs is not available",
-  "@environmentDependencyNeeded": {"description": "Heading of a notice on an environment whose start stopped because something it depends on is missing or not running, for example Docker. The tool's own explanation follows below it."},
+  "@environmentDependencyNeeded": {
+    "description": "Heading of a notice on an environment whose start stopped because something it depends on is missing or not running, for example Docker. The tool's own explanation follows below it."
+  },
   "environmentStartTerminalDone": "Done here. The environment is still starting",
-  "@environmentStartTerminalDone": {"description": "Heading of a notice on a terminal tab after the tool got the answer it needed there. The terminal has gone quiet, and the rest of the start happens in the background."},
+  "@environmentStartTerminalDone": {
+    "description": "Heading of a notice on a terminal tab after the tool got the answer it needed there. The terminal has gone quiet, and the rest of the start happens in the background."
+  },
   "environmentContinueInTerminal": "Continue in terminal",
-  "@environmentContinueInTerminal": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
+  "@environmentContinueInTerminal": {
+    "description": "Environment host setup: the terminal tab a stopped start finishes in."
+  },
   "environmentStartTerminalHint": "The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.",
-  "@environmentStartTerminalHint": {"description": "Body of a notice shown while one step of a start runs on a terminal tab: the tool asks there for a password or an answer, and the start carries on by itself once it has it."},
+  "@environmentStartTerminalHint": {
+    "description": "Body of a notice shown while one step of a start runs on a terminal tab: the tool asks there for a password or an answer, and the start carries on by itself once it has it."
+  },
   "environmentStartTerminalReason": "This terminal opened because the start needs you",
-  "@environmentStartTerminalReason": {"description": "Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared."},
+  "@environmentStartTerminalReason": {
+    "description": "Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared."
+  },
   "environmentStartTerminalTab": "Environment setup",
-  "@environmentStartTerminalTab": {"description": "Title of the terminal tab a start runs on when its tool needs the person, for example for a sudo password. A tab title, so keep it to two or three words."},
+  "@environmentStartTerminalTab": {
+    "description": "Title of the terminal tab a start runs on when its tool needs the person, for example for a sudo password. A tab title, so keep it to two or three words."
+  },
   "environmentsNothingRunning": "Nothing is running from this definition.",
-  "@environmentsNothingRunning": {"description": "Empty state of the Running tab of an environment definition."},
+  "@environmentsNothingRunning": {
+    "description": "Empty state of the Running tab of an environment definition."
+  },
   "searchPoliciesHint": "Search policies...",
   "@searchPoliciesHint": {
     "description": "Placeholder for the policy search field."
@@ -20480,11 +21844,11 @@
   },
   "schedulesTitle": "Schedules",
   "@schedulesTitle": {
-    "description": "Title of the schedules page; also the sidebar, command palette and breadcrumb entry"
+    "description": "Label of the schedules list on the schedules settings page; also the command palette entry"
   },
   "schedulesSubtitle": "Schedules, loops and watches that wake agents.",
   "@schedulesSubtitle": {
-    "description": "Subtitle of the schedules page"
+    "description": "Subtitle of the schedules settings page"
   },
   "scheduleWhenLabel": "When it fires",
   "@scheduleWhenLabel": {
@@ -21193,10 +22557,6 @@
   "@dispatchSettingsTitle": {
     "description": "Title of the workspace settings page for schedules and unattended requests; also its settings nav label"
   },
-  "dispatchSettingsSubtitle": "Limits on schedules and watches, and what happens to requests nobody answers.",
-  "@dispatchSettingsSubtitle": {
-    "description": "Subtitle of the schedules settings page"
-  },
   "dispatchLimitsLabel": "Schedule limits",
   "@dispatchLimitsLabel": {
     "description": "Heading of the schedule limits card"
@@ -21302,10 +22662,6 @@
   "goalRecordCrumb": "Goal",
   "@goalRecordCrumb": {
     "description": "Breadcrumb for one open goal"
-  },
-  "scheduleRecordCrumb": "Schedule",
-  "@scheduleRecordCrumb": {
-    "description": "Breadcrumb for one open schedule or watch"
   },
   "improvementRecordCrumb": "Proposal",
   "@improvementRecordCrumb": {
@@ -21777,30 +23133,42 @@
   "@improvementEvaluationSolved": {
     "description": "A skill change's evaluation numbers: paired runs (each task run with the current skill and with the change), and how many each side solved",
     "placeholders": {
-      "pairedRuns": {"type": "int"},
-      "candidateSolved": {"type": "int"},
-      "baselineSolved": {"type": "int"}
+      "pairedRuns": {
+        "type": "int"
+      },
+      "candidateSolved": {
+        "type": "int"
+      },
+      "baselineSolved": {
+        "type": "int"
+      }
     }
   },
   "improvementEvaluationWorse": "{count, plural, =1{1 task did worse with the change.} other{{count} tasks did worse with the change.}}",
   "@improvementEvaluationWorse": {
     "description": "A skill change's evaluation: tasks whose quality dropped with the change",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "improvementEvaluationCostlier": "{count, plural, =1{1 task cost more with the change.} other{{count} tasks cost more with the change.}}",
   "@improvementEvaluationCostlier": {
     "description": "A skill change's evaluation: tasks that cost more with the change",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "improvementEvaluationHarnessErrors": "{count, plural, =1{1 run hit a harness error.} other{{count} runs hit a harness error.}}",
   "@improvementEvaluationHarnessErrors": {
     "description": "A skill change's evaluation: runs of the change that hit a harness error (the agent harness failed, not the task)",
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "improvementEvaluationIncomplete": "The evaluation did not run in full.",
@@ -21847,8 +23215,63 @@
   "@scheduleSpentWithChain": {
     "description": "Schedule page Spent fact for the first schedule of a chain: the figure includes the runs of every schedule it started",
     "placeholders": {
-      "spent": {"type": "String"},
-      "cap": {"type": "String"}
+      "spent": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "ccLoading": "Loading",
+  "@ccLoading": {
+    "description": "Accessible name a screen reader speaks for a busy indicator (spinner) that has no other label"
+  },
+  "ccProgress": "Progress",
+  "@ccProgress": {
+    "description": "Accessible name a screen reader speaks for a progress bar that has no other label"
+  },
+  "ccBreadcrumb": "Breadcrumb",
+  "@ccBreadcrumb": {
+    "description": "Accessible name of a breadcrumb trail (the row of links showing where the current page sits)"
+  },
+  "ccDialog": "Dialog",
+  "@ccDialog": {
+    "description": "Accessible name of a dialog window that has no title"
+  },
+  "ccResize": "Resize",
+  "@ccResize": {
+    "description": "Accessible name of a divider between two panes that can be dragged or moved with arrow keys to resize them"
+  },
+  "ccUnverifiedLabel": "{label} (unverified)",
+  "@ccUnverifiedLabel": {
+    "description": "A diagram label followed by a marker that the step was not verified",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "prRowSelect": "Select {title}",
+  "@prRowSelect": {
+    "description": "Accessible name of the checkbox that selects one pull request row; title is the pull request title",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "prTableSelectAll": "Select all pull requests",
+  "@prTableSelectAll": {
+    "description": "Accessible name of the checkbox in a pull request table header that selects every row"
+  },
+  "planVersionRewind": "Rewind to version {version}",
+  "@planVersionRewind": {
+    "description": "Accessible name of the button that restores a plan to an earlier revision; version is the revision number",
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
     }
   }
 }

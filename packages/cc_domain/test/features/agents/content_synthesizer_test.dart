@@ -30,6 +30,7 @@ void main() {
       final s = ContentSynthesizer.fromAgent(
         _agent(adapterId: 'claude-code', modelId: ' haiku '),
       );
+      expect(s.agentId, 'a');
       expect(s.adapterId, 'claude-code');
       expect(s.modelId, 'haiku');
     });

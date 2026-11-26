@@ -11,8 +11,10 @@ import 'package:cc_domain/features/ticketing/domain/repositories/ticket_link_rep
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_link_service.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu.dart';
+import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu_keys.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
@@ -311,6 +313,95 @@ void main() {
 
       // No submenu is open initially, so no checkmark icons are visible.
       expect(find.byIcon(AppIcons.check), findsNothing);
+    });
+  });
+
+  group('keyboard', () {
+    Future<FocusNode> pumpRow(WidgetTester tester) async {
+      final row = FocusNode(debugLabel: 'ticket row');
+      addTearDown(row.dispose);
+      await tester.pumpWidget(
+        _wrap(
+          Align(
+            alignment: AlignmentDirectional.topStart,
+            child: TicketContextMenuKeys(
+              ticket: _ticket(),
+              workspaceId: _ws,
+              child: CcTappable(
+                focusNode: row,
+                onPressed: () {},
+                builder: (context, _) => const Text('Row'),
+              ),
+            ),
+          ),
+        ),
+      );
+      row.requestFocus();
+      await tester.pump();
+      return row;
+    }
+
+    for (final (name, open) in [
+      (
+        'Shift+F10',
+        () async {
+          await simulateKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+          await simulateKeyDownEvent(LogicalKeyboardKey.f10);
+          await simulateKeyUpEvent(LogicalKeyboardKey.f10);
+          await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        },
+      ),
+      (
+        'the Menu key',
+        () async {
+          await simulateKeyDownEvent(LogicalKeyboardKey.contextMenu);
+          await simulateKeyUpEvent(LogicalKeyboardKey.contextMenu);
+        },
+      ),
+    ]) {
+      testWidgets('$name on a focused row opens its menu', (tester) async {
+        _setupView(tester);
+        await pumpRow(tester);
+        await open();
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Status'), findsOneWidget);
+      });
+    }
+
+    testWidgets('the menu is operable and gives focus back on Esc', (
+      tester,
+    ) async {
+      _setupView(tester);
+      final handle = tester.ensureSemantics();
+      final row = await pumpRow(tester);
+      await simulateKeyDownEvent(LogicalKeyboardKey.contextMenu);
+      await simulateKeyUpEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pump();
+      await tester.pump();
+      expect(row.hasFocus, isFalse, reason: 'focus moved into the menu');
+
+      final status = find.text('Status');
+      expect(
+        tester.getSemantics(status),
+        isSemantics(isButton: true, hasExpandedState: true, isExpanded: false),
+      );
+      Focus.of(tester.element(status)).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(find.text('Backlog'), findsOneWidget);
+      expect(
+        tester.getSemantics(status),
+        isSemantics(hasExpandedState: true, isExpanded: true),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Status'), findsNothing);
+      expect(row.hasPrimaryFocus, isTrue);
+      handle.dispose();
     });
   });
 

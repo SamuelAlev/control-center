@@ -4,6 +4,8 @@ import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_domain/features/settings/domain/repositories/harness_provider_repository.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/providers/provider_detail_pane.dart';
 import 'package:control_center/features/settings/presentation/widgets/providers_models_section.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/model_catalog_providers.dart';
@@ -14,6 +16,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:riverpod/misc.dart' show Override;
 
 CcCheckbox _checkbox(WidgetTester tester, String label) {
   return tester.widget<CcCheckbox>(
@@ -74,7 +77,11 @@ void main() {
     repository = _FakeHarnessProviderRepository();
   });
 
-  Future<void> pumpSection(WidgetTester tester) async {
+  Future<void> pumpSection(
+    WidgetTester tester, {
+    List<WorkspaceProviderPolicy> policies = const [],
+    List<Override> extraOverrides = const [],
+  }) async {
     // The section is a tall master-detail surface; the default 800×600 test
     // viewport pushes the pane's lower half off-screen.
     tester.view.physicalSize = const Size(1600, 1600);
@@ -86,8 +93,9 @@ void main() {
           harnessProviderRepositoryProvider.overrideWithValue(repository),
           rawModelCatalogProvider.overrideWith((ref) async => catalog),
           workspaceProviderPoliciesProvider.overrideWith(
-            (ref) => Stream.value(const <WorkspaceProviderPolicy>[]),
+            (ref) => Stream.value(policies),
           ),
+          ...extraOverrides,
         ],
         child: MaterialApp(
           localizationsDelegates: appLocalizationsDelegates,
@@ -105,6 +113,26 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
   }
+
+  CcStatusDot railDot(WidgetTester tester, String provider) =>
+      tester.widget<CcStatusDot>(
+        find.descendant(
+          of: find.widgetWithText(SettingsRailItem, provider),
+          matching: find.byType(CcStatusDot),
+        ),
+      );
+
+  SettingsRailItem railItem(WidgetTester tester, String provider) =>
+      tester.widget<SettingsRailItem>(
+        find.widgetWithText(SettingsRailItem, provider),
+      );
+
+  CcStatusTag detailStatusTag(WidgetTester tester) => tester.widget<CcStatusTag>(
+    find.descendant(
+      of: find.byType(ProviderDetailPane),
+      matching: find.byType(CcStatusTag),
+    ),
+  );
 
   group('ProvidersModelsSection', () {
     testWidgets('rail lists providers and the connected one is preselected', (
@@ -295,6 +323,167 @@ void main() {
       expect(model.manual, isTrue);
       expect(model.inputModalities, ['text']);
     });
+
+    testWidgets(
+      'expired sign-in shows caution dot in rail and status tag until refreshed',
+      (tester) async {
+        const cursorExpired = HarnessProviderInfo(
+          id: 'cursor',
+          displayName: 'Cursor',
+          authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+          enabled: HarnessProviderEnabled.oauth,
+          hasCredential: true,
+          accountLabel: 'Cursor',
+          credentials: [
+            HarnessCredentialSummary(
+              credentialId: 'oauth:active',
+              method: HarnessAuthMethod.oauth,
+              isActive: true,
+              removable: true,
+              expired: false,
+              label: 'Active',
+            ),
+            HarnessCredentialSummary(
+              credentialId: 'oauth:expired',
+              method: HarnessAuthMethod.oauth,
+              isActive: false,
+              removable: true,
+              expired: true,
+              label: 'Cursor',
+            ),
+          ],
+        );
+        const cursorRenewed = HarnessProviderInfo(
+          id: 'cursor',
+          displayName: 'Cursor',
+          authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+          enabled: HarnessProviderEnabled.oauth,
+          hasCredential: true,
+          accountLabel: 'Cursor',
+          credentials: [
+            HarnessCredentialSummary(
+              credentialId: 'oauth:active',
+              method: HarnessAuthMethod.oauth,
+              isActive: true,
+              removable: true,
+              expired: false,
+              label: 'Active',
+            ),
+            HarnessCredentialSummary(
+              credentialId: 'oauth:expired',
+              method: HarnessAuthMethod.oauth,
+              isActive: false,
+              removable: true,
+              expired: false,
+              label: 'Cursor',
+            ),
+          ],
+        );
+        repository.providers = [
+          _FakeHarnessProviderRepository.anthropic,
+          cursorExpired,
+        ];
+        late VoidCallback refreshProviders;
+
+        await pumpSection(
+          tester,
+          extraOverrides: [
+            harnessProvidersProvider.overrideWith((ref) {
+              refreshProviders = ref.invalidateSelf;
+              return repository.listProviders();
+            }),
+          ],
+        );
+
+        expect(railDot(tester, 'Cursor').tone, CcStatusTone.caution);
+        expect(railItem(tester, 'Cursor').statusLabel, 'Sign-in expired');
+        expect(railDot(tester, 'Anthropic').tone, CcStatusTone.neutral);
+        expect(detailStatusTag(tester).tone, CcStatusTone.caution);
+        expect(detailStatusTag(tester).label, 'Sign-in expired');
+
+        repository.providers = [
+          _FakeHarnessProviderRepository.anthropic,
+          cursorRenewed,
+        ];
+        refreshProviders();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(railDot(tester, 'Cursor').tone, CcStatusTone.positive);
+        expect(railItem(tester, 'Cursor').statusLabel, 'Connected');
+        expect(detailStatusTag(tester).tone, CcStatusTone.positive);
+        expect(detailStatusTag(tester).label, 'Connected');
+      },
+    );
+
+    testWidgets('denied provider keeps negative status ahead of expired sign-in', (
+      tester,
+    ) async {
+      const cursorExpired = HarnessProviderInfo(
+        id: 'cursor',
+        displayName: 'Cursor',
+        authMethods: [HarnessAuthMethod.oauth],
+        enabled: HarnessProviderEnabled.oauth,
+        hasCredential: true,
+        credentials: [
+          HarnessCredentialSummary(
+            credentialId: 'oauth:expired',
+            method: HarnessAuthMethod.oauth,
+            isActive: true,
+            removable: true,
+            expired: true,
+            label: 'Cursor',
+          ),
+        ],
+      );
+      repository.providers = [cursorExpired];
+
+      await pumpSection(
+        tester,
+        policies: const [
+          WorkspaceProviderPolicy(
+            id: 'deny:cursor',
+            statement: PolicyStatement.denyProvider('cursor'),
+          ),
+        ],
+      );
+
+      expect(railDot(tester, 'Cursor').tone, CcStatusTone.negative);
+      expect(railItem(tester, 'Cursor').statusLabel, 'Denied');
+      expect(detailStatusTag(tester).tone, CcStatusTone.negative);
+      expect(detailStatusTag(tester).label, 'Denied');
+    });
+
+    testWidgets(
+      'disabled provider keeps neutral status even with stale expired credential',
+      (tester) async {
+        const cursorDisabled = HarnessProviderInfo(
+          id: 'cursor',
+          displayName: 'Cursor',
+          authMethods: [HarnessAuthMethod.oauth],
+          enabled: HarnessProviderEnabled.disabled,
+          hasCredential: false,
+          credentials: [
+            HarnessCredentialSummary(
+              credentialId: 'oauth:expired',
+              method: HarnessAuthMethod.oauth,
+              isActive: true,
+              removable: true,
+              expired: true,
+              label: 'Cursor',
+            ),
+          ],
+        );
+        repository.providers = [cursorDisabled];
+
+        await pumpSection(tester);
+
+        expect(railDot(tester, 'Cursor').tone, CcStatusTone.neutral);
+        expect(railItem(tester, 'Cursor').statusLabel, 'Not connected');
+        expect(detailStatusTag(tester).tone, CcStatusTone.neutral);
+        expect(detailStatusTag(tester).label, 'Not connected');
+      },
+    );
   });
 }
 
@@ -313,7 +502,7 @@ class _AddedCustom {
 }
 
 class _FakeHarnessProviderRepository implements HarnessProviderRepository {
-  static const _anthropic = HarnessProviderInfo(
+  static const anthropic = HarnessProviderInfo(
     id: 'anthropic',
     displayName: 'Anthropic',
     authMethods: [HarnessAuthMethod.apiKey],
@@ -340,17 +529,18 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
     hasCredential: true,
   );
 
+  List<HarnessProviderInfo> providers = const [
+    anthropic,
+    _customLocal,
+    _kimiCode,
+  ];
   final savedKeys = <String, String>{};
   final savedOverrides = <String, ProviderModelOverride>{};
   final removedOverrides = <String>[];
   _AddedCustom? addedCustom;
 
   @override
-  Future<List<HarnessProviderInfo>> listProviders() async => const [
-    _anthropic,
-    _customLocal,
-    _kimiCode,
-  ];
+  Future<List<HarnessProviderInfo>> listProviders() async => providers;
 
   @override
   Future<List<HarnessModelInfo>> listModels({String? providerId}) async {

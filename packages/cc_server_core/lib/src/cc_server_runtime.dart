@@ -4,11 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, GitHubTokenScope;
+    show ConnectOAuthLane, GitHubReviewCommentInput, GitHubTokenScope;
 import 'package:cc_domain/cc_domain.dart'
     show
         AuthException,
         NeedsSignInException,
+        NetworkException,
         NotFoundException,
         UserDto,
         ValidationException;
@@ -169,6 +170,7 @@ import 'package:cc_server_core/src/backup/workspace_restore_invalidation.dart';
 import 'package:cc_server_core/src/backup_archive.dart';
 import 'package:cc_server_core/src/catalog/connect_ops.dart';
 import 'package:cc_server_core/src/catalog/github_app_ops.dart';
+import 'package:cc_server_core/src/catalog/github_profile_cache.dart';
 import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
 import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
 import 'package:cc_server_core/src/catalog/pr_repo_visibility.dart';
@@ -1306,6 +1308,30 @@ Future<CcServer> runCcServer({
     approvalGuard: agentPrRequesters.guardFor,
   )(repo, workspaceId: workspaceId, actingUserId: actingUserId);
 
+  // One repo's bot/automation forge client, bounded by [actingUserId] when a
+  // person triggered the post: on GitHub, a one-repository installation token
+  // (`httpForRepo`, `viaPerson: false`: App bot on own Apps and listed Connect
+  // installs, falling back via `connectBotOrPerson` to the person's narrowed
+  // token only on unlisted Connect installs); on GitLab/Bitbucket, the
+  // repository's automation token. Never a person's whole sign-in, and never
+  // approves.
+  ForgePrClient forgeBotPrClientForRepo(
+    Repo repo, {
+    required String workspaceId,
+    String? actingUserId,
+  }) => repo.forge == ForgeHost.github
+      ? forgePrClientBuilder(
+          repo.forge,
+          githubClients.httpForRepo(
+            workspaceId,
+            repo.remoteOwner,
+            repo.remoteName,
+            actingUserId: actingUserId,
+          ),
+          approvalGuard: agentPrRequesters.guardFor,
+        )(repo, workspaceId: workspaceId, actingUserId: null)
+      : forgePrClientForRepo(repo, workspaceId: workspaceId);
+
   // Resolves the forge client for a repo coordinate in a workspace, by looking
   // the repo up and using ITS forge. This is what lets a publish land on
   // whichever forge the repo actually lives on rather than assuming GitHub.
@@ -1374,6 +1400,14 @@ Future<CcServer> runCcServer({
       (change) => (userId: change.userId, workspaceId: change.workspaceId),
     ),
     eventBus: eventBus,
+  );
+
+  final githubProfileCache = GitHubProfileCache();
+  final profileCacheCredSub = forgeCredentials.changes.listen(
+    (change) => githubProfileCache.invalidateUser(
+      change.userId,
+      workspaceId: change.workspaceId,
+    ),
   );
 
   // PR lifecycle (workspace-scoped at the `PullRequests` table). The thin client
@@ -2872,6 +2906,86 @@ Future<CcServer> runCcServer({
       for (final row in await globalDb.workspaceRegistryDao.getAll()) row.id,
     ],
   );
+  Future<AccountPoolOrder> resolveHarnessRotation({
+    String? workspaceId,
+    String? agentId,
+    required String providerId,
+    required List<String> credentialIds,
+  }) => resolveHarnessRotationOrder(
+    settings: workspaceSettingsRepository,
+    cooldowns: credentialCooldowns,
+    workspaceId: workspaceId,
+    agentId: agentId,
+    providerId: providerId,
+    credentialIds: credentialIds,
+  );
+  Future<void> onHarnessCredentialExhausted({
+    required String providerId,
+    required String credentialId,
+  }) => credentialCooldowns.mark(providerId, credentialId);
+  Future<ClaudeAccountPlan?> resolveClaudeConfigDir({
+    String? workspaceId,
+    String? conversationId,
+    String? agentId,
+    String? accountId,
+    String? workingDirectory,
+  }) async {
+    // Most-specific scope wins, the same order guardrails resolve in:
+    // the agent's own pool, then the workspace's. An explicit
+    // `accountId` is more specific than either and short-circuits both.
+    // The same reader the harness lane uses — one place pools resolve.
+    final read = await readAccountPool(
+      workspaceSettingsRepository,
+      workspaceId: workspaceId,
+      agentId: agentId,
+      lane: AccountPoolLanes.claudeCode,
+    );
+    final pool = read.pool;
+    final cursorKey = read.cursorKey;
+    final cursor = read.cursor;
+    final plan = await claudeAccountStore.resolveForDispatch(
+      pool: pool,
+      pinnedAccountId: accountId,
+      cursor: cursor,
+    );
+    if (plan.allSpent != null) {
+      return ClaudeAccountPlan(
+        accounts: const [],
+        refusal: plan.allSpent,
+      );
+    }
+    // Persist the round-robin position BEFORE the run, so two dispatches
+    // racing still land on different accounts — writing it after would
+    // let both read the same cursor and pick the same one.
+    final next = plan.nextCursor;
+    if (next != null &&
+        workspaceId != null &&
+        cursorKey != null &&
+        next != cursor) {
+      await workspaceSettingsRepository.set(
+        workspaceId,
+        cursorKey,
+        '$next',
+      );
+    }
+    // Answer Claude Code's interactive gates before the run needs them.
+    // Every candidate, not just the first: the fallback chain switches
+    // accounts mid-run, and an unprepared fallback fails exactly like the
+    // account it replaced. See [ClaudeAccountStore.prepareForRun].
+    for (final candidate in plan.candidates) {
+      await claudeAccountStore.prepareForRun(
+        accountId: candidate.accountId,
+        workingDirectory: workingDirectory ?? '',
+      );
+    }
+    return ClaudeAccountPlan(
+      accounts: plan.candidates,
+      onExhausted: ({required accountId, resetsAt}) =>
+          claudeAccountStore.markRateLimited(accountId, until: resetsAt),
+      onAuthFailed: ({required accountId, reason}) =>
+          claudeAccountStore.markAuthFailed(accountId, reason: reason),
+    );
+  }
   final agentDispatchService = AgentDispatchService(
     agentDispatch: agentDispatch,
     dispatchUseCase: DispatchAgentUseCase(
@@ -2922,90 +3036,14 @@ Future<CcServer> runCcServer({
     // but a different mechanism underneath: the harness owns the LLM call, so
     // `FallbackProvider` swaps credential mid-stream and all this decides is
     // which one LEADS the chain.
-    resolveHarnessRotation:
-        ({workspaceId, agentId, required providerId, required credentialIds}) =>
-            resolveHarnessRotationOrder(
-              settings: workspaceSettingsRepository,
-              cooldowns: credentialCooldowns,
-              workspaceId: workspaceId,
-              agentId: agentId,
-              providerId: providerId,
-              credentialIds: credentialIds,
-            ),
-    onHarnessCredentialExhausted:
-        ({required providerId, required credentialId}) =>
-            credentialCooldowns.mark(providerId, credentialId),
+    resolveHarnessRotation: resolveHarnessRotation,
+    onHarnessCredentialExhausted: onHarnessCredentialExhausted,
     // Parks a run whose Claude Code accounts are all out of headroom (or all
     // signed out) and re-resolves the plan once one is usable again, so the
     // resumed run reaches the sandbox with a directory the profile allows.
     credentialGate: credentialGate,
     limitParks: () => runQueues.limitParksOrNull,
-    resolveClaudeConfigDir:
-        ({
-          workspaceId,
-          conversationId,
-          agentId,
-          accountId,
-          workingDirectory,
-        }) async {
-          // Most-specific scope wins, the same order guardrails resolve in:
-          // the agent's own pool, then the workspace's. An explicit
-          // `accountId` is more specific than either and short-circuits both.
-          // The same reader the harness lane uses — one place pools resolve.
-          final read = await readAccountPool(
-            workspaceSettingsRepository,
-            workspaceId: workspaceId,
-            agentId: agentId,
-            lane: AccountPoolLanes.claudeCode,
-          );
-          final pool = read.pool;
-          final cursorKey = read.cursorKey;
-          final cursor = read.cursor;
-          final plan = await claudeAccountStore.resolveForDispatch(
-            pool: pool,
-            pinnedAccountId: accountId,
-            cursor: cursor,
-          );
-          if (plan.allSpent != null) {
-            return ClaudeAccountPlan(
-              accounts: const [],
-              refusal: plan.allSpent,
-            );
-          }
-          // Persist the round-robin position BEFORE the run, so two dispatches
-          // racing still land on different accounts — writing it after would
-          // let both read the same cursor and pick the same one.
-          final next = plan.nextCursor;
-          if (next != null &&
-              workspaceId != null &&
-              cursorKey != null &&
-              next != cursor) {
-            await workspaceSettingsRepository.set(
-              workspaceId,
-              cursorKey,
-              '$next',
-            );
-          }
-          // Answer Claude Code's interactive gates before the run needs them.
-          // Every candidate, not just the first: the fallback chain switches
-          // accounts mid-run, and an unprepared fallback fails exactly like the
-          // account it replaced. See [ClaudeAccountStore.prepareForRun].
-          if (workingDirectory != null && workingDirectory.isNotEmpty) {
-            for (final candidate in plan.candidates) {
-              await claudeAccountStore.prepareForRun(
-                accountId: candidate.accountId,
-                workingDirectory: workingDirectory,
-              );
-            }
-          }
-          return ClaudeAccountPlan(
-            accounts: plan.candidates,
-            onExhausted: ({required accountId, resetsAt}) =>
-                claudeAccountStore.markRateLimited(accountId, until: resetsAt),
-            onAuthFailed: ({required accountId, reason}) =>
-                claudeAccountStore.markAuthFailed(accountId, reason: reason),
-          );
-        },
+    resolveClaudeConfigDir: resolveClaudeConfigDir,
   );
   stopDemoRuns = (workspaceId) => stopRunsOfWorkspace(
     workspaceId,
@@ -3057,6 +3095,11 @@ Future<CcServer> runCcServer({
           credentials: harnessCreds,
           confinement: agentDispatch.oneShotConfinement,
           refresher: harnessOAuthBroker,
+          resolveClaudeConfigDir: resolveClaudeConfigDir,
+          resolveHarnessRotation: resolveHarnessRotation,
+          onHarnessCredentialExhausted: onHarnessCredentialExhausted,
+          runLogRepo: agentRunLogRepository,
+          agentDir: workspaceFilesystem.agentDir,
         )
       : AdapterOneShotRunner(
           credentials: harnessCreds,
@@ -5933,6 +5976,69 @@ Future<CcServer> runCcServer({
     forgeConnections: demo != null ? null : forgeCredentials,
     forgeTokens: demo != null ? null : forgeCredentials,
     buildForgePrClient: forgePrClientForRepo,
+    buildBotForgePrClient: demo != null ? null : forgeBotPrClientForRepo,
+    postConnectReviewComments: demo != null
+        ? null
+        : ({
+            required String workspaceId,
+            required Repo repo,
+            required String userId,
+            required int prNumber,
+            required String commitSha,
+            required List<GitHubReviewCommentInput> comments,
+          }) async {
+            try {
+              return await githubClients.postReviewCommentsViaConnect(
+                workspaceId: workspaceId,
+                owner: repo.remoteOwner,
+                repo: repo.remoteName,
+                prNumber: prNumber,
+                commitSha: commitSha,
+                actingUserId: userId,
+                comments: comments,
+              );
+            } on GitHubScopeRefused catch (e) {
+              throw switch (e.code) {
+                GitHubRefusal.needsSignIn ||
+                GitHubRefusal.ssoRequired => NeedsSignInException(
+                  ForgeHost.github.wire,
+                  e.message,
+                ),
+                GitHubRefusal.repoReplaced => NetworkException(
+                  e.message,
+                  statusCode: 409,
+                  responseBody: jsonEncode({
+                    ForgeCredentialUnavailable.repoReplacedKey:
+                        ForgeHost.github.wire,
+                  }),
+                  code: kRepoReplacedCode,
+                ),
+                GitHubRefusal.suspended => NetworkException(
+                  e.message,
+                  statusCode: 403,
+                  code: kGitHubInstallationSuspendedCode,
+                ),
+                GitHubRefusal.rateLimited => NetworkException(
+                  e.message,
+                  statusCode: 429,
+                  code: 'rate_limited',
+                ),
+                GitHubRefusal.providerUnavailable => NetworkException(
+                  e.message,
+                  statusCode: 503,
+                  code: 'provider_unavailable',
+                ),
+                _ => NetworkException(
+                  e.message,
+                  statusCode: 403,
+                  code: 'auth_error',
+                ),
+              };
+            }
+          },
+    automatedReviewAttribution: demo != null
+        ? null
+        : githubAutomation.reviewAttribution,
     // Sandbox detection: report THIS host's OS-native sandbox capabilities so a
     // connected web/thin client's Settings → Sandboxing reflects the server.
     // demo: no sandbox probing; nothing is sandboxed because nothing runs.
@@ -6106,39 +6212,71 @@ Future<CcServer> runCcServer({
             // On the ACTING USER's own sign-in, like `github.currentUser`
             // above: the profile query reads `organizations.nodes.teams`,
             // which only a user token may read. Not signed in is no profile.
-            userProfile: (login, actingUserId) async {
+            userProfile: (login, actingUserId, {force = false}) async {
               if (!await hasGitHubForActor(actingUserId)) {
                 return null;
               }
-              return (await githubClientForActor(
-                actingUserId,
-              ).graphql.getUserProfile(login: login))?.toWire();
+              return githubProfileCache.getUserProfile(
+                actingUserId: actingUserId,
+                login: login,
+                force: force,
+                load: () async => (await githubClientForActor(
+                  actingUserId,
+                ).graphql.getUserProfile(login: login))?.toWire(),
+              );
             },
-            teamProfile: (organization, slug, actingUserId) async {
+            teamProfile: (
+              organization,
+              slug,
+              actingUserId, {
+              force = false,
+            }) async {
               if (!await hasGitHubForActor(actingUserId)) {
                 return null;
               }
-              return githubClientForActor(
-                actingUserId,
-              ).graphql.getTeamProfile(organization: organization, slug: slug);
+              return githubProfileCache.getTeamProfile(
+                actingUserId: actingUserId,
+                organization: organization,
+                slug: slug,
+                force: force,
+                load: () => githubClientForActor(
+                  actingUserId,
+                ).graphql.getTeamProfile(
+                  organization: organization,
+                  slug: slug,
+                ),
+              );
             },
             // The caller's own sign-in for the bound workspace (its own App's
             // grant when it has one).
-            profileActivity:
-                (repos, logins, actingUserId, {required workspaceId}) async {
-                  if (!await hasGitHubForActor(
+            profileActivity: (
+              repos,
+              logins,
+              actingUserId, {
+              required workspaceId,
+              required targetKey,
+              force = false,
+            }) async {
+              if (!await hasGitHubForActor(
+                actingUserId,
+                workspaceId: workspaceId,
+              )) {
+                return GitHubProfileActivity.empty;
+              }
+              return githubProfileCache.getProfileActivity(
+                workspaceId: workspaceId,
+                actingUserId: actingUserId,
+                targetKey: targetKey,
+                visibleRepos: repos,
+                force: force,
+                load: () => GitHubProfileActivityAdapter(
+                  githubClientForActor(
                     actingUserId,
                     workspaceId: workspaceId,
-                  )) {
-                    return GitHubProfileActivity.empty;
-                  }
-                  return GitHubProfileActivityAdapter(
-                    githubClientForActor(
-                      actingUserId,
-                      workspaceId: workspaceId,
-                    ),
-                  ).fetch(repos: repos, logins: logins);
-                },
+                  ),
+                ).fetch(repos: repos, logins: logins),
+              );
+            },
             openPrPage: (owner, repo, page, {required workspaceId}) async {
               if (!await hasGitHubForOwner(workspaceId, owner)) {
                 return (prs: const <PullRequest>[], hasMore: false);
@@ -7882,6 +8020,7 @@ Future<CcServer> runCcServer({
     .._eventListenerStops.add(teamRoutingService.dispose)
     // Its reach rechecks and retries are timers; none outlives the server.
     .._eventListenerStops.add(prRepoVisibility.dispose)
+    .._eventListenerStops.add(() => unawaited(profileCacheCredSub.cancel()))
     .._chatConnector = chatConnector
     .._githubClients = githubClients
     .._forgeHttpClients = forgeHttpClients;

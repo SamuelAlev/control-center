@@ -210,17 +210,17 @@ class _PipelineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
+    final edge = selected ? ds.textPrimary : ds.borderSecondary;
+    return CcTappable(
+      onPressed: onTap,
+      semanticSelected: selected,
+      borderRadius: BorderRadius.circular(4),
+      builder: (context, _) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: selected ? ds.bgSecondary : ds.bgPrimary,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: selected ? ds.textPrimary : ds.borderSecondary,
-          ),
+          border: Border.all(color: edge),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

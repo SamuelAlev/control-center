@@ -743,7 +743,7 @@ void main() {
     );
     await _pump(tester, FakeEnvironmentRepository(definitions: [linked]));
     await _openFirst(tester);
-    expect(find.text('WORKSPACE OVERRIDES'), findsOneWidget);
+    expect(find.text('Workspace overrides'), findsOneWidget);
   });
 
   test('a repo opens the definition that owns its worktree tasks', () {

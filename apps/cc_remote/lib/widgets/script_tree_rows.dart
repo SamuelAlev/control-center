@@ -81,6 +81,11 @@ class PhoneScriptPendingRow extends StatelessWidget {
     final skipped =
         state == ScriptStepState.skipped || state == ScriptStepState.unknown;
     final word = phoneScriptPendingWord(l10n, state);
+    final labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: isCode ? FontWeight.w400 : FontWeight.w600,
+      color: skipped || isCode ? t.textQuaternary : t.textTertiary,
+    );
     return Semantics(
       label: word == null ? label : l10n.scriptStepSemantics(label, word),
       excludeSemantics: true,
@@ -110,15 +115,11 @@ class PhoneScriptPendingRow extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: CcFonts.code(
-                      textStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isCode ? FontWeight.w400 : FontWeight.w600,
-                        color: skipped || isCode
-                            ? t.textQuaternary
-                            : t.textTertiary,
-                      ),
-                    ),
+                    // Only a computed description is code; a label or a
+                    // tool's display name stays in the UI font.
+                    style: isCode
+                        ? CcFonts.code(textStyle: labelStyle)
+                        : labelStyle,
                   ),
                 ),
                 if (word != null) ...[

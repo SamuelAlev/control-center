@@ -67,7 +67,7 @@ void main() {
     ) async {
       await pump(tester);
 
-      expect(find.text(l10n.mcpWorkspaceServers.toUpperCase()), findsOneWidget);
+      expect(find.text(l10n.mcpWorkspaceServers), findsOneWidget);
       expect(find.text('github'), findsOneWidget);
       expect(find.text('npx -y server-github'), findsOneWidget);
       expect(find.text(l10n.mcpStatusAwaitingApproval), findsOneWidget);
@@ -172,7 +172,7 @@ void main() {
         personal: [httpEntry(approved: false, userId: 'u-1')],
       );
 
-      expect(find.text(l10n.mcpPersonalServers.toUpperCase()), findsOneWidget);
+      expect(find.text(l10n.mcpPersonalServers), findsOneWidget);
       expect(find.text(l10n.mcpPersonalServersDescription), findsOneWidget);
       expect(find.text(l10n.mcpWorkspaceServersAdminsOnly), findsNothing);
       expect(find.text('linear'), findsOneWidget);
@@ -262,9 +262,7 @@ void main() {
     final add = tester.getCenter(
       find.widgetWithText(CcButton, l10n.mcpAddServer),
     );
-    final title = tester.getCenter(
-      find.text(l10n.mcpWorkspaceServers.toUpperCase()),
-    );
+    final title = tester.getCenter(find.text(l10n.mcpWorkspaceServers));
     // The section's action sits at the start edge's opposite: the left.
     expect(add.dx, lessThan(title.dx));
     // The notices hang from the row's start (right) side, their buttons at

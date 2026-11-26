@@ -8,6 +8,7 @@ import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
+import 'package:cc_ui/src/foundation/cc_submit_keeps_focus.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_text_selection_gestures.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -39,8 +40,11 @@ typedef CcAutocompleteFilter<T> =
 /// an [EditableText] (no Material). Showing a prior selection lists all options
 /// (not pre-filtered to that row). [filter] or default label `contains`; first
 /// match stays highlighted. Tap / arrows+Enter select via [displayString]; Esc
-/// closes; ✕ clears. Empty → "No results". [onCustomValue] commits unmatched
-/// text on blur/Tab/Enter; exact option match is always a selection.
+/// closes and ↑/↓ reopen; Enter on a closed panel submits the typed text, never
+/// a hidden option. ✕ clears. Empty → "No results". Focus stays in the field
+/// throughout. [onCustomValue] commits unmatched text on blur/Tab/Enter (a Tab
+/// onto the field's own ✕ is not a blur); exact option match is always a
+/// selection.
 class CcAutocomplete<T> extends StatefulWidget {
   /// Creates a [CcAutocomplete].
   const CcAutocomplete({
@@ -104,6 +108,14 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
   TextEditingController? _internalText;
   FocusNode? _internalFocus;
   List<CcSelectOption<T>> _matches = const [];
+
+  /// Spans the text and its ✕: focus moving between the two is not leaving
+  /// the field, so it neither closes the panel nor commits a custom value.
+  final FocusNode _fieldFocus = FocusNode(
+    debugLabel: 'CcAutocomplete field',
+    canRequestFocus: false,
+    skipTraversal: true,
+  );
 
   /// Keeps the arrow-key highlight inside the scrolled viewport.
   final CcRowReveal _rows = CcRowReveal();
@@ -169,6 +181,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     _focus.removeListener(_onFocusChanged);
     _internalText?.dispose();
     _internalFocus?.dispose();
+    _fieldFocus.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -259,12 +272,16 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
       // where the EditableText claims the tap before the field's own
       // GestureDetector — opens the menu on focus gain.
       _openPanel();
-      return;
     }
-    // Tabbing away (or any focus loss) commits a pending custom value and
-    // closes the panel — Carbon's combo box saves on Tab.
-    _hideWithoutCommit();
-    _commitCustom();
+  }
+
+  /// Tabbing away (or any focus loss) commits a pending custom value and
+  /// closes the panel — Carbon's combo box saves on Tab.
+  void _onFieldFocusChanged(bool focused) {
+    if (!focused) {
+      _hideWithoutCommit();
+      _commitCustom();
+    }
   }
 
   /// Opens the panel over a freshly computed match list. A committed
@@ -359,10 +376,11 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     widget.onSelected(option.value);
   }
 
-  /// Enter: pick the highlighted (or best-matching) option; with no matches a
-  /// combo box commits the typed text as a custom value instead.
+  /// Enter: pick the highlighted (or best-matching) option; with no matches,
+  /// or with the list closed (nothing on screen to pick), a combo box commits
+  /// the typed text as a custom value instead.
   void _submitted() {
-    if (_matches.isNotEmpty) {
+    if (_controller.isOpen && _matches.isNotEmpty) {
       final idx = _highlighted ?? 0;
       _select(_matches[idx.clamp(0, _matches.length - 1)]);
     } else {
@@ -386,15 +404,38 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || _matches.isEmpty) {
-      if (event is KeyDownEvent &&
-          event.logicalKey == LogicalKeyboardKey.escape) {
-        _hideWithoutCommit();
-        return KeyEventResult.handled;
-      }
+    if (event is! KeyDownEvent) {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      // A closed list leaves Escape to whatever holds the field (a dialog).
+      if (!_controller.isOpen) {
+        return KeyEventResult.ignored;
+      }
+      _hideWithoutCommit();
+      return KeyEventResult.handled;
+    }
+    final vertical =
+        key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.arrowUp;
+    if (!vertical) {
+      return KeyEventResult.ignored;
+    }
+    if (!_controller.isOpen) {
+      // ↑/↓ bring a closed list back (after Escape, or a selection). A typed
+      // query reopens on its best match; otherwise the key moves on as usual.
+      _openPanel();
+      if (!_controller.isOpen) {
+        return KeyEventResult.ignored;
+      }
+      if (_highlighted != null) {
+        return KeyEventResult.handled;
+      }
+    }
+    if (_matches.isEmpty) {
+      return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.arrowDown) {
       final cur = _highlighted;
       final next = cur == null ? 0 : (cur + 1) % _matches.length;
@@ -409,9 +450,6 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
       setState(() => _highlighted = next);
       _rows.reveal(next, from: cur ?? -1);
       return KeyEventResult.handled;
-    } else if (key == LogicalKeyboardKey.escape) {
-      _hideWithoutCommit();
-      return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   }
@@ -420,9 +458,10 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
   Widget build(BuildContext context) {
     return Focus(
       // Ancestor key handler so ↑/↓/Esc drive the floating list while the field
-      // keeps text focus. `canRequestFocus: false` keeps it out of the tab order.
-      canRequestFocus: false,
+      // keeps text focus. The node itself never takes focus.
+      focusNode: _fieldFocus,
       onKeyEvent: _onKey,
+      onFocusChange: _onFieldFocusChanged,
       child: CcOverlayAnchor(
         controller: _controller,
         matchTargetWidth: true,
@@ -436,6 +475,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
           hintText: widget.hintText,
           enabled: widget.enabled,
           semanticLabel: widget.semanticLabel,
+          panel: _controller,
           tapGroup: _tapGroup,
           onTap: _onFieldTap,
           onSubmitted: _submitted,
@@ -474,7 +514,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
                 vertical: AppSpacing.sm,
               ),
               child: Text(
-                'No results',
+                context.ccStrings.noMatches,
                 style: CcTypography.caption.copyWith(color: t.textTertiary),
               ),
             ),
@@ -553,6 +593,7 @@ class _CcAutocompleteField extends StatefulWidget {
     required this.hintText,
     required this.enabled,
     required this.semanticLabel,
+    required this.panel,
     required this.tapGroup,
     required this.onTap,
     required this.onSubmitted,
@@ -564,6 +605,9 @@ class _CcAutocompleteField extends StatefulWidget {
   final String? hintText;
   final bool enabled;
   final String? semanticLabel;
+
+  /// The suggestion panel, whose open state the field reports as expanded.
+  final CcOverlayController panel;
 
   /// Tap-region group shared with the dropdown panel, so tapping a panel row
   /// is not "outside" the text field and never unfocuses it mid-gesture.
@@ -609,9 +653,19 @@ class _CcAutocompleteFieldState extends State<_CcAutocompleteField>
       ),
     );
 
-    return Semantics(
-      textField: true,
-      label: widget.semanticLabel,
+    // Only the semantics rebuild as the panel opens and closes; rebuilding the
+    // editable mid-gesture would break click-drag selection.
+    return ListenableBuilder(
+      listenable: widget.panel,
+      // A node of its own that the EditableText's node merges into: without
+      // `container` the name and state went up into the overlay target's
+      // node, and a second `textField` flag would keep the two nodes apart.
+      builder: (context, child) => Semantics(
+        container: true,
+        label: widget.semanticLabel,
+        expanded: widget.panel.isOpen,
+        child: child,
+      ),
       child: TextFieldTapRegion(
         groupId: widget.tapGroup,
         child: MouseRegion(
@@ -646,6 +700,10 @@ class _CcAutocompleteFieldState extends State<_CcAutocompleteField>
                 maxLines: 1,
                 keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.done,
+                onEditingComplete: ccSubmitKeepsFocus(
+                  widget.controller,
+                  TextInputAction.done,
+                ),
                 onSubmitted: (_) => widget.onSubmitted(),
                 cursorWidth: 1.5,
                 selectionControls: null,
@@ -732,11 +790,11 @@ class _CcAutocompleteFieldState extends State<_CcAutocompleteField>
                                 start: AppSpacing.sm,
                               ),
                               child: CcTooltip(
-                                message: 'Clear',
+                                message: context.ccStrings.clear,
                                 child: CcTappable(
                                   onPressed: widget.onClear,
                                   borderRadius: AppRadii.brXs,
-                                  semanticLabel: 'Clear input',
+                                  semanticLabel: context.ccStrings.clear,
                                   builder: (context, states) => Icon(
                                     CcIcons.x,
                                     size: 14,
@@ -804,6 +862,7 @@ class _CcAutocompleteRow<T> extends StatelessWidget {
       showFocusRing: false,
       canRequestFocus: false,
       semanticLabel: option.label,
+      semanticSelected: highlighted,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
@@ -828,9 +887,12 @@ class _CcAutocompleteRow<T> extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: CcTruncatedText(
-                    option.label,
-                    style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+                  // The row carries the label already.
+                  child: ExcludeSemantics(
+                    child: CcTruncatedText(
+                      option.label,
+                      style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+                    ),
                   ),
                 ),
               ],

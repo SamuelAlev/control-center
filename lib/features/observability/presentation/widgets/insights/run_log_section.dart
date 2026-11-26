@@ -128,7 +128,9 @@ class _RunRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final numStyle = CcTypography.monoNum.copyWith(color: t.textPrimary);
+    final numStyle = CcFonts.numeric(
+      textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
+    );
     final cost = run.cost;
 
     Widget numCell(String text, double width) => SizedBox(

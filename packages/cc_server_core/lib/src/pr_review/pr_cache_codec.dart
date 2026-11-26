@@ -341,6 +341,7 @@ class PrCacheCodec {
     if (c.threadId != null) 'thread_id': c.threadId,
     if (c.isResolved) 'is_resolved': true,
     if (c.isFileLevel) 'file_level': true,
+    if (c.isOutdated) 'is_outdated': true,
     'reactions': reactionsToCache(c.reactions),
   };
 
@@ -363,6 +364,7 @@ class PrCacheCodec {
         threadId: _str(m['thread_id']),
         isResolved: m['is_resolved'] == true,
         isFileLevel: m['file_level'] == true,
+        isOutdated: m['is_outdated'] == true,
         reactions: reactionsFromCache(m['reactions']),
       );
 

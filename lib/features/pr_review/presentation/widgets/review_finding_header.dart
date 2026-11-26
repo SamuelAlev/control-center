@@ -92,11 +92,10 @@ class ReviewFindingHeader extends StatelessWidget {
         ? null
         : '${path.split('/').last}$lineSuffix';
 
-    // Mono for every classification token and every number in the row: the
-    // kind, the priority and the confidence line up in a column down a list of
-    // findings, which is what makes the list scannable rather than ragged.
-    final monoLabel = CcFonts.code(textStyle: CcTypography.label);
-    final monoCaption = CcFonts.code(textStyle: CcTypography.caption);
+    // Tabular figures for the confidence so it lines up in a column down a
+    // list of findings; the anchor is a path, so it takes the code font.
+    final numericCaption = CcFonts.numeric(textStyle: CcTypography.caption);
+    final pathCaption = CcFonts.code(textStyle: CcTypography.caption);
 
     return Semantics(
       button: true,
@@ -144,12 +143,12 @@ class ReviewFindingHeader extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   decor.label,
-                  style: monoLabel.copyWith(color: decor.accent),
+                  style: CcTypography.label.copyWith(color: decor.accent),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   payload.priority.name.toUpperCase(),
-                  style: monoLabel.copyWith(
+                  style: CcTypography.label.copyWith(
                     color: reviewPriorityColor(payload.priority, context),
                   ),
                 ),
@@ -162,7 +161,7 @@ class ReviewFindingHeader extends StatelessWidget {
                   ),
                   child: Text(
                     '${(payload.confidence * 100).round()}%',
-                    style: monoCaption.copyWith(color: tokens.textTertiary),
+                    style: numericCaption.copyWith(color: tokens.textTertiary),
                   ),
                 ),
                 // A regex hit and a model's judgement carry different kinds of
@@ -204,7 +203,7 @@ class ReviewFindingHeader extends StatelessWidget {
                         anchorLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: monoCaption.copyWith(color: tokens.textTertiary),
+                        style: pathCaption.copyWith(color: tokens.textTertiary),
                       ),
                     ),
                   ),

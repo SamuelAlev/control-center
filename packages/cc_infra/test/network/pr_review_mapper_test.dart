@@ -442,6 +442,34 @@ void main() {
       expect(pr.reviewedByMe, isFalse);
     });
 
+    test('maps GraphQL state MERGED, CLOSED, OPEN and absent default', () {
+      expect(
+        pullRequestFromGraphQlNode({
+          ...fullNode(),
+          'state': 'MERGED',
+        }, repoFullName: 'o/r').state,
+        PrState.merged,
+      );
+      expect(
+        pullRequestFromGraphQlNode({
+          ...fullNode(),
+          'state': 'CLOSED',
+        }, repoFullName: 'o/r').state,
+        PrState.closed,
+      );
+      expect(
+        pullRequestFromGraphQlNode({
+          ...fullNode(),
+          'state': 'OPEN',
+        }, repoFullName: 'o/r').state,
+        PrState.open,
+      );
+      expect(
+        pullRequestFromGraphQlNode(fullNode(), repoFullName: 'o/r').state,
+        PrState.open,
+      );
+    });
+
     test('falls back to defaults on a node missing optional fields', () {
       // PullRequest asserts number > 0 and title non-empty, so supply those;
       // every other optional field stays absent to exercise the fallbacks.
@@ -685,7 +713,7 @@ void main() {
       expect(prReviewersFromReviewState(raw), isEmpty);
     });
 
-    test('a completed individual review overrides a pending row', () {
+    test('a pending individual request overrides a prior completed review', () {
       const raw = GitHubPrReviewState(
         pendingUsers: [
           GitHubPendingUserRequest(
@@ -704,8 +732,31 @@ void main() {
       );
       final reviewers = prReviewersFromReviewState(raw);
       final user = reviewers.whereType<PrUserReviewer>().single;
-      expect(user.user.login, 'alice');
-      expect(user.state, PrReviewSubmissionState.approved);
+      expect(user.user.login, 'Alice');
+      expect(user.state, PrReviewSubmissionState.pending);
+    });
+
+    test('pending code-owner flag is preserved when re-requesting review', () {
+      const raw = GitHubPrReviewState(
+        pendingUsers: [
+          GitHubPendingUserRequest(
+            login: 'Alice',
+            avatarUrl: 'https://a',
+            asCodeOwner: true,
+          ),
+        ],
+        completedReviews: [
+          GitHubCompletedReview(
+            authorLogin: 'alice',
+            authorAvatarUrl: 'https://a',
+            state: 'CHANGES_REQUESTED',
+          ),
+        ],
+      );
+      final reviewers = prReviewersFromReviewState(raw);
+      final user = reviewers.whereType<PrUserReviewer>().single;
+      expect(user.state, PrReviewSubmissionState.pending);
+      expect(user.isCodeOwner, isTrue);
     });
 
     test('knownCodeOwnerIds marks a completed reviewer as code owner', () {
@@ -725,7 +776,7 @@ void main() {
       expect(reviewers.whereType<PrUserReviewer>().single.isCodeOwner, isTrue);
     });
 
-    test('a completed review on behalf of a team merges into the team row', () {
+    test('a pending team request overrides a prior on-behalf team review', () {
       const raw = GitHubPrReviewState(
         pendingTeams: [
           GitHubPendingTeamRequest(
@@ -748,8 +799,8 @@ void main() {
       expect(team.slug, 'fe');
       expect(team.name, 'Frontend');
       expect(team.isCodeOwner, isTrue);
-      expect(team.state, PrReviewSubmissionState.changesRequested);
-      expect(team.reviewedBy?.login, 'dave');
+      expect(team.state, PrReviewSubmissionState.pending);
+      expect(team.reviewedBy, isNull);
     });
 
     test(
@@ -767,10 +818,13 @@ void main() {
         );
         final team = prReviewersFromReviewState(
           raw,
+          knownCodeOwnerIds: const {'team:new'},
         ).whereType<PrTeamReviewer>().single;
         expect(team.slug, 'new');
         expect(team.name, 'New Team');
         expect(team.state, PrReviewSubmissionState.approved);
+        expect(team.reviewedBy?.login, 'eve');
+        expect(team.isCodeOwner, isTrue);
       },
     );
 
@@ -916,7 +970,7 @@ void main() {
       );
     });
 
-    test('falls back to originalLine when line is null', () {
+    test('marks comment outdated without falling back to originalLine when line is null', () {
       const c = GitHubReviewComment(
         id: 1,
         body: '',
@@ -924,7 +978,11 @@ void main() {
         diffHunk: '',
         originalLine: 12,
       );
-      expect(prCodeReviewCommentFromGitHub(c).position, 12);
+      final comment = prCodeReviewCommentFromGitHub(c);
+      expect(comment.position, isNull);
+      expect(comment.anchorLine, isNull);
+      expect(comment.originalLine, 12);
+      expect(comment.isOutdated, isTrue);
     });
   });
 

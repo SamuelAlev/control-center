@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/presentation/ide/panels/agents
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -152,6 +153,31 @@ void main() {
       isFalse,
       reason: "a top-level run's activity IS the conversation",
     );
+  });
+
+  testWidgets('Shift+F10 opens a focused row\'s menu without opening the row', (
+    tester,
+  ) async {
+    final opened = await pump(tester, logs: parentAndChild);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(AgentsSection)),
+    );
+
+    Focus.of(tester.element(find.text('scout the repo'))).requestFocus();
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(opened, isEmpty);
+    expect(find.text(l10n.focusConversation), findsOneWidget);
+    await tester.tap(find.text(l10n.focusConversation));
+    await tester.pump();
+    expect(opened.single.runId, 'run-child');
+    expect(opened.single.isSubAgent, isFalse);
   });
 
   testWidgets('shows the empty state when the conversation has no runs', (

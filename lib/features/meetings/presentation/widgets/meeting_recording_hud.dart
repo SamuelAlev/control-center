@@ -168,7 +168,7 @@ class _HudBody extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               MeetingFormat.clock(elapsed),
-              style: meetingMono(context, fontSize: 14, color: onInk),
+              style: meetingMeta(context, fontSize: 14, color: onInk),
             ),
             const SizedBox(width: 8),
             Text(

@@ -223,6 +223,9 @@ String spaceRoute(
 /// conversation of a space instead of whichever one is standing.
 String conversationTabKey(String conversationId) => 'chat:$conversationId';
 
+/// The `?tab=` key of the goal tab showing [goalId] in its space.
+String goalTabKey(String goalId) => 'goal:$goalId';
+
 /// Ticketing board (work items the agents read from and act on).
 String ticketsRoute(String workspaceId) => '/workspaces/$workspaceId/tickets';
 
@@ -386,10 +389,15 @@ String settingsGuardrailsRoute(String workspaceId) =>
 String settingsCodeModeRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/code-mode';
 
-/// Settings → Workspace → Schedules: the workspace's limits on schedules and
-/// watches, and what happens to requests nobody answers.
+/// Settings → Workspace → Schedules: the workspace's schedules and watches
+/// (wake rules), its limits on them, and what happens to requests nobody
+/// answers.
 String settingsSchedulesRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/schedules';
+
+/// One schedule or watch's page, open on Settings → Workspace → Schedules.
+String scheduleRoute(String workspaceId, String ruleId) =>
+    '${settingsSchedulesRoute(workspaceId)}/$ruleId';
 
 /// Settings → Server → Connection & status: which server this client talks to,
 /// plus how this server is shared (mDNS, tunnel opt-in, relay usage).
@@ -580,6 +588,20 @@ String memoryFactRoute(String workspaceId, String factId) =>
 String memoryPolicyRoute(String workspaceId, String policyId) =>
     '${memoryRoute(workspaceId)}/policies/$policyId';
 
+/// Query parameter selecting an initial tab on [memoryRoute].
+const String memoryTabQueryParam = 'tab';
+
+/// Tab key opening [memoryRoute] on its Improvements tab.
+const String memoryImprovementsTabKey = 'improvements';
+
+/// Memory screen opened directly at its Improvements tab.
+String memoryImprovementsRoute(String workspaceId) =>
+    '${memoryRoute(workspaceId)}?$memoryTabQueryParam=$memoryImprovementsTabKey';
+
+/// One improvement proposal, open on the Memory screen.
+String memoryImprovementRoute(String workspaceId, String proposalId) =>
+    '${memoryRoute(workspaceId)}/improvements/$proposalId';
+
 /// Meetings list screen (local meeting notes).
 String meetingsRoute(String workspaceId) => '/workspaces/$workspaceId/meetings';
 
@@ -598,33 +620,6 @@ String calendarRoute(String workspaceId) => '/workspaces/$workspaceId/calendar';
 /// Calendar event detail screen for [id].
 String calendarDetailRoute(String workspaceId, String id) =>
     '/workspaces/$workspaceId/calendar/$id';
-
-/// The workspace's durable goals (the goal list; its pages are [goalRoute]).
-String goalsRoute(String workspaceId) => '/workspaces/$workspaceId/goals';
-
-/// One durable goal's page: status, hold, budget, contract, checks, verdict.
-String goalRoute(String workspaceId, String goalId) =>
-    '${goalsRoute(workspaceId)}/$goalId';
-
-/// The query a link to [goalRoute] carries to open the goal's contract
-/// editor at once (the goal card's "No machine check: add one").
-const String goalContractEditQuery = 'edit=contract';
-
-/// The workspace's schedules and watches (wake rules).
-String schedulesRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/schedules';
-
-/// One schedule or watch's page.
-String scheduleRoute(String workspaceId, String ruleId) =>
-    '${schedulesRoute(workspaceId)}/$ruleId';
-
-/// The workspace's improvement proposals (the improvements inbox).
-String improvementsRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/improvements';
-
-/// One improvement proposal's page.
-String improvementRoute(String workspaceId, String proposalId) =>
-    '${improvementsRoute(workspaceId)}/$proposalId';
 
 /// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (workspace-independent, so without the `/workspaces/:id` prefix).
 /// For example `/workspaces/ws-1/tickets/42` → `/tickets/42`. Non-workspace locations (`/onboarding`, the `/workspaces` picker) pass through unchanged.

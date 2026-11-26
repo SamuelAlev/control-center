@@ -2,7 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// A collapsible sidebar section shell: a chevron + leading icon + uppercase
+/// A collapsible sidebar section shell: a chevron + leading icon + sentence-case
 /// eyebrow, an optional right-aligned count badge and a trailing action slot,
 /// over an animated body.
 ///
@@ -88,11 +88,11 @@ class _CollapsibleSidebarSectionState extends State<CollapsibleSidebarSection> {
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      widget.label.toUpperCase(),
+                      widget.label,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.6,
+                        letterSpacing: 0.2,
                         color: t.textTertiary,
                       ),
                     ),

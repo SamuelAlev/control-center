@@ -316,9 +316,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get joinMeeting => 'Csatlakozás a megbeszéléshez';
 
   @override
-  String get join => 'Csatlakozás';
-
-  @override
   String attendeesCount(int count) {
     return 'Résztvevők ($count)';
   }

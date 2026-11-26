@@ -551,6 +551,39 @@ void registerMeetingBodies(
         _logW('meeting.saveNotes', 'speaker-name apply skipped: $e');
       }
     }
+
+    if (outcome.transcriptCorrections.isNotEmpty) {
+      try {
+        final segments = await meetingRepository.getSegments(
+          ctx.workspaceId,
+          meeting.id,
+        );
+        final corrected = applyTranscriptCorrections(
+          segments,
+          outcome.transcriptCorrections,
+        );
+        var changed = false;
+        for (var i = 0; i < segments.length; i++) {
+          if (corrected[i].text != segments[i].text) {
+            changed = true;
+            break;
+          }
+        }
+        if (changed) {
+          await meetingRepository.replaceSegments(
+            ctx.workspaceId,
+            meeting.id,
+            corrected,
+          );
+          _logI(
+            'meeting.saveNotes',
+            'applied ${outcome.transcriptCorrections.length} transcript correction rule(s)',
+          );
+        }
+      } on Object catch (e) {
+        _logW('meeting.saveNotes', 'transcript corrections skipped: $e');
+      }
+    }
     return StepResult.ok(mutatedState: const {'meeting_notes_saved': true});
   });
 

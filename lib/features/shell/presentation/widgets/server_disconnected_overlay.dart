@@ -182,8 +182,10 @@ class _ServerDisconnectedOverlayState
               padding: const EdgeInsetsDirectional.all(AppSpacing.lg),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: FocusScope(
-                  autofocus: true,
+                // A trap, not an autofocusing scope: the app beneath still
+                // holds focus when this appears, which drops an autofocus, and
+                // Tab must not walk back into the app it covers.
+                child: CcFocusTrap(
                   child: Semantics(
                     scopesRoute: true,
                     namesRoute: true,

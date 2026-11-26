@@ -101,7 +101,10 @@ class _RowShell extends StatelessWidget {
           horizontal: AppSpacing.sm,
           vertical: 5,
         ),
-        child: child,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _kRowActionExtent),
+          child: child,
+        ),
       ),
     );
   }
@@ -255,7 +258,7 @@ class _AgentCommandRowState extends ConsumerState<_AgentCommandRow> {
               Text(
                 status,
                 maxLines: 1,
-                style: CcFonts.code(
+                style: CcFonts.numeric(
                   textStyle: TextStyle(fontSize: 11, color: t.textQuaternary),
                 ),
               ),
@@ -287,10 +290,13 @@ String _compactElapsed(BuildContext context, DateTime startedAt) {
   return formatCompactAge(context, startedAt);
 }
 
-/// A row's trailing action: the glyph alone, named by its tooltip. The
-/// sidebar's in-row idiom (see the rig rows' power button) — a 32px
-/// CcIconButton would tower over these dense rows. It paints its own hover
-/// only when its own target is hovered.
+/// Side of a row's trailing action button. Rows are floored at it, so revealing
+/// the button on hover never changes a row's height.
+const double _kRowActionExtent = 20;
+
+/// A row's trailing action: a compact square icon button, named by its
+/// tooltip — a 32px CcIconButton would tower over these dense rows. It paints
+/// its hover wash only when its own target is hovered.
 class _RowAction extends StatelessWidget {
   const _RowAction({
     required this.icon,
@@ -313,16 +319,23 @@ class _RowAction extends StatelessWidget {
         child: CcTappable(
           onPressed: onPressed,
           borderRadius: AppRadii.brSm,
-          builder: (context, states) => Padding(
-            padding: const EdgeInsets.all(2),
-            child: Icon(
-              icon,
-              size: 14,
-              color: states.contains(WidgetState.hovered)
-                  ? t.textPrimary
-                  : t.textSecondary,
-            ),
-          ),
+          builder: (context, states) {
+            final over = states.contains(WidgetState.hovered);
+            return Container(
+              width: _kRowActionExtent,
+              height: _kRowActionExtent,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: over ? t.hoverStrong : const Color(0x00000000),
+                borderRadius: AppRadii.brSm,
+              ),
+              child: Icon(
+                icon,
+                size: 14,
+                color: over ? t.textPrimary : t.textSecondary,
+              ),
+            );
+          },
         ),
       ),
     );

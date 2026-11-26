@@ -10,15 +10,13 @@ import 'package:control_center/features/dispatch/presentation/widgets/goals/goal
 import 'package:control_center/features/dispatch/presentation/widgets/work_record_states.dart';
 import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
-import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One goal's page: loading, refused (the watch's refusal in words), not
-/// found, or the goal. With [openContractEditor] (the `?edit=contract`
-/// query) the contract editor opens once, as soon as the goal is paused,
-/// for a viewer who may change it (`can_resume`).
+/// found, or the goal. With [openContractEditor] the contract editor opens
+/// once, as soon as the goal is paused, for a viewer who may change it
+/// (`can_resume`).
 class GoalPage extends ConsumerStatefulWidget {
   /// Creates the page of [goalId] in [workspaceId].
   const GoalPage({
@@ -44,10 +42,6 @@ class GoalPage extends ConsumerStatefulWidget {
 class _GoalPageState extends ConsumerState<GoalPage> {
   bool _editorOpened = false;
 
-  void _back() => ref
-      .read(navigationHistoryProvider.notifier)
-      .backOr(goalsRoute(widget.workspaceId));
-
   void _maybeOpenEditor(GoalRunView view) {
     if (!widget.openContractEditor ||
         _editorOpened ||
@@ -72,8 +66,6 @@ class _GoalPageState extends ConsumerState<GoalPage> {
     return WorkRecordStates<GoalRunView>(
       value: view,
       notFound: l10n.goalNotFound,
-      backLabel: l10n.goalsBackToList,
-      onBack: _back,
       builder: (v) {
         _maybeOpenEditor(v);
         final goal = v.goal;
@@ -83,7 +75,7 @@ class _GoalPageState extends ConsumerState<GoalPage> {
             vertical: AppSpacing.lg,
           ),
           children: [
-            GoalPageHeader(view: v, onBack: _back),
+            GoalPageHeader(view: v),
             const SizedBox(height: AppSpacing.lg),
             GoalOverviewSection(goal: goal),
             GoalContractSection(goal: goal, canChange: v.canResume),

@@ -290,7 +290,7 @@ class ComposerTextController extends TextEditingController {
       style = style.copyWith(color: syntax);
     }
     if (key & (ComposerMarkdownFlag.bold | ComposerMarkdownFlag.heading) != 0) {
-      style = style.copyWith(fontWeight: FontWeight.w600);
+      style = style.copyWith(fontWeight: FontWeight.w700);
     }
     if (key & ComposerMarkdownFlag.italic != 0) {
       style = style.copyWith(fontStyle: FontStyle.italic);

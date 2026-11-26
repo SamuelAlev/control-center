@@ -344,6 +344,20 @@ void main() {
     expect(find.byType(ReorderableListView), findsNothing);
   });
 
+  testWidgets('the pencil opens the card for typing', (tester) async {
+    await _pump(
+      tester,
+      windowMessages: [_queued('a', 'check the flaky test', order: 0)],
+    );
+    await tester.tap(find.byIcon(AppIcons.pencil));
+    await tester.pumpAndSettle();
+    expect(
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>(),
+      isNotNull,
+    );
+  });
+
   testWidgets('renders one card per queued message', (tester) async {
     await _pump(
       tester,

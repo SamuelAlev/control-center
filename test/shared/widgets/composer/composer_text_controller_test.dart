@@ -127,7 +127,7 @@ void main() {
     // Delimiters stay in the text, dimmed, inside the same code chip.
     expect(children[1].style!.color, ds.textPlaceholder);
     expect(children[1].style!.backgroundColor, ds.hoverStrong);
-    expect(children[6].style!.fontWeight, FontWeight.w600);
+    expect(children[6].style!.fontWeight, FontWeight.w700);
     expect(children[5].style!.color, ds.textPlaceholder);
     expect(children[0].style, isNull);
   });
@@ -158,7 +158,7 @@ void main() {
     final reference = children.firstWhere((c) => c.text == '@[file:a.png]');
     expect(reference.style, isNull);
     final bold = children.firstWhere((c) => c.text == 'now');
-    expect(bold.style?.fontWeight, FontWeight.w600);
+    expect(bold.style?.fontWeight, FontWeight.w700);
   });
 
   group('leading slash command', () {

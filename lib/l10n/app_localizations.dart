@@ -2039,23 +2039,23 @@ abstract class AppLocalizations {
   /// **'No events in this range'**
   String get calendarEmptyNoEvents;
 
-  /// No description provided for @calendarStartRecording.
-  ///
-  /// In en, this message translates to:
-  /// **'Start recording'**
-  String get calendarStartRecording;
-
-  /// No description provided for @calendarStartRecordingAndLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Start recording & link'**
-  String get calendarStartRecordingAndLink;
-
   /// No description provided for @calendarJoinMeet.
   ///
   /// In en, this message translates to:
   /// **'Join meeting'**
   String get calendarJoinMeet;
+
+  /// No description provided for @calendarJoinAndRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Join and record'**
+  String get calendarJoinAndRecord;
+
+  /// No description provided for @calendarRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the recording'**
+  String get calendarRecordFailed;
 
   /// No description provided for @calendarFromCalendar.
   ///
@@ -3478,12 +3478,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity'**
   String get activity;
-
-  /// No description provided for @activityLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'ACTIVITY'**
-  String get activityLabel;
 
   /// No description provided for @activitySearchHint.
   ///
@@ -5042,7 +5036,7 @@ abstract class AppLocalizations {
   /// No description provided for @bugLabel.
   ///
   /// In en, this message translates to:
-  /// **'BUG'**
+  /// **'Bug'**
   String get bugLabel;
 
   /// Locale string for bundledDefaultsNeverUpdated
@@ -7736,7 +7730,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionLabel.
   ///
   /// In en, this message translates to:
-  /// **'QUESTION'**
+  /// **'Question'**
   String get questionLabel;
 
   /// No description provided for @queued.
@@ -7766,7 +7760,7 @@ abstract class AppLocalizations {
   /// No description provided for @recommendLabel.
   ///
   /// In en, this message translates to:
-  /// **'RECOMMEND'**
+  /// **'Recommend'**
   String get recommendLabel;
 
   /// Recording from a specific device
@@ -8930,7 +8924,7 @@ abstract class AppLocalizations {
   /// No description provided for @suggestLabel.
   ///
   /// In en, this message translates to:
-  /// **'SUGGEST'**
+  /// **'Suggest'**
   String get suggestLabel;
 
   /// Label for superseded facts
@@ -9020,7 +9014,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketLabel.
   ///
   /// In en, this message translates to:
-  /// **'TICKET'**
+  /// **'Ticket'**
   String get ticketLabel;
 
   /// Title
@@ -12885,6 +12879,18 @@ abstract class AppLocalizations {
   /// **'Add reviewers'**
   String get addReviewers;
 
+  /// Tooltip for the button that re-requests a pull request review from a reviewer
+  ///
+  /// In en, this message translates to:
+  /// **'Re-request review'**
+  String get reRequestReview;
+
+  /// Accessible name for the control that re-requests a pull request review from a reviewer
+  ///
+  /// In en, this message translates to:
+  /// **'Re-request review from {label}'**
+  String reRequestReviewFor(String label);
+
   /// Button to add assignees to a PR
   ///
   /// In en, this message translates to:
@@ -13179,6 +13185,12 @@ abstract class AppLocalizations {
   /// **'Recording'**
   String get meetingStatusRecording;
 
+  /// No description provided for @meetingStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get meetingStatusPaused;
+
   /// No description provided for @meetingStatusProcessing.
   ///
   /// In en, this message translates to:
@@ -13215,24 +13227,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 processing now} other{{count} processing now}}'**
   String meetingsProcessingNow(int count);
 
-  /// No description provided for @meetingsCountLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{No meetings} =1{1 meeting} other{{count} meetings}}'**
-  String meetingsCountLabel(int count);
-
-  /// No description provided for @meetingsLedgerOpenActions.
-  ///
-  /// In en, this message translates to:
-  /// **'Open actions'**
-  String get meetingsLedgerOpenActions;
-
-  /// No description provided for @meetingsLedgerDecisions.
-  ///
-  /// In en, this message translates to:
-  /// **'Decisions'**
-  String get meetingsLedgerDecisions;
-
   /// No description provided for @meetingsLiveOpen.
   ///
   /// In en, this message translates to:
@@ -13244,18 +13238,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Template'**
   String get meetingTemplateShort;
-
-  /// No description provided for @meetingsStatThisWeek.
-  ///
-  /// In en, this message translates to:
-  /// **'This week'**
-  String get meetingsStatThisWeek;
-
-  /// No description provided for @meetingsStatRecorded.
-  ///
-  /// In en, this message translates to:
-  /// **'Recorded'**
-  String get meetingsStatRecorded;
 
   /// No description provided for @meetingsFilterAll.
   ///
@@ -13322,12 +13304,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{done} / {total} action items'**
   String meetingsActionItemsProgress(int done, int total);
-
-  /// No description provided for @meetingsEnhancedPill.
-  ///
-  /// In en, this message translates to:
-  /// **'enhanced'**
-  String get meetingsEnhancedPill;
 
   /// No description provided for @meetingsTranscribing.
   ///
@@ -13746,12 +13722,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Looks like a meeting is happening. Record it?'**
   String get meetingDetectedSubtitleGeneric;
-
-  /// No description provided for @meetingDetectedRecord.
-  ///
-  /// In en, this message translates to:
-  /// **'Record'**
-  String get meetingDetectedRecord;
 
   /// No description provided for @meetingDetectedDismiss.
   ///
@@ -16393,6 +16363,12 @@ abstract class AppLocalizations {
   /// **'Never connected'**
   String get deviceNeverSeen;
 
+  /// No description provided for @deviceAwaitingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting approval'**
+  String get deviceAwaitingApproval;
+
   /// No description provided for @profileSectionLabel.
   ///
   /// In en, this message translates to:
@@ -17814,18 +17790,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed'**
   String get evalsStatusFailed;
-
-  /// No description provided for @bannerMeetingJoin.
-  ///
-  /// In en, this message translates to:
-  /// **'Join'**
-  String get bannerMeetingJoin;
-
-  /// No description provided for @bannerMeetingRecordAndLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Record & link'**
-  String get bannerMeetingRecordAndLink;
 
   /// No description provided for @bannerCalendarReconnect.
   ///
@@ -23184,6 +23148,12 @@ abstract class AppLocalizations {
   /// **'Could not post the reply: {error}'**
   String failedToPostReply(String error);
 
+  /// Error toast shown when posting a top-level PR conversation comment fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not post the comment: {error}'**
+  String failedToPostComment(String error);
+
   /// Line label on a single-line inline review conversation in the PR timeline
   ///
   /// In en, this message translates to:
@@ -25509,12 +25479,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close {tab}'**
   String closeTabNamed(String tab);
-
-  /// Number of comments in a code review conversation, shown in its header.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
-  String threadCommentCount(int count);
 
   /// No description provided for @notificationAgentAwaitingInput.
   ///
@@ -34510,13 +34474,13 @@ abstract class AppLocalizations {
   /// **'Next: {times}'**
   String scheduleNextFires(String times);
 
-  /// Title of the schedules page; also the sidebar, command palette and breadcrumb entry
+  /// Label of the schedules list on the schedules settings page; also the command palette entry
   ///
   /// In en, this message translates to:
   /// **'Schedules'**
   String get schedulesTitle;
 
-  /// Subtitle of the schedules page
+  /// Subtitle of the schedules settings page
   ///
   /// In en, this message translates to:
   /// **'Schedules, loops and watches that wake agents.'**
@@ -35392,12 +35356,6 @@ abstract class AppLocalizations {
   /// **'Schedules'**
   String get dispatchSettingsTitle;
 
-  /// Subtitle of the schedules settings page
-  ///
-  /// In en, this message translates to:
-  /// **'Limits on schedules and watches, and what happens to requests nobody answers.'**
-  String get dispatchSettingsSubtitle;
-
   /// Heading of the schedule limits card
   ///
   /// In en, this message translates to:
@@ -35529,12 +35487,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal'**
   String get goalRecordCrumb;
-
-  /// Breadcrumb for one open schedule or watch
-  ///
-  /// In en, this message translates to:
-  /// **'Schedule'**
-  String get scheduleRecordCrumb;
 
   /// Breadcrumb for one open improvement proposal
   ///
@@ -36091,6 +36043,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{spent} of {cap}, counting every schedule in its chain'**
   String scheduleSpentWithChain(String spent, String cap);
+
+  /// Accessible name a screen reader speaks for a busy indicator (spinner) that has no other label
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get ccLoading;
+
+  /// Accessible name a screen reader speaks for a progress bar that has no other label
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get ccProgress;
+
+  /// Accessible name of a breadcrumb trail (the row of links showing where the current page sits)
+  ///
+  /// In en, this message translates to:
+  /// **'Breadcrumb'**
+  String get ccBreadcrumb;
+
+  /// Accessible name of a dialog window that has no title
+  ///
+  /// In en, this message translates to:
+  /// **'Dialog'**
+  String get ccDialog;
+
+  /// Accessible name of a divider between two panes that can be dragged or moved with arrow keys to resize them
+  ///
+  /// In en, this message translates to:
+  /// **'Resize'**
+  String get ccResize;
+
+  /// A diagram label followed by a marker that the step was not verified
+  ///
+  /// In en, this message translates to:
+  /// **'{label} (unverified)'**
+  String ccUnverifiedLabel(String label);
+
+  /// Accessible name of the checkbox that selects one pull request row; title is the pull request title
+  ///
+  /// In en, this message translates to:
+  /// **'Select {title}'**
+  String prRowSelect(String title);
+
+  /// Accessible name of the checkbox in a pull request table header that selects every row
+  ///
+  /// In en, this message translates to:
+  /// **'Select all pull requests'**
+  String get prTableSelectAll;
+
+  /// Accessible name of the button that restores a plan to an earlier revision; version is the revision number
+  ///
+  /// In en, this message translates to:
+  /// **'Rewind to version {version}'**
+  String planVersionRewind(int version);
 }
 
 class _AppLocalizationsDelegate

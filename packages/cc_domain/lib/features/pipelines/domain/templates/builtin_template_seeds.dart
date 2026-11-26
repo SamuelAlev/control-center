@@ -2051,7 +2051,16 @@ PipelineDefinition _meetingSummarySeed({
             '"Hi, I\'m Dana", "this is Dana", or another speaker addresses them '
             'by name). Never guess from role or context. Omit any speaker whose '
             'name is not explicitly stated and use {} when none are. Do not map '
-            '"ME" — that is the user.\n\n'
+            '"ME" — that is the user.\n'
+            '  - "transcriptCorrections": an optional array of '
+            '{"find": "<verbatim ASR phrase>", "replace": "<corrected term>"} '
+            'objects fixing ONLY clear speech-recognition errors on technical '
+            'terms, acronyms, product/tool names, or proper nouns (e.g. '
+            '"Cold Rabbit" -> "CodeRabbit", "M C P" -> "MCP", "Depend about" -> '
+            '"Dependabot"). For ambiguous common words (e.g. "Cloud" meant as '
+            '"Claude"), include 2-4 surrounding words in "find" so only that '
+            'specific phrase changes. Never paraphrase or rewrite grammar. '
+            'Use [] when no corrections are needed.\n\n'
             'If template instructions are provided below, follow them for the '
             'structure, emphasis and tone of the notes:\n'
             r'<instructions>{{$trigger.summary_instructions}}</instructions>'
@@ -2067,7 +2076,7 @@ PipelineDefinition _meetingSummarySeed({
       kind: StepKind.listen,
       bodyKey: BuiltInBodyKeys.meetingSaveNotes,
       triggers: const [
-        StepTrigger(sourceStepIds: [summarizeId]),
+        StepTrigger(sourceStepIds: [summarizeId, updateTranscriptId]),
       ],
       config: const PipelineNodeConfig(
         label: 'Save notes',

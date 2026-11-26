@@ -278,16 +278,19 @@ class _AttachmentCardState extends State<_AttachmentCard> {
       ),
     );
 
+    // The wash follows the pointer even when the card opens nothing, so the
+    // hover stays here rather than on the tappable's states. A card that opens
+    // nothing is not a control; the visible name and status read it.
     return MouseRegion(
-      cursor: open == null
-          ? SystemMouseCursors.basic
-          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovering = true),
       onExit: (_) => setState(() => _hovering = false),
-      child: GestureDetector(
-        onTap: open,
-        child: Semantics(button: open != null, label: label, child: card),
-      ),
+      child: open == null
+          ? card
+          : CcTappable(
+              onPressed: open,
+              borderRadius: AppRadii.brSm,
+              builder: (context, _) => card,
+            ),
     );
   }
 }

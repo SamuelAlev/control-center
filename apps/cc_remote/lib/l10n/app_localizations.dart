@@ -726,12 +726,6 @@ abstract class AppLocalizations {
   /// **'Join meeting'**
   String get joinMeeting;
 
-  /// Compact join button on the up-next card.
-  ///
-  /// In en, this message translates to:
-  /// **'Join'**
-  String get join;
-
   /// Event detail: attendees section header with count.
   ///
   /// In en, this message translates to:

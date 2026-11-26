@@ -346,9 +346,9 @@ void main() {
     ) async {
       await _pump(tester, running());
 
-      expect(find.text('URLS'), findsOneWidget);
-      expect(find.text('COMPONENTS'), findsOneWidget);
-      expect(find.text('SCRIPTS'), findsOneWidget);
+      expect(find.text('URLs'), findsOneWidget);
+      expect(find.text('Components'), findsOneWidget);
+      expect(find.text('Scripts'), findsOneWidget);
     });
 
     testWidgets('Destroy is in plain sight, and asks first', (tester) async {
@@ -387,7 +387,7 @@ void main() {
       ];
       await _pump(tester, repository);
 
-      expect(find.text('URLS'), findsNothing);
+      expect(find.text('URLs'), findsNothing);
       expect(find.text('Start'), findsOneWidget);
     });
 
@@ -430,7 +430,7 @@ void main() {
         ),
       );
 
-      expect(find.text('ACTIVITY'), findsOneWidget);
+      expect(find.text('Activity'), findsOneWidget);
       expect(find.text('seed: table users missing'), findsNothing);
 
       await tester.tap(find.text('seed').last);
@@ -569,7 +569,7 @@ void main() {
       await _pump(tester, running(), textDirection: TextDirection.rtl);
 
       expect(tester.takeException(), isNull);
-      expect(find.text('SCRIPTS'), findsOneWidget);
+      expect(find.text('Scripts'), findsOneWidget);
     });
   });
 }

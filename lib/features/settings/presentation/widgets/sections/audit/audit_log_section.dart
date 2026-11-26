@@ -60,7 +60,7 @@ class _AuditLogSectionState extends ConsumerState<AuditLogSection> {
     final quiet = CcTypography.bodySm.copyWith(color: t.textTertiary);
     if (!ref.watch(canSeeAuditLogProvider)) {
       return SectionCard(
-        label: l10n.activityLabel,
+        label: l10n.activity,
         child: CcAlert(
           title: l10n.auditLogNoAccessTitle,
           description: Text(l10n.auditLogNoAccess),
@@ -78,7 +78,7 @@ class _AuditLogSectionState extends ConsumerState<AuditLogSection> {
     final page = async.asData?.value;
 
     return SectionCard(
-      label: l10n.activityLabel,
+      label: l10n.activity,
       trailing: page == null || page.total == 0
           ? null
           : _CountChip(count: page.total),
@@ -231,8 +231,8 @@ class _PaginationFooter extends StatelessWidget {
         children: [
           Text(
             l10n.activityPageRange(start, end, total),
-            style: CcFonts.code(
-              textStyle: CcTypography.monoNum.copyWith(
+            style: CcFonts.numeric(
+              textStyle: CcTypography.numeric.copyWith(
                 fontSize: 12,
                 color: t.textTertiary,
               ),
@@ -260,7 +260,7 @@ class _PaginationFooter extends StatelessWidget {
   }
 }
 
-/// The header count: how many records match, in tabular mono on a chip.
+/// The header count: how many records match, in tabular figures on a chip.
 class _CountChip extends StatelessWidget {
   const _CountChip({required this.count});
 
@@ -274,8 +274,8 @@ class _CountChip extends StatelessWidget {
       color: t.bgTertiary,
       child: Text(
         '$count',
-        style: CcFonts.code(
-          textStyle: CcTypography.monoNum.copyWith(
+        style: CcFonts.numeric(
+          textStyle: CcTypography.numeric.copyWith(
             fontSize: 12,
             color: t.textSecondary,
           ),

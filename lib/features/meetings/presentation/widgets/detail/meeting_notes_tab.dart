@@ -30,8 +30,8 @@ enum MeetingNotesMode {
   yours,
 }
 
-/// The Notes tab, the meeting's overview: the notes editor (Enhanced ↔ Your
-/// notes toggle), a transcript excerpt and the [MeetingOverviewRail] of
+/// The Notes tab, the meeting's overview: the notes panel (Enhanced and Your
+/// notes as tabs in its header), a transcript excerpt and the [MeetingOverviewRail] of
 /// speakers, action items and decisions.
 ///
 /// Wide windows lay the three side by side; mid-width ones keep notes and
@@ -178,14 +178,7 @@ class MeetingNotesTab extends StatelessWidget {
             const SizedBox(width: AppSpacing.lg),
             SizedBox(
               width: _railWidth,
-              child: Padding(
-                // Clears the column headings beside it so the three panels
-                // share a top edge.
-                padding: const EdgeInsets.only(
-                  top: kMeetingNotesHeadingHeight + AppSpacing.md,
-                ),
-                child: overview(MeetingOverviewLayout.stacked),
-              ),
+              child: overview(MeetingOverviewLayout.stacked),
             ),
           ],
         );
@@ -218,49 +211,57 @@ class _NotesColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: kMeetingNotesHeadingHeight,
-          child: Row(
+    final ds = context.ds;
+    const modes = MeetingNotesMode.values;
+    // The two versions of the notes are tabs in the panel's own header, the
+    // way the comment box carries Write/Preview: the switch belongs to the
+    // panel it changes instead of floating above it against the page tabs.
+    return SectionCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              MeetingEyebrow(l10n.meetingTabNotes),
-              const Spacer(),
-              CcSegmentedToggle<MeetingNotesMode>(
-                value: mode,
-                onChanged: onModeChanged,
-                segments: [
-                  CcSegment(
-                    value: MeetingNotesMode.enhanced,
-                    label: l10n.meetingNotesEnhancedToggle,
-                  ),
-                  CcSegment(
-                    value: MeetingNotesMode.yours,
-                    label: l10n.meetingNotesYoursToggle,
-                  ),
+              CcTabs(
+                height: kMeetingPanelHeaderHeight,
+                tabs: [
+                  CcTab(l10n.meetingNotesEnhancedToggle),
+                  CcTab(l10n.meetingNotesYoursToggle),
                 ],
+                selectedIndex: modes.indexOf(mode),
+                onChanged: (i) => onModeChanged(modes[i]),
+              ),
+              // The strip's rule stops where the tabs do; this carries it the
+              // rest of the way on the same line (one rule, not two stacked).
+              Expanded(
+                child: Container(
+                  height: kMeetingPanelHeaderHeight,
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: ds.borderPrimary)),
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SectionCard(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: mode == MeetingNotesMode.enhanced
-              ? _EnhancedNotes(
-                  meeting: meeting,
-                  hasTranscript: hasTranscript,
-                  onGenerate: onGenerateNotes,
-                  onWriteOwn: () => onModeChanged(MeetingNotesMode.yours),
-                )
-              : _YourNotes(
-                  controller: notesController,
-                  onChanged: onNotesChanged,
-                  savingLabel: savingLabel,
-                ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: mode == MeetingNotesMode.enhanced
+                ? _EnhancedNotes(
+                    meeting: meeting,
+                    hasTranscript: hasTranscript,
+                    onGenerate: onGenerateNotes,
+                    onWriteOwn: () => onModeChanged(MeetingNotesMode.yours),
+                  )
+                : _YourNotes(
+                    controller: notesController,
+                    onChanged: onNotesChanged,
+                    savingLabel: savingLabel,
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -349,7 +350,7 @@ class _YourNotes extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Text(savingLabel, style: meetingMono(context, fontSize: 11)),
+            Text(savingLabel, style: meetingMeta(context, fontSize: 11)),
           ],
         ),
       ],
@@ -357,38 +358,44 @@ class _YourNotes extends StatelessWidget {
   }
 }
 
-/// A compact [CcMarkdownStyle] for enhanced notes: mono uppercase headings
+/// A compact [CcMarkdownStyle] for enhanced notes: eyebrow headings
 /// and orange list markers, matching the design.
 ///
 /// Derived from the unified [appMarkdownStyle] (so code/inline-chip styling
 /// stays identical to PR descriptions, chat and ticket surfaces) with the
-/// bespoke mono-heading / accent-bullet treatment layered on top.
+/// bespoke eyebrow-heading / accent-bullet treatment layered on top.
 CcMarkdownStyle _notesStyle(BuildContext context) {
   final ds = context.ds;
   final base = appMarkdownStyle(context);
-  final mono = meetingMono(
-    context,
+  final heading = TextStyle(
     fontSize: 11,
+    fontWeight: FontWeight.w600,
     color: ds.muted,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
   );
   const headingPad = EdgeInsets.only(top: 18);
   return base.copyWith(
-    paragraph: TextStyle(fontSize: 14, height: 1.62, color: ds.fg),
-    h1: mono,
-    h2: mono,
-    h3: mono,
-    h4: mono,
-    h5: mono,
-    h6: mono,
+    paragraph: base.paragraph?.copyWith(
+      fontSize: 14,
+      height: 1.62,
+      color: ds.fg,
+    ),
+    h1: heading,
+    h2: heading,
+    h3: heading,
+    h4: heading,
+    h5: heading,
+    h6: heading,
     h1Padding: headingPad,
     h2Padding: headingPad,
     h3Padding: headingPad,
     h4Padding: headingPad,
-    listBullet: TextStyle(fontSize: 14, height: 1.62, color: ds.accent),
+    listBullet: base.listBullet?.copyWith(
+      fontSize: 14,
+      height: 1.62,
+      color: ds.accent,
+    ),
     listIndent: 18,
-    bold: TextStyle(fontWeight: FontWeight.w600, color: ds.fg),
-    italic: TextStyle(fontStyle: FontStyle.italic, color: ds.fg),
     blockquoteDecoration: BoxDecoration(
       border: BorderDirectional(
         start: BorderSide(color: ds.borderSecondary, width: 3),

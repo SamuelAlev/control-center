@@ -60,6 +60,33 @@ class CcSequenceDiagram extends StatelessWidget {
     const headerHeight = 34.0;
     final height = headerHeight + messages.length * rowHeight + 24;
     final width = math.max(participants.length * 150.0, 260.0);
+    final strings = context.ccStrings;
+    // The diagram is one painted picture; this is its reading: the lanes,
+    // then each message in order.
+    final description = [
+      participants.join(', '),
+      for (final msg in messages)
+        _reading(msg, msg.verified ? msg.label : strings.unverified(msg.label)),
+    ].join('\n');
+    return Semantics(
+      container: true,
+      image: true,
+      label: description,
+      child: _frame(context, t, width, height, rowHeight, headerHeight),
+    );
+  }
+
+  static String _reading(CcSequenceMessage msg, String label) =>
+      '${msg.from} → ${msg.to}: $label';
+
+  Widget _frame(
+    BuildContext context,
+    DesignSystemTokens t,
+    double width,
+    double height,
+    double rowHeight,
+    double headerHeight,
+  ) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: t.surface,
@@ -80,6 +107,7 @@ class CcSequenceDiagram extends StatelessWidget {
               rowHeight: rowHeight,
               headerHeight: headerHeight,
               fontFamily: context.ccTheme?.fontFamily,
+              unverified: context.ccStrings.unverified,
             ),
           ),
         ),
@@ -96,8 +124,11 @@ class _SequencePainter extends CustomPainter {
     required this.rowHeight,
     required this.headerHeight,
     required this.fontFamily,
+    required this.unverified,
   });
 
+  /// Marks a label as not verified, in the host's language.
+  final String Function(String label) unverified;
   final List<String> participants;
   final List<CcSequenceMessage> messages;
   final DesignSystemTokens tokens;
@@ -178,7 +209,7 @@ class _SequencePainter extends CustomPainter {
         math.max(fromX, toX),
         y - 4,
       );
-      final label = msg.verified ? msg.label : '${msg.label} (unverified)';
+      final label = msg.verified ? msg.label : unverified(msg.label);
       _text(canvas, label, labelRect, tokens.muted, 11, center: true);
     }
   }
@@ -223,7 +254,8 @@ class _SequencePainter extends CustomPainter {
   bool shouldRepaint(_SequencePainter old) =>
       old.messages != messages ||
       old.participants != participants ||
-      old.tokens != tokens;
+      old.tokens != tokens ||
+      old.unverified != unverified;
 }
 
 /// A transition in a [CcStateMachineDiagram].
@@ -324,12 +356,12 @@ class CcStateMachineDiagram extends StatelessWidget {
     CcStateTransition tr,
   ) {
     final color = tr.verified ? t.fg : t.warn;
-    final suffix = tr.verified ? '' : '  (unverified)';
     final label = tr.label.isEmpty ? '' : ' : ${tr.label}';
+    final line = '${tr.from}  →  ${tr.to}$label';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Text(
-        '${tr.from}  →  ${tr.to}$label$suffix',
+        tr.verified ? line : context.ccStrings.unverified(line),
         style: TextStyle(color: color, fontSize: 12),
       ),
     );

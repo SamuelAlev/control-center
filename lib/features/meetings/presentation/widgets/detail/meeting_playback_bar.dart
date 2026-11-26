@@ -18,8 +18,9 @@ import 'package:media_kit/media_kit.dart';
 /// retained audio (`audioPath`). The host assembles + serves the mixed track;
 /// this widget fetches the waveform/duration over RPC ([meetingAudioClipProvider])
 /// and streams the bytes from the server's `/meeting/audio` URL — so playback is
-/// identical on web and desktop, local or remote. Renders nothing while loading
-/// or when there is no usable audio.
+/// identical on web and desktop, local or remote. While the clip loads it holds
+/// an empty frame of the bar's own height, so the page below does not jump when
+/// the waveform arrives; it renders nothing when there is no usable audio.
 class MeetingPlaybackBar extends ConsumerWidget {
   /// Creates a [MeetingPlaybackBar] for meeting [meetingId] in [workspaceId].
   const MeetingPlaybackBar({
@@ -69,7 +70,7 @@ class MeetingPlaybackBar extends ConsumerWidget {
       )),
     );
     return clip.when(
-      loading: () => const SizedBox.shrink(),
+      loading: () => const _PlaybackFrame(child: SizedBox.expand()),
       error: (_, _) => const SizedBox.shrink(),
       data: (data) => data == null
           ? const SizedBox.shrink()
@@ -116,6 +117,10 @@ class _PlayerState extends ConsumerState<_Player> {
   Duration _duration = Duration.zero;
   bool _playing = false;
   bool _ready = false;
+
+  /// The player could not open the clip. Distinct from "not ready yet": only a
+  /// failure earns the warning glyph.
+  bool _failed = false;
 
   /// Shared playback store the transcript watches (#8). Captured once in
   /// [initState] rather than read on demand: `dispose()` calls
@@ -199,7 +204,10 @@ class _PlayerState extends ConsumerState<_Player> {
       // Audio backend unavailable (e.g. headless / missing codec): leave the
       // bar disabled rather than crashing the detail screen.
       if (mounted) {
-        setState(() => _ready = false);
+        setState(() {
+          _ready = false;
+          _failed = true;
+        });
       }
     }
   }
@@ -255,7 +263,9 @@ class _PlayerState extends ConsumerState<_Player> {
       milliseconds: (_duration.inMilliseconds * clamped).round(),
     );
     setState(() => _position = target);
-    _playback.report(positionMs: target.inMilliseconds);
+    // A seek, not a tick: the transcript must not scroll the page to the line
+    // this lands on.
+    _playback.reportSeek(target.inMilliseconds);
     await _player.seek(target);
   }
 
@@ -270,16 +280,7 @@ class _PlayerState extends ConsumerState<_Player> {
         ? 0.0
         : (_position.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: ds.surface,
-        borderRadius: AppRadii.brMd,
-        border: Border.all(color: ds.borderSecondary),
-      ),
+    return _PlaybackFrame(
       child: Row(
         children: [
           _PlayButton(playing: _playing, enabled: _ready, onPressed: _toggle),
@@ -314,9 +315,9 @@ class _PlayerState extends ConsumerState<_Player> {
           const SizedBox(width: AppSpacing.md),
           Text(
             '${MeetingFormat.clock(_position)} / ${MeetingFormat.clock(total)}',
-            style: meetingMono(context, fontSize: 12),
+            style: meetingMeta(context, fontSize: 12),
           ),
-          if (!_ready) ...[
+          if (_failed) ...[
             const SizedBox(width: AppSpacing.sm),
             CcTooltip(
               message: l10n.meetingPlaybackUnavailable,
@@ -325,6 +326,34 @@ class _PlayerState extends ConsumerState<_Player> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The bar's surface at its fixed height, shared by the player and by the
+/// placeholder shown while the clip loads.
+class _PlaybackFrame extends StatelessWidget {
+  const _PlaybackFrame({required this.child});
+
+  final Widget child;
+
+  /// Height of the content row: the waveform's.
+  static const double contentHeight = 40;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: ds.surface,
+        borderRadius: AppRadii.brMd,
+        border: Border.all(color: ds.borderSecondary),
+      ),
+      child: SizedBox(height: contentHeight, child: child),
     );
   }
 }
@@ -348,22 +377,23 @@ class _PlayButton extends StatelessWidget {
       message: playing ? l10n.meetingPlaybackPause : l10n.meetingPlaybackPlay,
       child: CcTappable(
         onPressed: enabled ? onPressed : null,
-        semanticLabel: playing ? l10n.meetingPlaybackPause : l10n.meetingPlaybackPlay,
+        semanticLabel: playing
+            ? l10n.meetingPlaybackPause
+            : l10n.meetingPlaybackPlay,
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        builder:
-            (context, states) => Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: enabled ? ds.accent : ds.hoverStrong,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                playing ? AppIcons.pause : AppIcons.play,
-                size: 16,
-                color: enabled ? ds.surface : ds.muted,
-              ),
-            ),
+        builder: (context, states) => Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: enabled ? ds.accent : ds.hoverStrong,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            playing ? AppIcons.pause : AppIcons.play,
+            size: 16,
+            color: enabled ? ds.surface : ds.muted,
+          ),
+        ),
       ),
     );
   }

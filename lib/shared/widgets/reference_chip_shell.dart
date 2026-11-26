@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 /// The chip is a control, so it opts out of the surrounding markdown
 /// [SelectionArea]: the title is not selectable and the pointer is a click
 /// cursor. Hover washes the fill the same way the PR header's branch chips do.
-class ReferenceChipShell extends StatefulWidget {
+class ReferenceChipShell extends StatelessWidget {
   /// Creates a [ReferenceChipShell].
   const ReferenceChipShell({
     super.key,
@@ -22,40 +22,30 @@ class ReferenceChipShell extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<ReferenceChipShell> createState() => _ReferenceChipShellState();
-}
-
-class _ReferenceChipShellState extends State<ReferenceChipShell> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
 
     return SelectionContainer.disabled(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            // Outside the border, so the fill doesn't run up to the words.
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs,
-                vertical: AppSpacing.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: _hovered ? tokens.bgTertiary : tokens.bgSecondary,
-                border: Border.all(color: tokens.borderSecondary),
-                borderRadius: AppRadii.brSm,
-              ),
-              child: widget.child,
+      child: CcTappable(
+        onPressed: onTap,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) => Padding(
+          // Outside the border, so the fill doesn't run up to the words.
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.xxs,
             ),
+            decoration: BoxDecoration(
+              color: states.contains(WidgetState.hovered)
+                  ? tokens.bgTertiary
+                  : tokens.bgSecondary,
+              border: Border.all(color: tokens.borderSecondary),
+              borderRadius: AppRadii.brSm,
+            ),
+            child: child,
           ),
         ),
       ),
@@ -84,9 +74,10 @@ class ReferenceFallbackLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
     final linkColor = tokens?.fgBrandPrimary ?? const Color(0xFFfa500f);
-    return GestureDetector(
-      onTap: onTap,
-      child: CcLinkText(
+    return CcTappable(
+      onPressed: onTap,
+      semanticButton: false,
+      builder: (context, _) => CcLinkText(
         label,
         style: TextStyle(color: linkColor).withLinkUnderline(),
       ),

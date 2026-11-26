@@ -87,6 +87,10 @@ class AecDelayEstimator {
   /// count as "support" for the repeated-support lock tier.
   static const int _supportToleranceMs = 80;
 
+  /// Minimum correlation confidence for an estimate to count toward the
+  /// repeated-support lock tier (prevents uncorrelated noise from locking).
+  static const double _minSupportConfidence = 0.25;
+
   /// Records far-end (loopback) energy [rms] stamped at shared-clock time [tMs].
   void addFar(int tMs, double rms) => _put(_far, tMs, rms);
 
@@ -239,8 +243,14 @@ class AecDelayEstimator {
     final recent5 = _recent.length <= 5
         ? _recent
         : _recent.sublist(_recent.length - 5);
-    final centre = recencyWeightedMedianLagMs(recent5);
-    final nearby = recent5
+    final confident = recent5
+        .where((e) => e.confidence >= _minSupportConfidence)
+        .toList(growable: false);
+    if (confident.length < 3) {
+      return false;
+    }
+    final centre = recencyWeightedMedianLagMs(confident);
+    final nearby = confident
         .where((e) => (e.lagMs - centre).abs() <= _supportToleranceMs)
         .length;
     return nearby >= 3;

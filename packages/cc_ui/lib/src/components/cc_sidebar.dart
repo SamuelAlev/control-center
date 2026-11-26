@@ -265,101 +265,106 @@ class _CcSidebarState extends State<CcSidebar> {
   Widget build(BuildContext context) {
     final t = context.ds;
 
+    // One traversal group: Tab finishes the sidebar before it moves on to the
+    // page beside it, instead of interleaving the two by screen position.
     return CcSidebarScope(
       collapsed: _scopeCollapsed,
       transitioning: _transitioning,
-      child: AnimatedContainer(
-        duration: CcMotion.resolve(context, CcMotion.slow),
-        curve: CcMotion.emphasized,
-        width: widget.collapsed ? _kCollapsedWidth : widget.width,
-        decoration: BoxDecoration(
-          color: widget.background ?? t.sidebar,
-          // Trailing hairline against the neighbouring pane (content or a
-          // second sidebar). Same token as the top bar's bottom hairline, so
-          // the app chrome reads as one grid. Directional: the sidebar docks
-          // at the start edge, so the hairline sits at its end in RTL too.
-          border: BorderDirectional(end: BorderSide(color: t.borderPrimary)),
-        ),
-        // Horizontal inset lives on the ListView's own padding (and explicit
-        // wrappers around header/footer), NOT on this container: the desktop
-        // scrollbar inserted by the scroll behavior draws at the viewport
-        // edge, so the viewport must span the full sidebar width for the
-        // thumb to sit flush against the container side instead of
-        // overlapping the items.
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        child: Builder(
-          builder: (context) {
-            const contentPadding = EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-            );
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.header != null) ...[
-                  Padding(padding: contentPadding, child: widget.header!),
-                  SizedBox(height: widget.headerGap),
-                ],
-                Expanded(
-                  child: CcDepthSwitcher(
-                    depth: widget.depth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: widget.pinnedChildren.isEmpty
-                              ? _fluidList(widget.children, contentPadding)
-                              : LayoutBuilder(
-                                  builder: (context, constraints) => Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          maxHeight:
-                                              constraints.maxHeight *
-                                              _kPinnedMaxFraction,
-                                        ),
-                                        child: ScrollConfiguration(
-                                          behavior: ScrollConfiguration.of(
-                                            context,
-                                          ).copyWith(scrollbars: false),
-                                          child: SingleChildScrollView(
-                                            padding: contentPadding,
-                                            child: _fluidCollection(
-                                              widget.pinnedChildren,
-                                              (context, registered) => Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.stretch,
-                                                children: registered,
+      child: FocusTraversalGroup(
+        child: AnimatedContainer(
+          duration: CcMotion.resolve(context, CcMotion.slow),
+          curve: CcMotion.emphasized,
+          width: widget.collapsed ? _kCollapsedWidth : widget.width,
+          decoration: BoxDecoration(
+            color: widget.background ?? t.sidebar,
+            // Trailing hairline against the neighbouring pane (content or a
+            // second sidebar). Same token as the top bar's bottom hairline, so
+            // the app chrome reads as one grid. Directional: the sidebar docks
+            // at the start edge, so the hairline sits at its end in RTL too.
+            border: BorderDirectional(end: BorderSide(color: t.borderPrimary)),
+          ),
+          // Horizontal inset lives on the ListView's own padding (and explicit
+          // wrappers around header/footer), NOT on this container: the desktop
+          // scrollbar inserted by the scroll behavior draws at the viewport
+          // edge, so the viewport must span the full sidebar width for the
+          // thumb to sit flush against the container side instead of
+          // overlapping the items.
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Builder(
+            builder: (context) {
+              const contentPadding = EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+              );
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.header != null) ...[
+                    Padding(padding: contentPadding, child: widget.header!),
+                    SizedBox(height: widget.headerGap),
+                  ],
+                  Expanded(
+                    child: CcDepthSwitcher(
+                      depth: widget.depth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: widget.pinnedChildren.isEmpty
+                                ? _fluidList(widget.children, contentPadding)
+                                : LayoutBuilder(
+                                    builder: (context, constraints) => Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxHeight:
+                                                constraints.maxHeight *
+                                                _kPinnedMaxFraction,
+                                          ),
+                                          child: ScrollConfiguration(
+                                            behavior: ScrollConfiguration.of(
+                                              context,
+                                            ).copyWith(scrollbars: false),
+                                            child: SingleChildScrollView(
+                                              padding: contentPadding,
+                                              child: _fluidCollection(
+                                                widget.pinnedChildren,
+                                                (context, registered) => Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .stretch,
+                                                  children: registered,
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      Expanded(
-                                        child: _fluidList(
-                                          widget.children,
-                                          contentPadding,
+                                        Expanded(
+                                          child: _fluidList(
+                                            widget.children,
+                                            contentPadding,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                        ),
-                        if (widget.footer != null) ...[
-                          SizedBox(height: widget.footerGap),
-                          Padding(
-                            padding: contentPadding,
-                            child: widget.footer!,
                           ),
+                          if (widget.footer != null) ...[
+                            SizedBox(height: widget.footerGap),
+                            Padding(
+                              padding: contentPadding,
+                              child: widget.footer!,
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -12,8 +12,9 @@ import 'package:material_ui/material_ui.dart';
 /// happens ONLY when a call site asks for a *different* family (a user-selected
 /// font), which [CcFontRegistry] resolves on demand through the host.
 ///
-/// The bundled families are short-circuited in every dynamic helper (see
-/// [_bundled]): they are already registered, so they must never be looked up.
+/// The bundled families are short-circuited in every dynamic helper (via
+/// [CcFonts.resolveBundled]): they are already registered, so they must never be
+/// looked up.
 class AppFonts {
   AppFonts._();
 
@@ -23,12 +24,6 @@ class AppFonts {
 
   /// Bundled monospace font family. Aliases [CcFonts.codeFamily].
   static const codeFamily = CcFonts.codeFamily;
-
-  /// Families bundled as host assets. These are always applied verbatim and
-  /// never fetched — even though `Fira Code` happens to also be downloadable.
-  /// Aliases the cc_ui set so the two resolution paths ([_dynamic] here and
-  /// `CcFonts`) cannot disagree about what is bundled.
-  static const _bundled = CcFonts.bundledFamilies;
 
   /// Platform emoji font for [TextStyle.fontFamilyFallback].
   ///
@@ -74,13 +69,40 @@ class AppFonts {
 
   /// UI / body text in Manrope.
   ///
-  /// Proportional, so no tabular figures: digits in prose, headings and labels
-  /// keep their natural widths (see [CcTypography.numeralFeatures]).
+  /// No tabular figures: digits in prose, headings and labels keep their
+  /// natural widths (see [CcTypography.numeralFeatures]); use [numeric] for
+  /// values that must line up.
   static TextStyle ui({TextStyle? textStyle}) =>
       (textStyle ?? const TextStyle()).copyWith(fontFamily: uiFamily);
 
-  /// Code / monospace text in Fira Code — and therefore tabular figures,
-  /// unless the caller named its own [TextStyle.fontFeatures].
+  /// Numeric text — counts, durations, costs, timestamps — in the ambient UI
+  /// font with tabular figures. Not monospace; see [CcFonts.numeric].
+  static TextStyle numeric({TextStyle? textStyle}) =>
+      CcFonts.numeric(textStyle: textStyle);
+
+  /// [numeric] from direct style fields, mirroring [codeStyle].
+  static TextStyle numericStyle({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    Color? backgroundColor,
+    double? height,
+    FontStyle? fontStyle,
+    double? letterSpacing,
+  }) => TextStyle(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    backgroundColor: backgroundColor,
+    height: height,
+    fontStyle: fontStyle,
+    letterSpacing: letterSpacing,
+    fontFeatures: CcTypography.numeralFeatures,
+  );
+
+  /// Code / monospace text in Fira Code, for code only (code, diffs,
+  /// terminals, logs, paths, branches, SHAs, commands). Carries tabular
+  /// figures unless the caller named its own [TextStyle.fontFeatures].
   static TextStyle code({TextStyle? textStyle}) =>
       _mono(textStyle).copyWith(fontFamily: codeFamily);
 
@@ -128,21 +150,25 @@ class AppFonts {
   static TextStyle codeDynamic(String family, {TextStyle? textStyle}) =>
       _dynamic(family, _mono(textStyle), fallback: codeFamily);
 
-  /// Resolves [family] against [textStyle]. Bundled families are already
-  /// registered, so they apply by name; anything else goes through
-  /// [CcFontRegistry], falling back to the surface's own bundled family
-  /// ([fallback]) until the bytes land.
+  /// Resolves [family] against [textStyle]. Bundled families (and their
+  /// display-name aliases) are already registered, so they apply by name;
+  /// anything else goes through [CcFontRegistry], falling back to the
+  /// surface's own bundled family ([fallback]) until the bytes land.
   static TextStyle _dynamic(
     String family,
     TextStyle? textStyle, {
     required String fallback,
-  }) => _bundled.contains(family)
-      ? (textStyle ?? const TextStyle()).copyWith(fontFamily: family)
-      : CcFontRegistry.instance.apply(
-          family,
-          textStyle,
-          fallbackFamily: fallback,
-        );
+  }) {
+    final bundled = CcFonts.resolveBundled(family);
+    if (bundled != null) {
+      return (textStyle ?? const TextStyle()).copyWith(fontFamily: bundled);
+    }
+    return CcFontRegistry.instance.apply(
+      family,
+      textStyle,
+      fallbackFamily: fallback,
+    );
+  }
 
   /// Code style dynamic.
   static TextStyle codeStyleDynamic(
@@ -170,14 +196,15 @@ class AppFonts {
 
   /// Apply any font family to a TextTheme.
   ///
-  /// Bundled families apply by name in one call. Everything else is resolved
-  /// PER SLOT, because each slot carries its own weight and [CcFontRegistry]
-  /// registers one real cut per weight — applying the family wholesale would
-  /// leave every heading synthetically emboldened from the regular cut.
+  /// Bundled families apply by name in one call. Everything else preloads the
+  /// standard weight/italic cuts via [CcFontRegistry] under one unified family
+  /// name and applies that family per slot.
   static TextTheme textThemeFor(String family, TextTheme base) {
-    if (_bundled.contains(family)) {
-      return base.apply(fontFamily: family);
+    final bundled = CcFonts.resolveBundled(family);
+    if (bundled != null) {
+      return base.apply(fontFamily: bundled);
     }
+    CcFontRegistry.instance.preloadFamily(family);
     TextStyle? slot(TextStyle? style) => style == null
         ? null
         : CcFontRegistry.instance.apply(

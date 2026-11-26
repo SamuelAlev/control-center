@@ -45,6 +45,13 @@ Map<String, dynamic> expectStatuses(Iterable<int> statuses) => {
   expectedStatusesExtra: List<int>.unmodifiable(statuses),
 };
 
+/// Request metadata ([BaseHttpRequest.additionalData]) overriding
+/// [RetryInterceptor.maxRetries] for one request (e.g. `0` for adaptive
+/// GraphQL splits that halve on 5xx instead of retrying identically).
+Map<String, dynamic> maxRetriesOption(int maxRetries) => {
+  RetryInterceptor.maxRetriesKey: maxRetries,
+};
+
 /// The timeouts the shared clients apply when the caller configures none.
 ///
 /// Connection and total request deadlines are both 30 seconds. Callers can

@@ -1,4 +1,7 @@
+import 'dart:ui' show CheckedState, Tristate;
+
 import 'package:cc_ui/src/components/cc_select.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -550,6 +553,213 @@ void main() {
       expect(a.hashCode, aDup.hashCode);
       expect(a == b, isFalse); // different label
       expect(a == c, isFalse); // different value
+    });
+  });
+
+  group('CcSelect keyboard and focus', () {
+    late FocusNode after;
+    setUp(() => after = FocusNode(debugLabel: 'after'));
+    tearDown(() => after.dispose());
+
+    const fruit = <CcSelectOption<String>>[
+      CcSelectOption(value: 'a', label: 'Apple'),
+      CcSelectOption(value: 'b', label: 'Banana'),
+      CcSelectOption(value: 'bb', label: 'Blueberry'),
+      CcSelectOption(value: 'c', label: 'Cherry'),
+    ];
+
+    Widget host(ValueChanged<String?> onChanged) => ccTestApp(
+      Column(
+        children: [
+          _MirrorSelect(
+            options: fruit,
+            initial: null,
+            hintText: 'Pick fruit',
+            onChanged: onChanged,
+          ),
+          CcTappable(
+            focusNode: after,
+            onPressed: () {},
+            builder: (context, states) => const Text('After'),
+          ),
+        ],
+      ),
+    );
+
+    FocusNode trigger(WidgetTester tester) =>
+        Focus.of(tester.element(find.text('Pick fruit')));
+
+    Future<void> open(WidgetTester tester) async {
+      trigger(tester).requestFocus();
+      await tester.pump();
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
+      await tester.sendKeyEvent(k);
+      await tester.pump();
+    }
+
+    testWidgets('opening moves focus in; Tab cannot reach the page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host((_) {}));
+      await open(tester);
+      expect(find.text('Banana'), findsOneWidget);
+      expect(trigger(tester).hasFocus, isFalse);
+      await key(tester, LogicalKeyboardKey.tab);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasFocus, isFalse);
+      expect(find.text('Banana'), findsOneWidget);
+    });
+
+    testWidgets('a pick returns focus to the trigger; Tab continues on', (
+      tester,
+    ) async {
+      String? value;
+      await tester.pumpWidget(host((v) => value = v));
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(value, 'a');
+      expect(find.text('Banana'), findsNothing);
+      expect(
+        Focus.of(tester.element(find.text('Apple'))).hasPrimaryFocus,
+        isTrue,
+      );
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('Escape and an outside tap return focus to the trigger', (
+      tester,
+    ) async {
+      await tester.pumpWidget(host((_) {}));
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.text('Banana'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(find.text('Banana'), findsOneWidget);
+      await tester.tapAt(const Offset(780, 580));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Banana'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('Home, End, typeahead and Space', (tester) async {
+      final picked = <String?>[];
+      await tester.pumpWidget(host(picked.add));
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.end);
+      await key(tester, LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(picked, ['c']);
+
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.home);
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(picked, ['c', 'a']);
+
+      // "b" then "b" again cycles Banana → Blueberry.
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.keyB);
+      await tester.pump(const Duration(seconds: 1));
+      await key(tester, LogicalKeyboardKey.keyB);
+      await tester.pump(const Duration(seconds: 1));
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(picked, ['c', 'a', 'bb']);
+    });
+
+    testWidgets('panel rows are not focus stops', (tester) async {
+      await tester.pumpWidget(host((_) {}));
+      await open(tester);
+      final rows = tester.widgetList<CcTappable>(
+        find.ancestor(
+          of: find.text('Banana'),
+          matching: find.byType(CcTappable),
+        ),
+      );
+      expect(rows.first.canRequestFocus, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+    });
+  });
+
+  group('CcSelect semantics', () {
+    testWidgets('the label names the trigger; the selection is its value', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcSelect<String>(
+              options: _options,
+              value: 'b',
+              label: 'Fruit',
+              helperText: 'Pick one you like',
+              hintText: 'Pick fruit',
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.text('Banana'));
+      expect(node.label, 'Fruit');
+      expect(node.value, 'Banana');
+      expect(node.hint, 'Pick one you like');
+      expect(node.flagsCollection.isExpanded, Tristate.isFalse);
+      // The visible label and helper are not read a second time.
+      expect(find.semantics.byLabel('Fruit'), findsOne);
+      expect(find.semantics.byLabel('Pick one you like'), findsNothing);
+
+      await tester.tap(find.text('Banana'));
+      await tester.pump();
+      await tester.pump();
+      expect(
+        tester
+            .getSemantics(find.text('Banana').first)
+            .flagsCollection
+            .isExpanded,
+        Tristate.isTrue,
+      );
+      final row = tester.getSemantics(find.text('Banana').last);
+      expect(row.label, 'Banana');
+      expect(row.flagsCollection.isChecked, CheckedState.isTrue);
+      semantics.dispose();
+    });
+
+    testWidgets('the error is a live region', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcSelect<String>(
+              options: _options,
+              value: null,
+              label: 'Fruit',
+              errorText: 'Required',
+              hintText: 'Pick fruit',
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.text('Required'));
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+      semantics.dispose();
     });
   });
 }

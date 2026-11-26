@@ -45,6 +45,31 @@ bool canToggleDraft(WidgetRef ref, PullRequest pr, PrRef prRef) {
   return perm == 'admin' || perm == 'write';
 }
 
+/// Whether the viewer may close [pr]: it is open, and they authored it or hold
+/// write access to its repository.
+bool canClosePullRequest(WidgetRef ref, PullRequest pr, PrRef prRef) {
+  if (!pr.isOpen) {
+    return false;
+  }
+  final login = ref.watch(currentUserLoginForPrProvider(prRef));
+  if (login.isNotEmpty && pr.author?.login.toLowerCase() == login) {
+    return true;
+  }
+  final repo = ref.watch(prRepoRowProvider(prRef));
+  if (repo == null) {
+    return false;
+  }
+  final perm = ref
+      .watch(
+        repoPermissionProvider((
+          owner: repo.remoteOwner,
+          repo: repo.remoteName,
+        )),
+      )
+      .value;
+  return perm == 'admin' || perm == 'write';
+}
+
 /// The primary action on a draft pull request: take it out of draft so
 /// reviewers are notified and required checks start gating the merge.
 ///
@@ -77,42 +102,9 @@ class _MarkReadyForReviewButtonState
     if (_busy) {
       return;
     }
-    final l10n = AppLocalizations.of(context);
-    final toaster = CcToastScope.of(context);
-
-    if (!await confirmDraftChange(
-      context,
-      title: l10n.markReadyForReview,
-      body: l10n.markReadyForReviewConfirm,
-    )) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-
-    final repo = ref.read(prRepositoryProvider(widget.prRef));
-    if (repo == null) {
-      return;
-    }
     setState(() => _busy = true);
     try {
-      await repo.setPullRequestDraft(
-        prNumber: widget.prRef.number,
-        draft: false,
-      );
-      toaster.show(
-        l10n.pullRequestMarkedReady,
-        variant: CcToastVariant.success,
-      );
-    } on Exception catch (e) {
-      if (mounted && offerPrSignIn(context, ref, e, prRef: widget.prRef)) {
-        return;
-      }
-      toaster.show(
-        l10n.failedToMarkPrReady('$e'),
-        variant: CcToastVariant.danger,
-      );
+      await confirmAndMarkReadyForReview(context, ref, widget.prRef);
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -209,6 +201,93 @@ Future<bool> confirmAndConvertToDraft(
       l10n.failedToConvertPrToDraft('$e'),
       variant: CcToastVariant.danger,
     );
+    return false;
+  }
+}
+
+/// Takes the pull request out of draft after confirming.
+///
+/// Returns true when it was marked ready. Reports its own outcome as a toast.
+Future<bool> confirmAndMarkReadyForReview(
+  BuildContext context,
+  WidgetRef ref,
+  PrRef prRef,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final toaster = CcToastScope.of(context);
+
+  if (!await confirmDraftChange(
+    context,
+    title: l10n.markReadyForReview,
+    body: l10n.markReadyForReviewConfirm,
+  )) {
+    return false;
+  }
+
+  final repo = ref.read(prRepositoryProvider(prRef));
+  if (repo == null) {
+    return false;
+  }
+  try {
+    await repo.setPullRequestDraft(prNumber: prRef.number, draft: false);
+    toaster.show(l10n.pullRequestMarkedReady, variant: CcToastVariant.success);
+    return true;
+  } on Exception catch (e) {
+    if (context.mounted && offerPrSignIn(context, ref, e, prRef: prRef)) {
+      return false;
+    }
+    toaster.show(
+      l10n.failedToMarkPrReady('$e'),
+      variant: CcToastVariant.danger,
+    );
+    return false;
+  }
+}
+
+/// Closes [pr] after a destructive confirm.
+///
+/// Returns true when it was closed. Reports its own outcome as a toast.
+Future<bool> confirmAndClosePullRequest(
+  BuildContext context,
+  WidgetRef ref,
+  PullRequest pr,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final toaster = CcToastScope.of(context);
+
+  final confirmed = await showCcDialog<bool>(
+    context: context,
+    builder: (ctx) => CcDialog(
+      title: l10n.closePullRequest,
+      content: Text(l10n.closePullRequestConfirm),
+      actions: [
+        CcButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          variant: CcButtonVariant.secondary,
+          child: Text(l10n.cancel),
+        ),
+        CcButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          variant: CcButtonVariant.destructive,
+          child: Text(l10n.confirm),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) {
+    return false;
+  }
+
+  try {
+    await ref
+        .read(prReviewRepositoryProvider)
+        .closePullRequest(prNumber: pr.number);
+    toaster.show(l10n.pullRequestClosed, variant: CcToastVariant.success);
+    return true;
+  } on Exception catch (e) {
+    if (context.mounted) {
+      showPrError(context, ref, e, (l) => l.failedToClosePr('$e'));
+    }
     return false;
   }
 }

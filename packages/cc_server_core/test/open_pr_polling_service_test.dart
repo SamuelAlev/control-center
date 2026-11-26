@@ -112,9 +112,14 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   final Set<String> unavailableHistoryBranches = {};
   int branchHistoryCalls = 0;
 
+  /// Scripted surgical PR results per repo id, keyed by PR number.
+  final Map<String, Map<int, PullRequest>> surgicalPrs = {};
+  final List<({String repoId, List<int> numbers})> fetchPullRequestsCalls = [];
+
   int probeCalls = 0;
   int fetchGroupsCalls = 0;
   int fetchChecksCalls = 0;
+  final List<Map<String, List<String>>?> fetchChecksNodeIds = [];
 
   /// When set, `fetchGroups` parks on this gate — lets tests hold a sweep
   /// mid-flight.
@@ -160,9 +165,27 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     String? workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
   }) async {
     fetchChecksCalls++;
+    fetchChecksNodeIds.add(prNodeIdsByRepoId);
     return checks;
+  }
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    String? workspaceId,
+  }) async {
+    fetchPullRequestsCalls.add((repoId: repo.id, numbers: prNumbers));
+    final byRepo = surgicalPrs[repo.id];
+    if (byRepo == null) {
+      return null;
+    }
+    return {
+      for (final n in prNumbers) n: ?byRepo[n],
+    };
   }
 
   @override
@@ -311,6 +334,8 @@ PullRequest _pr(
 Map<String, dynamic> _prToWire(PullRequest pr) => {
   'number': pr.number,
   'title': pr.title,
+  'external_id': pr.externalId,
+  'repo_full_name': pr.repoFullName,
   'author': {'login': pr.author?.login ?? ''},
   'updated_at': pr.updatedAt?.toIso8601String(),
   'head_sha': pr.headSha,
@@ -2724,6 +2749,221 @@ void main() {
     expect(reported, hasLength(1));
     expect(reported[repo1.id]?.numbers, isEmpty);
     expect(reported[repo1.id]?.complete, isTrue);
+  });
+
+  group('persist-before-publish & surgical syncPullRequests', () {
+    test('persists snapshot BEFORE publishing ExternalPrDetected, '
+        'PrReviewDecisionChanged, and PrChecksStatusChanged', () async {
+      final authPoller = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
+        checksEvery: 1,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        memberLoginsFor: (_, _) async => {'u1': 'alice'},
+        now: () => now,
+      );
+      addTearDown(authPoller.dispose);
+
+      port.groups = [
+        (
+          repo: repo1,
+          prs: [
+            _pr(1, author: 'alice', checks: 'passing'),
+          ],
+          hasMore: false,
+          totalCount: 1,
+        ),
+      ];
+      await authPoller.refreshNow('ws1');
+
+      Future<String?>? snapOnExternalFuture;
+      Future<String?>? snapOnDecisionFuture;
+      Future<String?>? snapOnChecksFuture;
+
+      final sub1 = bus.on<ExternalPrDetected>().listen((_) {
+        snapOnExternalFuture = db.cacheDao.read(
+          'ws1',
+          OpenPrPollingService.cacheKind,
+          OpenPrPollingService.cacheKey,
+        );
+      });
+      final sub2 = bus.on<PrReviewDecisionChanged>().listen((_) {
+        snapOnDecisionFuture = db.cacheDao.read(
+          'ws1',
+          OpenPrPollingService.cacheKind,
+          OpenPrPollingService.cacheKey,
+        );
+      });
+      final sub3 = bus.on<PrChecksStatusChanged>().listen((_) {
+        snapOnChecksFuture = db.cacheDao.read(
+          'ws1',
+          OpenPrPollingService.cacheKind,
+          OpenPrPollingService.cacheKey,
+        );
+      });
+      addTearDown(() async {
+        await sub1.cancel();
+        await sub2.cancel();
+        await sub3.cancel();
+      });
+
+      // Full sweep: PR #1 becomes changesRequested & PR #2 appears.
+      port.groups = [
+        (
+          repo: repo1,
+          prs: [
+            _pr(
+              1,
+              author: 'alice',
+              checks: 'passing',
+              reviewDecision: PrReviewDecision.changesRequested,
+            ),
+            _pr(2, author: 'bob', checks: 'none'),
+          ],
+          hasMore: false,
+          totalCount: 2,
+        ),
+      ];
+      now = now.add(const Duration(minutes: 5));
+      await authPoller.refreshNow('ws1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(snapOnExternalFuture, isNotNull);
+      final snapshotOnExternalPr = await snapOnExternalFuture!;
+      expect(
+        _numbersOf(
+          jsonDecode(snapshotOnExternalPr!) as Map<String, dynamic>,
+          'o/r1',
+        ),
+        containsAll([1, 2]),
+      );
+      expect(snapOnDecisionFuture, isNotNull);
+      final snapshotOnDecision = await snapOnDecisionFuture!;
+      final decisionSnap =
+          jsonDecode(snapshotOnDecision!) as Map<String, dynamic>;
+      final decisionPrs =
+          ((decisionSnap['repos'] as List).single as Map)['prs'] as List;
+      final pr1Wire = decisionPrs[0] as Map;
+      expect(pr1Wire['review_decision'], 'changesRequested');
+
+      // Checks pass: PR #1 CI fails — snapshot must already hold failing
+      // checks when PrChecksStatusChanged fires.
+      port.checks = {
+        repo1.id: {
+          1: (checksRollup: 'FAILURE', reviewDecision: 'CHANGES_REQUESTED'),
+        },
+      };
+      final watchSub = authPoller.watchOpenForWorkspace('ws1').listen((_) {});
+      addTearDown(watchSub.cancel);
+      await Future<void>.delayed(Duration.zero);
+      port.probeResults[repo1.id] = (changed: false, etag: 'etag-1');
+      now = now.add(const Duration(minutes: 5));
+      await authPoller.pollSoon('ws1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(snapOnChecksFuture, isNotNull);
+      final snapshotOnChecks = await snapOnChecksFuture!;
+      final checksSnap = jsonDecode(snapshotOnChecks!) as Map<String, dynamic>;
+      final checksPrs =
+          ((checksSnap['repos'] as List).single as Map)['prs'] as List;
+      final pr1ChecksWire = checksPrs[0] as Map;
+      expect(pr1ChecksWire['checks_status'], 'failing');
+      // Verify _checksPass passed known external_ids to fetchChecks.
+      expect(port.fetchChecksNodeIds.last?[repo1.id], ['n1', 'n2']);
+    });
+
+    test('syncPullRequests upserts open PR into snapshot immediately without '
+        'calling fetchGroups', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: 1),
+      ];
+      await poller.refreshNow('ws1');
+      final groupsBefore = port.fetchGroupsCalls;
+
+      final frames = <Map<String, dynamic>>[];
+      final sub = poller.watchOpenForWorkspace('ws1').listen(frames.add);
+      addTearDown(sub.cancel);
+      await Future<void>.delayed(Duration.zero);
+
+      port.surgicalPrs[repo1.id] = {
+        42: _pr(42, requestedReviewers: ['me']),
+      };
+      await poller.syncPullRequests('ws1', [
+        (repoFullName: 'o/r1', number: 42, merged: false),
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(port.fetchGroupsCalls, groupsBefore);
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), containsAll([1, 42]));
+      expect(_numbersOf(frames.last, 'o/r1'), containsAll([1, 42]));
+    });
+
+    test('syncPullRequests removes merged PR and records terminal_prs with 0 '
+        'network calls', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: 2),
+      ];
+      await poller.refreshNow('ws1');
+      final fetchCallsBefore = port.fetchPullRequestsCalls.length;
+
+      await poller.syncPullRequests('ws1', [
+        (repoFullName: 'o/r1', number: 2, merged: true),
+      ]);
+
+      expect(port.fetchPullRequestsCalls.length, fetchCallsBefore);
+      final snap = await _readSnapshot(db);
+      expect(_numbersOf(snap, 'o/r1'), [1]);
+      final terminals = snap['terminal_prs'] as List;
+      expect(terminals, hasLength(1));
+      expect((terminals.single as Map)['number'], 2);
+      expect(
+        ((terminals.single as Map)['pull_request'] as Map)['state'],
+        'merged',
+      );
+    });
+
+    test('surgical update arriving while full sweep is in flight survives '
+        'when full sweep lands', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: 1),
+      ];
+      await poller.refreshNow('ws1');
+
+      // Hold the next full sweep inside fetchGroups.
+      final gate = Completer<void>();
+      port.fetchGroupsGate = gate;
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: 1),
+      ];
+      now = now.add(const Duration(minutes: 5));
+      final fullSweep = poller.refreshNow('ws1');
+      await Future<void>.delayed(Duration.zero);
+
+      // While fullSweep is awaiting fetchGroups, a notification triggers a
+      // surgical sync for PR #99.
+      now = now.add(const Duration(seconds: 2));
+      port.surgicalPrs[repo1.id] = {
+        99: _pr(99, requestedReviewers: ['me']),
+      };
+      await poller.syncPullRequests('ws1', [
+        (repoFullName: 'o/r1', number: 99, merged: false),
+      ]);
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), contains(99));
+
+      // Now let the older fullSweep finish (without PR #99 in its groups).
+      gate.complete();
+      await fullSweep;
+
+      expect(
+        _numbersOf(await _readSnapshot(db), 'o/r1'),
+        containsAll([1, 99]),
+      );
+    });
   });
 }
 

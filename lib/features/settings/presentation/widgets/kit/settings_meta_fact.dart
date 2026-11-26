@@ -1,10 +1,11 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
-/// A small mono fact for `SettingsEntityRow.meta`.
+/// A small fact for `SettingsEntityRow.meta`.
 ///
-/// Mono because these are machine truths — a version, a count, a path, a price
-/// — and the design system reserves Fira Code for exactly that.
+/// Most are numbers — a version, a count, a size, a price — so the value takes
+/// the UI face with tabular figures. A machine string (a hash, a fingerprint,
+/// a transport id) sets [code] and takes the code face instead.
 class SettingsMetaFact extends StatelessWidget {
   /// Creates a [SettingsMetaFact].
   const SettingsMetaFact({
@@ -12,9 +13,10 @@ class SettingsMetaFact extends StatelessWidget {
     required this.value,
     this.label,
     this.icon,
+    this.code = false,
   });
 
-  /// The machine value.
+  /// The value.
   final String value;
 
   /// Optional word before it ("context", "installed").
@@ -23,9 +25,13 @@ class SettingsMetaFact extends StatelessWidget {
   /// Optional leading glyph.
   final IconData? icon;
 
+  /// Renders the value in the code face, for machine strings.
+  final bool code;
+
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final valueStyle = CcTypography.caption.copyWith(color: t.textSecondary);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -42,9 +48,9 @@ class SettingsMetaFact extends StatelessWidget {
         ],
         Text(
           value,
-          style: CcFonts.code(
-            textStyle: CcTypography.caption.copyWith(color: t.textSecondary),
-          ),
+          style: code
+              ? CcFonts.code(textStyle: valueStyle)
+              : CcFonts.numeric(textStyle: valueStyle),
         ),
       ],
     );

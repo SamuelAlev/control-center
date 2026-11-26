@@ -113,7 +113,10 @@ A per-minute scheduler scans for events starting within a configurable lead
 window and fires a **"meeting starting soon"** notification (a
 `MeetingStartingSoon` [domain event](/manual/concepts/domain-events/)). The
 notification carries the join URL when one is present and clicking it opens the
-event detail. Alerts are de-duplicated against the event's `alertedAt`, so the
+event detail. Its **Join meeting** and **Join and record** actions, on the
+in-app banner and on the OS notification alike, open the call without opening
+the event first; an event without a call link offers **Record meeting**
+instead. Alerts are de-duplicated against the event's `alertedAt`, so the
 same meeting never alerts twice, even across restarts and an event whose start
 passed while the app was closed never replays.
 
@@ -129,7 +132,7 @@ seeded with the event's title. Control Center stores a one-to-one link between
 the recording and the event, so the meeting's notes and the calendar entry stay
 connected without either feature depending on the other.
 
-**Start recording & link** is desktop-only. On the web client the action
+**Join and record** is desktop-only. On the web client the action
 reports that recording is unavailable — even though the meetings screen's own
 record flow does work in the browser.
 

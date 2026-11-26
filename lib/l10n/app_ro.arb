@@ -474,9 +474,9 @@
   "calendarDisconnect": "Deconectează",
   "calendarReconnect": "Reconectează",
   "calendarEmptyNoEvents": "Niciun eveniment în acest interval",
-  "calendarStartRecording": "Pornește înregistrarea",
-  "calendarStartRecordingAndLink": "Pornește înregistrarea și leagă",
   "calendarJoinMeet": "Intră în întâlnire",
+  "calendarJoinAndRecord": "Intră și înregistrează",
+  "calendarRecordFailed": "Nu s-a putut porni înregistrarea",
   "calendarFromCalendar": "Din calendar",
   "calendarLinkedMeeting": "Întâlnire legată",
   "calendarToday": "Azi",
@@ -899,7 +899,6 @@
   "actions": "Acțiuni",
   "activate": "Activează",
   "activity": "Activitate",
-  "activityLabel": "ACTIVITATE",
   "activitySearchHint": "Caută activitate",
   "activityNoMatches": "Nicio activitate nu se potrivește filtrelor tale",
   "activityPageRange": "{start}–{end} din {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Blochează",
   "bookmarkLabel": "Marcaj",
   "briefDescription": "Descriere scurtă",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "Implicite incluse — niciodată actualizate",
   "cancel": "Anulează",
   "cancelEdit": "Anulează editarea",
@@ -2612,12 +2611,12 @@
   "published": "Publicat",
   "pullRequestApproved": "Pull request aprobat",
   "pullRequests": "Pull request-uri",
-  "questionLabel": "ÎNTREBARE",
+  "questionLabel": "Întrebare",
   "queued": "În coadă",
   "react": "Reacționează",
   "readerPreferences": "Preferințe cititor",
   "reasoningEffort": "Efort de raționament",
-  "recommendLabel": "RECOMANDĂ",
+  "recommendLabel": "Recomandă",
   "recordingFromDevice": "Se înregistrează de pe {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Succes",
   "successLabel": "Succes",
   "suggestion": "Sugestie",
-  "suggestLabel": "SUGEREAZĂ",
+  "suggestLabel": "Sugerează",
   "superseded": "Înlocuit",
   "synced": "Sincronizat",
   "systemDefault": "Implicit sistem",
@@ -3025,7 +3024,7 @@
   "themeLight": "Luminos",
   "themeSystem": "Sistem",
   "thisCannotBeUndone": "Această acțiune nu poate fi anulată.",
-  "ticketLabel": "TICHET",
+  "ticketLabel": "Tichet",
   "titleLabel": "Titlu",
   "todayLabel": "Azi",
   "toggleTheme": "Comută tema",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Șablon",
   "prTemplateDefault": "Implicit",
   "addReviewers": "Adaugă recenzenți",
-  "addAssignees": "Adaugă asignați",
+
+  "reRequestReview": "Solicită din nou recenzia",
+  "reRequestReviewFor": "Solicită din nou recenzia de la {label}",  "addAssignees": "Adaugă asignați",
   "addLabels": "Adaugă etichete",
   "searchLabels": "Caută etichete…",
   "noMatchingLabels": "Nicio etichetă potrivită",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Notează rapid — agentul le dezvoltă după întâlnire.",
   "meetingSpeakerMe": "Tu",
   "meetingStatusRecording": "Se înregistrează",
+  "meetingStatusPaused": "Pauză",
   "meetingStatusProcessing": "Se procesează",
   "meetingStatusDone": "Gata",
   "meetingStatusFailed": "Eșuat",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Nicio întâlnire} one{1 întâlnire} few{# întâlniri} other{# de întâlniri}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Acțiuni deschise",
-  "meetingsLedgerDecisions": "Decizii",
   "meetingsLiveOpen": "Deschide înregistrarea",
   "meetingTemplateShort": "Șablon",
-  "meetingsStatThisWeek": "Săptămâna aceasta",
-  "meetingsStatRecorded": "Înregistrate",
   "meetingsFilterAll": "Toate",
   "meetingsFilterDone": "Gata",
   "meetingsFilterProcessing": "Se procesează",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "îmbunătățit",
   "meetingsTranscribing": "se transcrie și se rezumă…",
   "meetingsOpenAction": "Deschide",
   "meetingsStopProcessing": "Oprește",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Se pare că are loc o întâlnire. O înregistrezi?",
-  "meetingDetectedRecord": "Înregistrează",
   "meetingDetectedDismiss": "Închide",
   "meetingAutoStopTitle": "Întâlnirea pare încheiată. Oprești înregistrarea?",
   "meetingAutoStopStop": "Oprește",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Niciodată conectat",
+  "deviceAwaitingApproval": "Se așteaptă aprobarea",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Cum apari echipei și în autoratul commit-urilor git în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului.",
   "displayNameLabel": "Nume afișat",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "În rulare",
   "evalsStatusPassed": "Promovat",
   "evalsStatusFailed": "Eșuat",
-  "bannerMeetingJoin": "Intră",
-  "bannerMeetingRecordAndLink": "Înregistrează și leagă",
   "bannerCalendarReconnect": "Reconectează",
   "bannerView": "Vezi",
   "soundscapeTitle": "Soundscapes",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Nu s-a putut posta comentariul: {error}",
   "commentOnLine": "Linia {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Permiteți întotdeauna copierea din medii",
   "rigClipboardAlwaysCopyDescription": "Puneți conținutul clipboardului din orice mediu pe acest dispozitiv fără confirmare.",
   "imageDiffBefore": "Înainte",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "După",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Una lângă alta",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Glisează",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Diferență",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% modificat",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Imagini",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Sursă",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Șters",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} marcat ca nevăzut",
   "prLineChangesSemantics": "Linii adăugate: {additions}, linii eliminate: {deletions}",
   "closeTabNamed": "Închide {tab}",
-  "threadCommentCount": "{count, plural, one{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
   "notificationAgentAwaitingInput": "Un agent necesită atenție",
   "notifyAgentAwaitingInput": "Când un agent are nevoie de aprobare, un răspuns sau credențiale valide, ori o politică blochează o acțiune",
   "notificationAgentNeedsApproval": "{agent} are nevoie de aprobarea ta",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Decide un admin",
   "improvementNotFound": "Această propunere nu există sau se află într-un spațiu la care nu poți accesa.",
   "dispatchSettingsTitle": "Programe",
-  "dispatchSettingsSubtitle": "Limite pentru programe și urmăriri și ce se întâmplă cu cererile la care nimeni nu răspunde.",
   "dispatchLimitsLabel": "Limite de programe",
   "dispatchLimitsSubtitle": "Plafoane privind câte programe și urmăriri pot avea agenții și valorile lor implicite.",
   "dispatchLimitRange": "De la 1 la {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "În {zone}, fusul orar de mai sus.",
   "dispatchDigestHourRange": "De la 0 la 23",
   "goalRecordCrumb": "Obiectiv",
-  "scheduleRecordCrumb": "Program",
   "improvementRecordCrumb": "Propunere",
   "goalNodeNeedsAgent": "Alege agentul care urmărește obiectivul.",
   "goalNodeNeedsObjective": "Scrie obiectivul.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Nu este codul afișat de browser. {count, plural, one{Mai ai 1 încercare.} few{Mai ai {count} încercări.} other{Mai ai {count} de încercări.}}",
   "mcpServerSignInEnded": "A durat prea mult, a fost refuzată sau ai introdus prea multe coduri greșite. Începe din nou ca să primești o pagină nouă de autentificare.",
   "mcpServerSignInStartAgain": "Începe din nou",
-  "mcpServerSignedIn": "Te-ai autentificat la {name}."
+  "mcpServerSignedIn": "Te-ai autentificat la {name}.",
+  "ccLoading": "Se încarcă",
+  "ccProgress": "Progres",
+  "ccBreadcrumb": "Cale de navigare",
+  "ccDialog": "Casetă de dialog",
+  "ccResize": "Redimensionează",
+  "ccUnverifiedLabel": "{label} (neverificat)",
+  "prRowSelect": "Selectează {title}",
+  "prTableSelectAll": "Selectează toate pull request-urile",
+  "planVersionRewind": "Revino la versiunea {version}"
 }

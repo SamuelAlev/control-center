@@ -16,7 +16,8 @@ import UserNotifications
 ///     in the request's `userInfo`. One already delivered under the same
 ///     identifier is replaced and alerts again (how a reminder re-raises a
 ///     wait). `timeSensitive` sets the time-sensitive interruption level;
-///     `approvalId` adds Approve and Deny buttons.
+///     `approvalId` adds Approve and Deny buttons, `meetingActions` the
+///     meeting's Join / Join and record / Record buttons.
 ///   • `remove` → withdraws a delivered notification by identifier.
 ///
 /// Banners are presented even while the app is frontmost (the common case for
@@ -30,12 +31,18 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
   private static let approvalCategory = "cc.agentApproval"
   private static let approveAction = "cc.approve"
   private static let denyAction = "cc.deny"
+  private static let meetingCategoryPrefix = "cc.meeting."
+  private static let meetingActionPrefix = "cc.meeting."
 
   private let channel: FlutterMethodChannel
 
-  /// The button titles last registered, so the category is re-registered only
-  /// when the app's language changes.
-  private var registeredLabels: (approve: String, deny: String)?
+  /// Every category registered so far, by identifier. The system replaces the
+  /// whole set on each registration, so they are kept and sent together.
+  private var categories: [String: UNNotificationCategory] = [:]
+
+  /// The button titles each category was last registered with, so one is
+  /// re-registered only when the app's language changes.
+  private var registeredTitles: [String: [String]] = [:]
 
   init(messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(
@@ -105,6 +112,25 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
       content.categoryIdentifier = MacOsNotifier.approvalCategory
       userInfo["approvalId"] = approvalId
     }
+    if let workspaceId = args["meetingWorkspaceId"] as? String,
+      let eventId = args["meetingEventId"] as? String,
+      let actions = args["meetingActions"] as? [[String: Any]]
+    {
+      let buttons = actions.compactMap { action -> (id: String, label: String)? in
+        guard let id = action["id"] as? String, let label = action["label"] as? String else {
+          return nil
+        }
+        return (id, label)
+      }
+      if !buttons.isEmpty {
+        content.categoryIdentifier = registerMeetingCategory(buttons)
+      }
+      userInfo["meetingWorkspaceId"] = workspaceId
+      userInfo["meetingEventId"] = eventId
+      if let url = args["meetingUrl"] as? String {
+        userInfo["meetingUrl"] = url
+      }
+    }
     content.userInfo = userInfo
 
     let center = UNUserNotificationCenter.current()
@@ -136,11 +162,9 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
   /// Neither button opens the app: the answer goes to the server in the
   /// background, as the in-app card's does.
   private func registerApprovalCategory(approve: String, deny: String) {
-    if let labels = registeredLabels, labels == (approve, deny) {
-      return
-    }
-    let category = UNNotificationCategory(
-      identifier: MacOsNotifier.approvalCategory,
+    register(
+      MacOsNotifier.approvalCategory,
+      titles: [approve, deny],
       actions: [
         UNNotificationAction(
           identifier: MacOsNotifier.approveAction,
@@ -152,12 +176,44 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
           title: deny,
           options: [.destructive]
         ),
-      ],
+      ]
+    )
+  }
+
+  /// Registers the category for a meeting with these buttons and returns its
+  /// identifier. One category per button set: a meeting with a call link
+  /// offers Join and Join and record, one without offers Record alone.
+  /// No button brings the app forward: joining opens the browser, and the
+  /// recording starts behind it.
+  private func registerMeetingCategory(_ buttons: [(id: String, label: String)]) -> String {
+    let identifier =
+      MacOsNotifier.meetingCategoryPrefix + buttons.map { $0.id }.joined(separator: "+")
+    register(
+      identifier,
+      titles: buttons.map { $0.label },
+      actions: buttons.map {
+        UNNotificationAction(
+          identifier: MacOsNotifier.meetingActionPrefix + $0.id,
+          title: $0.label,
+          options: []
+        )
+      }
+    )
+    return identifier
+  }
+
+  private func register(_ identifier: String, titles: [String], actions: [UNNotificationAction]) {
+    if registeredTitles[identifier] == titles {
+      return
+    }
+    categories[identifier] = UNNotificationCategory(
+      identifier: identifier,
+      actions: actions,
       intentIdentifiers: [],
       options: []
     )
-    UNUserNotificationCenter.current().setNotificationCategories([category])
-    registeredLabels = (approve, deny)
+    registeredTitles[identifier] = titles
+    UNUserNotificationCenter.current().setNotificationCategories(Set(categories.values))
   }
 
   // Present banners even while the app is in the foreground.
@@ -192,6 +248,22 @@ class MacOsNotifier: NSObject, UNUserNotificationCenterDelegate {
       if let route = userInfo["route"] as? String {
         channel.invokeMethod("onNotificationClick", arguments: ["route": route])
       }
+    case let identifier where identifier.hasPrefix(MacOsNotifier.meetingActionPrefix):
+      if let workspaceId = userInfo["meetingWorkspaceId"] as? String,
+        let eventId = userInfo["meetingEventId"] as? String
+      {
+        var arguments: [String: Any] = [
+          "action": String(identifier.dropFirst(MacOsNotifier.meetingActionPrefix.count)),
+          "meetingWorkspaceId": workspaceId,
+          "meetingEventId": eventId,
+        ]
+        if let url = userInfo["meetingUrl"] as? String {
+          arguments["meetingUrl"] = url
+        }
+        channel.invokeMethod("onNotificationAction", arguments: arguments)
+      }
+      // Acted on: the buttons must not linger in the list.
+      center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
     default:
       break
     }

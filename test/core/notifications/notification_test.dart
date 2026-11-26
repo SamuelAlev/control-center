@@ -22,6 +22,7 @@ class _FakeDelivery implements DesktopNotificationDelivery {
       String route,
       bool timeSensitive,
       String? approvalId,
+      NotificationMeeting? meeting,
     })
   >
   shown = [];
@@ -39,6 +40,7 @@ class _FakeDelivery implements DesktopNotificationDelivery {
     required String route,
     bool timeSensitive = false,
     String? approvalId,
+    NotificationMeeting? meeting,
   }) async {
     shown.add((
       id: id,
@@ -47,6 +49,7 @@ class _FakeDelivery implements DesktopNotificationDelivery {
       route: route,
       timeSensitive: timeSensitive,
       approvalId: approvalId,
+      meeting: meeting,
     ));
   }
 
@@ -437,12 +440,20 @@ void main() {
     late List<MethodCall> nativeCalls;
     late List<String> navigated;
     late List<(String, bool)> answered;
+    late List<(NotificationMeeting, MeetingNotificationAction)> meetingActions;
 
     MacOsChannelNotificationDelivery createDelivery() =>
         MacOsChannelNotificationDelivery(
           onNavigate: navigated.add,
           onApproval: (id, {required approved}) => answered.add((id, approved)),
           actionLabels: () => (approve: 'Approve', deny: 'Deny'),
+          onMeetingAction: (meeting, action) =>
+              meetingActions.add((meeting, action)),
+          meetingLabels: () => (
+            join: 'Join meeting',
+            joinAndRecord: 'Join and record',
+            record: 'Record meeting',
+          ),
         );
 
     Future<void> sendFromNative(String method, Map<String, Object?> args) =>
@@ -459,6 +470,7 @@ void main() {
       nativeCalls = [];
       navigated = [];
       answered = [];
+      meetingActions = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(const MethodChannel(channelName), (
             call,
@@ -510,6 +522,82 @@ void main() {
       expect(args['approvalId'], 'cf_1');
       expect(args['approveLabel'], 'Approve');
       expect(args['denyLabel'], 'Deny');
+      delivery.dispose();
+    });
+
+    test(
+      'a meeting with a call link offers Join and Join and record',
+      () async {
+        final delivery = createDelivery();
+        await delivery.show(
+          id: 'meetingStartsSoon-0',
+          title: 'Meeting starting soon',
+          body: 'Standup',
+          route: '/calendar/evt-1',
+          timeSensitive: true,
+          meeting: NotificationMeeting(
+            workspaceId: 'ws-1',
+            eventId: 'evt-1',
+            meetingUrl: 'https://meet.example/abc',
+          ),
+        );
+
+        final args = nativeCalls.single.arguments as Map;
+        expect(args['meetingWorkspaceId'], 'ws-1');
+        expect(args['meetingEventId'], 'evt-1');
+        expect(args['meetingUrl'], 'https://meet.example/abc');
+        expect(args['meetingActions'], [
+          {'id': 'join', 'label': 'Join meeting'},
+          {'id': 'joinAndRecord', 'label': 'Join and record'},
+        ]);
+        delivery.dispose();
+      },
+    );
+
+    test('a meeting without a call link offers Record alone', () async {
+      final delivery = createDelivery();
+      await delivery.show(
+        id: 'meetingStartsSoon-1',
+        title: 'Meeting starting soon',
+        body: 'Workshop',
+        route: '/calendar/evt-2',
+        meeting: NotificationMeeting(workspaceId: 'ws-1', eventId: 'evt-2'),
+      );
+
+      final args = nativeCalls.single.arguments as Map;
+      expect(args.containsKey('meetingUrl'), isFalse);
+      expect(args['meetingActions'], [
+        {'id': 'record', 'label': 'Record meeting'},
+      ]);
+      delivery.dispose();
+    });
+
+    test('routes meeting buttons to the meeting handler', () async {
+      final delivery = createDelivery();
+      await sendFromNative('onNotificationAction', {
+        'action': 'joinAndRecord',
+        'meetingWorkspaceId': 'ws-1',
+        'meetingEventId': 'evt-1',
+        'meetingUrl': 'https://meet.example/abc',
+      });
+      // Join is not offered for a meeting without a link, so it is ignored.
+      await sendFromNative('onNotificationAction', {
+        'action': 'join',
+        'meetingWorkspaceId': 'ws-1',
+        'meetingEventId': 'evt-2',
+      });
+
+      expect(meetingActions, [
+        (
+          NotificationMeeting(
+            workspaceId: 'ws-1',
+            eventId: 'evt-1',
+            meetingUrl: 'https://meet.example/abc',
+          ),
+          MeetingNotificationAction.joinAndRecord,
+        ),
+      ]);
+      expect(answered, isEmpty);
       delivery.dispose();
     });
 

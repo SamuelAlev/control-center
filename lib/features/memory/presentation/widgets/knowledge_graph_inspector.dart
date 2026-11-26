@@ -6,6 +6,7 @@ import 'package:control_center/features/memory/presentation/widgets/memory_recor
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -138,107 +139,120 @@ class KnowledgeGraphInspector extends StatelessWidget {
         onOpen != null || onDelete != null || onToggleFacts != null;
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): onClose},
-      child: Focus(
-        autofocus: true,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: t.bgPrimary,
-            border: BorderDirectional(
-              start: BorderSide(color: t.borderSecondary),
+      // The node that was picked keeps focus, so Escape would never reach this
+      // panel: focus moves in for each node shown, and Escape hands it back to
+      // the node. Keyed on the node, not the instance, so a data refresh of
+      // the same node does not pull focus again.
+      child: FocusOnMount(
+        key: ValueKey((
+          nodeData.type,
+          nodeData.domainSlug,
+          nodeData.topic,
+          nodeData.fact?.id,
+          nodeData.policy?.id,
+        )),
+        builder: (context, focusNode) => Focus(
+          focusNode: focusNode,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: t.bgPrimary,
+              border: BorderDirectional(
+                start: BorderSide(color: t.borderSecondary),
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                  AppSpacing.sm,
-                  AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    Icon(icon, size: 14, color: t.fgTertiary),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        kind,
-                        style: CcTypography.caption.copyWith(
-                          color: t.textTertiary,
-                        ),
-                      ),
-                    ),
-                    CcIconButton(
-                      icon: AppIcons.x,
-                      size: CcButtonSize.sm,
-                      variant: CcButtonVariant.ghost,
-                      tooltip: l10n.closeEsc,
-                      onPressed: onClose,
-                    ),
-                  ],
-                ),
-              ),
-              const CcDivider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_title case final title?) ...[
-                        Text(
-                          title,
-                          style: CcTypography.title.copyWith(
-                            color: t.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                      ..._body(context, l10n),
-                    ],
-                  ),
-                ),
-              ),
-              if (hasFooter) ...[
-                const CcDivider(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                    AppSpacing.sm,
+                  ),
                   child: Row(
                     children: [
-                      if (onOpen != null)
-                        CcButton(
-                          variant: CcButtonVariant.secondary,
-                          size: CcButtonSize.sm,
-                          onPressed: onOpen,
-                          child: Text(l10n.openLabel),
-                        ),
-                      if (onToggleFacts != null)
-                        CcButton(
-                          variant: CcButtonVariant.secondary,
-                          size: CcButtonSize.sm,
-                          onPressed: onToggleFacts,
-                          child: Text(
-                            factsShown
-                                ? l10n.memoryGraphHideFacts
-                                : l10n.memoryGraphShowFacts,
+                      Icon(icon, size: 14, color: t.fgTertiary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          kind,
+                          style: CcTypography.caption.copyWith(
+                            color: t.textTertiary,
                           ),
                         ),
-                      const Spacer(),
-                      if (onDelete != null)
-                        CcIconButton(
-                          icon: AppIcons.trash2,
-                          size: CcButtonSize.sm,
-                          variant: CcButtonVariant.ghost,
-                          tooltip: l10n.delete,
-                          onPressed: onDelete,
-                        ),
+                      ),
+                      CcIconButton(
+                        icon: AppIcons.x,
+                        size: CcButtonSize.sm,
+                        variant: CcButtonVariant.ghost,
+                        tooltip: l10n.closeEsc,
+                        onPressed: onClose,
+                      ),
                     ],
                   ),
                 ),
+                const CcDivider(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_title case final title?) ...[
+                          Text(
+                            title,
+                            style: CcTypography.title.copyWith(
+                              color: t.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
+                        ..._body(context, l10n),
+                      ],
+                    ),
+                  ),
+                ),
+                if (hasFooter) ...[
+                  const CcDivider(),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Row(
+                      children: [
+                        if (onOpen != null)
+                          CcButton(
+                            variant: CcButtonVariant.secondary,
+                            size: CcButtonSize.sm,
+                            onPressed: onOpen,
+                            child: Text(l10n.openLabel),
+                          ),
+                        if (onToggleFacts != null)
+                          CcButton(
+                            variant: CcButtonVariant.secondary,
+                            size: CcButtonSize.sm,
+                            onPressed: onToggleFacts,
+                            child: Text(
+                              factsShown
+                                  ? l10n.memoryGraphHideFacts
+                                  : l10n.memoryGraphShowFacts,
+                            ),
+                          ),
+                        const Spacer(),
+                        if (onDelete != null)
+                          CcIconButton(
+                            icon: AppIcons.trash2,
+                            size: CcButtonSize.sm,
+                            variant: CcButtonVariant.ghost,
+                            tooltip: l10n.delete,
+                            onPressed: onDelete,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

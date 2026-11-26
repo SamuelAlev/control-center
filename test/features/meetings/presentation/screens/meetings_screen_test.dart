@@ -206,8 +206,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Standup'), findsNothing);
       // The header — and its count chip — stay, so a folded day is still
-      // legible. Scoped to the header row: the ledger above happens to render
-      // the same "1" for its this-week total.
+      // legible. Scoped to the header row.
       expect(find.text('Today'), findsOneWidget);
       expect(
         find.descendant(

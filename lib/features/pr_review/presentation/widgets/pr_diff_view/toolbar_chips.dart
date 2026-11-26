@@ -31,7 +31,7 @@ class ViewModeToggle extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: tokens.bgSecondary.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadii.brSm,
         border: Border.all(color: tokens.borderSecondary),
       ),
       child: Row(
@@ -110,8 +110,7 @@ class ViewModeSegment extends StatelessWidget {
   }
 }
 
-/// A chip showing the inline comment count; tapping it opens the comment inbox.
-
+/// A badge showing the inline comment count.
 class CommentCountChip extends StatelessWidget {
   /// Creates a [CommentCountChip].
   const CommentCountChip({super.key, required this.count});
@@ -121,28 +120,7 @@ class CommentCountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = resolveDesignTokens(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.bgSecondary.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIcons.messageSquare, size: 13, color: tokens.textTertiary),
-          const SizedBox(width: 6),
-          Text(
-            '$count',
-            style: CcTypography.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              color: tokens.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
+    return CcBadge(label: '$count', icon: AppIcons.messageSquare);
   }
 }
 
@@ -156,37 +134,37 @@ class DiffUpdateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = resolveDesignTokens(context);
     return CcTooltip(
       message: AppLocalizations.of(context).newCommitsPushed,
-      child: CcTappable(
+      child: CcChip(
+        label: 'New changes — Refresh diff',
+        leadingIcon: AppIcons.refreshCw,
+        selected: true,
         onPressed: onRefresh,
-        borderRadius: BorderRadius.circular(999),
-        builder: (context, states) => Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF1F75FE).withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: const Color(0xFF1F75FE).withValues(alpha: 0.3),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.refreshCw, size: 13, color: tokens.textPrimary),
-              const SizedBox(width: 6),
-              Text(
-                'New changes — Refresh diff',
-                style: CcTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: tokens.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
+    );
+  }
+}
+
+/// Quiet inline indicator shown in the diff toolbar while an automatic or
+/// manual diff refresh is in flight.
+class DiffRefreshingIndicator extends StatelessWidget {
+  /// Creates a [DiffRefreshingIndicator].
+  const DiffRefreshingIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = resolveDesignTokens(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CcSpinner(size: 12),
+        const SizedBox(width: 6),
+        Text(
+          AppLocalizations.of(context).loadingEllipsis,
+          style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+        ),
+      ],
     );
   }
 }

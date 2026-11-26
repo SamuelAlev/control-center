@@ -1,3 +1,4 @@
+import 'package:cc_infra/src/network/app_network.dart' show maxRetriesOption;
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/retry_interceptor.dart';
 // rhttp ships an interceptor of its own with the same name as the cc_infra
@@ -278,6 +279,77 @@ void main() {
       // A generous ceiling: proves the backoff is still BOUNDED (a regression
       // that dropped the cap or the jitter's upper half would blow past it).
       expect(elapsed.inMilliseconds, lessThan(2000));
+    });
+
+    test('maxRetriesOption(0) skips retries while still recording rate-limit '
+        'headers', () async {
+      var calls = 0;
+      final futureReset =
+          DateTime.now()
+              .add(const Duration(seconds: 30))
+              .millisecondsSinceEpoch ~/
+          1000;
+      final retry = RetryInterceptor(
+        maxRetries: 3,
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          return _ok(request);
+        },
+      );
+
+      final req = HttpRequest.from(
+        request: BaseHttpRequest(
+          method: HttpMethod.post,
+          url: 'https://example.test/graphql',
+          expectBody: HttpExpectBody.text,
+        )..additionalData.addAll(maxRetriesOption(0)),
+        settings: const ClientSettings(),
+      );
+
+      final result = await retry.onError(
+        _status(
+          req,
+          504,
+          headers: {
+            'x-ratelimit-remaining': '0',
+            'x-ratelimit-reset': '$futureReset',
+          },
+        ),
+      );
+
+      expect(result.value, isNull);
+      expect(calls, 0);
+      await expectLater(
+        retry.beforeRequest(_request()),
+        throwsA(isA<RhttpStatusCodeException>()),
+      );
+    });
+
+    test('maxRetriesOption(1) caps retries below RetryInterceptor.maxRetries',
+        () async {
+      var calls = 0;
+      final retry = RetryInterceptor(
+        maxRetries: 3,
+        baseDelay: const Duration(milliseconds: 1),
+        send: (request) async {
+          calls++;
+          throw _status(request, 502);
+        },
+      );
+
+      final req = HttpRequest.from(
+        request: BaseHttpRequest(
+          method: HttpMethod.post,
+          url: 'https://example.test/graphql',
+          expectBody: HttpExpectBody.text,
+        )..additionalData.addAll(maxRetriesOption(1)),
+        settings: const ClientSettings(),
+      );
+
+      final result = await retry.onError(_status(req, 502));
+      expect(result, isA<InterceptorNextResult<RhttpException>>());
+      expect(calls, 1);
     });
   });
 

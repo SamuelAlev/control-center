@@ -377,10 +377,6 @@
   "@joinMeeting": {
     "description": "Button opening the event's meeting link."
   },
-  "join": "Join",
-  "@join": {
-    "description": "Compact join button on the up-next card."
-  },
   "attendeesCount": "Attendees ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

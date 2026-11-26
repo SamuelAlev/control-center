@@ -1,5 +1,6 @@
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
-import 'package:control_center/router/routes.dart' show conversationTabKey;
+import 'package:control_center/router/routes.dart'
+    show conversationTabKey, goalTabKey;
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/attachment_preview_pane.dart'
@@ -44,6 +45,9 @@ abstract final class MessagingTabKinds {
 
   /// Plan Studio for one plan (a plan document or an orchestration proposal).
   static const String plan = 'plan';
+
+  /// One durable supervised goal of a conversation.
+  static const String goal = 'goal';
 
   /// One published artifact (work product) at full size, with its revisions.
   static const String artifact = 'artifact';
@@ -109,6 +113,17 @@ abstract final class MessagingTabKinds {
     return key.substring('chat:'.length);
   }
 
+  /// Dedup key (and `?tab=` URL key) of the tab showing [goalId].
+  static String goalTabKeyFor(String goalId) => goalTabKey(goalId);
+
+  /// The goal id a [goalTabKey] names, or null for any other key.
+  static String? goalIdFromTabKey(String key) {
+    if (!key.startsWith('goal:') || key.length <= 'goal:'.length) {
+      return null;
+    }
+    return key.substring('goal:'.length);
+  }
+
   /// The tab-strip icon for a messaging [kind].
   static IconData iconFor(String kind) {
     switch (kind) {
@@ -136,6 +151,8 @@ abstract final class MessagingTabKinds {
         return AppIcons.gitCompareArrows;
       case plan:
         return AppIcons.network;
+      case goal:
+        return AppIcons.target;
       case artifact:
         return AppIcons.layoutTemplate;
       case agentActivity:

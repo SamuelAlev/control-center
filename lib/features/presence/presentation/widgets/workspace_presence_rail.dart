@@ -48,28 +48,29 @@ class WorkspacePresenceRail extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Each avatar is a follow toggle, so it stays in the semantics tree
+        // under the rail's label rather than being hidden behind it.
         Semantics(
           container: true,
           label: l10n.presenceRailLabel,
-          child: ExcludeSemantics(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final p in shown)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 4),
-                    child: PresenceAvatarChip(participant: p, size: 20),
+          explicitChildNodes: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final p in shown)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4),
+                  child: PresenceAvatarChip(participant: p, size: 20),
+                ),
+              if (overflow > 0)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4),
+                  child: CcAvatar(
+                    size: 20,
+                    initials: l10n.presencePlusCount(overflow),
                   ),
-                if (overflow > 0)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 4),
-                    child: CcAvatar(
-                      size: 20,
-                      initials: l10n.presencePlusCount(overflow),
-                    ),
-                  ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
         const SizedBox(width: AppSpacing.xs),

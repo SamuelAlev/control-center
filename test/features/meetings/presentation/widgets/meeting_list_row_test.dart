@@ -4,6 +4,7 @@ import 'package:control_center/features/meetings/presentation/widgets/meeting_co
 import 'package:control_center/features/meetings/presentation/widgets/meeting_list_row.dart';
 import 'package:control_center/features/meetings/providers/meeting_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -130,7 +131,34 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('renders signal pills for enhanced meeting', (tester) async {
+    testWidgets('is a button with an open hint that Enter activates', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      var tapped = false;
+      await tester.pumpWidget(
+        testWrap(
+          MeetingListRow(
+            meeting: _basicMeeting(),
+            now: DateTime(2026, 6, 10, 12, 0),
+            onTap: () => tapped = true,
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSemantics(find.text('Sprint Planning')),
+        isSemantics(isButton: true, isFocusable: true, onTapHint: 'Open'),
+      );
+      Focus.of(tester.element(find.text('Sprint Planning'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(tapped, isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('renders decision and action item pills', (tester) async {
       final meeting = Meeting(
         id: 'm2',
         workspaceId: 'ws1',
@@ -167,7 +195,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(AppIcons.sparkles), findsOneWidget);
+      // Enhanced notes are the norm, not a signal worth a pill.
+      expect(find.byIcon(AppIcons.sparkles), findsNothing);
       expect(find.byIcon(AppIcons.flag), findsOneWidget);
       expect(find.byIcon(AppIcons.listChecks), findsOneWidget);
     });
@@ -189,7 +218,8 @@ void main() {
       expect(find.text('Open'), findsNothing);
       // 10:00 → 11:00 reads as one hour, in tabular mono.
       expect(find.text('1:00:00'), findsOneWidget);
-      expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
+      // No chevron either: the hover wash is the affordance.
+      expect(find.byIcon(AppIcons.chevronRight), findsNothing);
     });
 
     testWidgets('replaces the duration with Stop while summarizing', (

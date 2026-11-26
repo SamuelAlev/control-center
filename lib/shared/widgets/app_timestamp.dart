@@ -64,18 +64,14 @@ class AppTimestamp extends StatelessWidget {
       showDelay: const Duration(seconds: 1),
       maxWidth: 360,
       tip: AppTimestampDetails(dateTime: dateTime),
-      child: Semantics(
-        label: semanticLabel,
-        button: true,
-        container: true,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _copy(context),
-            child: display,
-          ),
-        ),
+      child: CcTappable(
+        onPressed: () => _copy(context),
+        semanticLabel: semanticLabel,
+        // Not a Tab stop: a list shows one per row, and the absolute time
+        // already reaches a screen reader through the label. Copying the
+        // raw value stays a pointer shortcut.
+        canRequestFocus: false,
+        builder: (context, _) => display,
       ),
     );
   }

@@ -1078,13 +1078,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calendarEmptyNoEvents => 'No events in this range';
 
   @override
-  String get calendarStartRecording => 'Start recording';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Start recording & link';
-
-  @override
   String get calendarJoinMeet => 'Join meeting';
+
+  @override
+  String get calendarJoinAndRecord => 'Join and record';
+
+  @override
+  String get calendarRecordFailed => 'Couldn\'t start the recording';
 
   @override
   String get calendarFromCalendar => 'From calendar';
@@ -1917,9 +1917,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activity => 'Activity';
-
-  @override
-  String get activityLabel => 'ACTIVITY';
 
   @override
   String get activitySearchHint => 'Search activity';
@@ -2871,7 +2868,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get briefDescription => 'Brief description';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated => 'Bundled defaults — never updated';
@@ -4445,7 +4442,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'QUESTION';
+  String get questionLabel => 'Question';
 
   @override
   String get queued => 'Queued';
@@ -4460,7 +4457,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasoningEffort => 'Reasoning effort';
 
   @override
-  String get recommendLabel => 'RECOMMEND';
+  String get recommendLabel => 'Recommend';
 
   @override
   String recordingFromDevice(String device) {
@@ -5124,7 +5121,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suggestion => 'Suggestion';
 
   @override
-  String get suggestLabel => 'SUGGEST';
+  String get suggestLabel => 'Suggest';
 
   @override
   String get superseded => 'Superseded';
@@ -5169,7 +5166,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thisCannotBeUndone => 'This cannot be undone.';
 
   @override
-  String get ticketLabel => 'TICKET';
+  String get ticketLabel => 'Ticket';
 
   @override
   String get titleLabel => 'Title';
@@ -7465,6 +7462,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addReviewers => 'Add reviewers';
 
   @override
+  String get reRequestReview => 'Re-request review';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Re-request review from $label';
+  }
+
+  @override
   String get addAssignees => 'Add assignees';
 
   @override
@@ -7631,6 +7636,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get meetingStatusRecording => 'Recording';
 
   @override
+  String get meetingStatusPaused => 'Paused';
+
+  @override
   String get meetingStatusProcessing => 'Processing';
 
   @override
@@ -7658,34 +7666,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count meetings',
-      one: '1 meeting',
-      zero: 'No meetings',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Open actions';
-
-  @override
-  String get meetingsLedgerDecisions => 'Decisions';
-
-  @override
   String get meetingsLiveOpen => 'Open recording';
 
   @override
   String get meetingTemplateShort => 'Template';
-
-  @override
-  String get meetingsStatThisWeek => 'This week';
-
-  @override
-  String get meetingsStatRecorded => 'Recorded';
 
   @override
   String get meetingsFilterAll => 'All';
@@ -7729,9 +7713,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total action items';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'enhanced';
 
   @override
   String get meetingsTranscribing => 'transcribing & summarizing…';
@@ -7966,9 +7947,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Looks like a meeting is happening. Record it?';
-
-  @override
-  String get meetingDetectedRecord => 'Record';
 
   @override
   String get meetingDetectedDismiss => 'Dismiss';
@@ -9491,6 +9469,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceNeverSeen => 'Never connected';
 
   @override
+  String get deviceAwaitingApproval => 'Awaiting approval';
+
+  @override
   String get profileSectionLabel => 'Profile';
 
   @override
@@ -10318,12 +10299,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Failed';
-
-  @override
-  String get bannerMeetingJoin => 'Join';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Record & link';
 
   @override
   String get bannerCalendarReconnect => 'Reconnect';
@@ -13636,6 +13611,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Could not post the comment: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Line $line';
   }
@@ -15111,17 +15091,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Close $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count comments',
-      one: '1 comment',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21361,10 +21330,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dispatchSettingsTitle => 'Schedules';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limits on schedules and watches, and what happens to requests nobody answers.';
-
-  @override
   String get dispatchLimitsLabel => 'Schedule limits';
 
   @override
@@ -21443,9 +21408,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Goal';
-
-  @override
-  String get scheduleRecordCrumb => 'Schedule';
 
   @override
   String get improvementRecordCrumb => 'Proposal';
@@ -21845,6 +21807,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent of $cap, counting every schedule in its chain';
+  }
+
+  @override
+  String get ccLoading => 'Loading';
+
+  @override
+  String get ccProgress => 'Progress';
+
+  @override
+  String get ccBreadcrumb => 'Breadcrumb';
+
+  @override
+  String get ccDialog => 'Dialog';
+
+  @override
+  String get ccResize => 'Resize';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (unverified)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Select $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Select all pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Rewind to version $version';
   }
 }
 

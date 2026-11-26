@@ -8,6 +8,7 @@ import 'package:control_center/features/messaging/presentation/ide/ide_rig_host.
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_tabs.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/l10n/app_localizations_en.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -214,6 +215,24 @@ void main() {
       focus(MessagingTabKinds.chatTabKey('unknown'));
 
       expect(opened, ['a']);
+    });
+
+    test('a goal tab key delegates to openGoal when not yet open', () {
+      final layout = _layoutOf([MessagingIdeTabs.chat('space')]);
+      addTearDown(layout.dispose);
+      const view = IdeConversationView(standingId: 's');
+      final openedGoals = <String>[];
+
+      focusIdeTabByKey(
+        layout,
+        goalTabKey('goal-7'),
+        spaceId: 'space',
+        view: view,
+        openConversation: (_, _) {},
+        openGoal: openedGoals.add,
+      );
+
+      expect(openedGoals, ['goal-7']);
     });
   });
 

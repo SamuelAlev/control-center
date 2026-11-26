@@ -65,7 +65,10 @@ class _ServerConnectionSectionState
               icon: AppIcons.monitor,
               title: l10n.serverModeLocal,
               subtitle: l10n.serverModeLocalDescription,
-              facts: [if (serverBuild?.version != null) serverBuild!.version!],
+              facts: [
+                if (serverBuild?.version != null)
+                  SettingsMetaFact(value: serverBuild!.version!),
+              ],
               isActive: state.currentServerId == 'local',
               busy: state.busy,
               onSwitch: () => _run(() => notifier.switchTo('local')),
@@ -91,7 +94,9 @@ class _ServerConnectionSectionState
               icon: AppIcons.cloud,
               title: entry.name,
               subtitle: _entryUrl(entry),
-              facts: [_entryFingerprint(entry)],
+              facts: [
+                SettingsMetaFact(value: _entryFingerprint(entry), code: true),
+              ],
               isActive: state.currentServerId == entry.serverId,
               insecure: entry.descriptor.insecureAllowed,
               busy: state.busy,
@@ -187,7 +192,7 @@ class _ServerRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final List<String> facts;
+  final List<SettingsMetaFact> facts;
   final bool isActive;
   final bool busy;
   final bool insecure;
@@ -208,7 +213,7 @@ class _ServerRow extends StatelessWidget {
       statusLabel: isActive ? l10n.serverListActive : null,
       subtitle: subtitle,
       meta: [
-        for (final fact in facts) SettingsMetaFact(value: fact),
+        ...facts,
         if (insecure)
           CcBadge(
             label: l10n.serverListInsecureBadge,

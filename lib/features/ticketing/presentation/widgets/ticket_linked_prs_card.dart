@@ -121,7 +121,7 @@ class TicketLinkedPrsCard extends ConsumerWidget {
 
 /// A single linked-PR row: status icon + title (or the raw node id when the PR
 /// can't be resolved), tappable to open the PR, with hover-to-remove.
-class _LinkedPrRow extends StatefulWidget {
+class _LinkedPrRow extends StatelessWidget {
   const _LinkedPrRow({
     required this.externalId,
     required this.resolved,
@@ -135,16 +135,9 @@ class _LinkedPrRow extends StatefulWidget {
   final VoidCallback onRemove;
 
   @override
-  State<_LinkedPrRow> createState() => _LinkedPrRowState();
-}
-
-class _LinkedPrRowState extends State<_LinkedPrRow> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final resolved = widget.resolved;
+    final resolved = this.resolved;
     final status = resolved == null
         ? null
         : prStatusIconData(resolved.pr, context);
@@ -157,53 +150,57 @@ class _LinkedPrRowState extends State<_LinkedPrRow> {
           : CcTypography.mediumWeight,
     );
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onOpen,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            children: [
-              Icon(
-                status?.icon ?? AppIcons.gitPullRequest,
-                size: 14,
-                color: status?.color ?? t.fgBrandPrimary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: resolved == null
-                    ? Text(
-                        widget.externalId,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
-                      )
-                    : PrTitleText(
-                        resolved.pr.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
-                        leading: [
-                          TextSpan(
-                            text: '#${resolved.pr.number}  ',
-                            style: labelStyle,
-                          ),
-                        ],
-                      ),
-              ),
-              if (_hovered)
-                CcTappable(
-                  onPressed: widget.onRemove,
-                  builder: (context, states) => Padding(
-                    padding: const EdgeInsetsDirectional.only(start: 6),
-                    child: Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-                  ),
+    return CcTappable(
+      onPressed: onOpen,
+      // An unresolved PR cannot be opened, but its remove control must still
+      // be reachable, and it only shows while the row has focus or hover.
+      focusableWhenDisabled: true,
+      builder: (context, states) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Icon(
+              status?.icon ?? AppIcons.gitPullRequest,
+              size: 14,
+              color: status?.color ?? t.fgBrandPrimary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: resolved == null
+                  ? Text(
+                      externalId,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle,
+                    )
+                  : PrTitleText(
+                      resolved.pr.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle,
+                      leading: [
+                        TextSpan(
+                          text: '#${resolved.pr.number}  ',
+                          style: labelStyle,
+                        ),
+                      ],
+                    ),
+            ),
+            // Focus on the row includes focus on this button, so tabbing
+            // onto it keeps it shown.
+            if (states.contains(WidgetState.hovered) ||
+                states.contains(WidgetState.focused))
+              CcTappable(
+                onPressed: onRemove,
+                semanticLabel: AppLocalizations.of(
+                  context,
+                ).removeLabel(resolved?.pr.title ?? externalId),
+                builder: (context, states) => Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 6),
+                  child: Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

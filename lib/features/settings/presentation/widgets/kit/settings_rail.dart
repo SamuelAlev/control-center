@@ -90,8 +90,8 @@ class SettingsMasterDetail extends StatelessWidget {
   }
 }
 
-/// The small uppercase mono label above a group of rail items ("PROVIDERS",
-/// "CUSTOM PROVIDERS").
+/// The small label above a group of rail items ("Providers",
+/// "Custom providers").
 class SettingsRailGroupLabel extends StatelessWidget {
   /// Creates a [SettingsRailGroupLabel].
   const SettingsRailGroupLabel({super.key, required this.label});
@@ -104,12 +104,10 @@ class SettingsRailGroupLabel extends StatelessWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     return Text(
       label,
-      style: CcFonts.code(
-        textStyle: CcTypography.caption.copyWith(
-          color: tokens.textTertiary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.6,
-        ),
+      style: CcTypography.caption.copyWith(
+        color: tokens.textTertiary,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
       ),
     );
   }

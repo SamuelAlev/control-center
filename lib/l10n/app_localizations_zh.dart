@@ -1038,13 +1038,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get calendarEmptyNoEvents => '此时间范围内没有活动';
 
   @override
-  String get calendarStartRecording => '开始录制';
-
-  @override
-  String get calendarStartRecordingAndLink => '开始录制并关联';
-
-  @override
   String get calendarJoinMeet => '加入会议';
+
+  @override
+  String get calendarJoinAndRecord => '加入并录制';
+
+  @override
+  String get calendarRecordFailed => '无法开始录制';
 
   @override
   String get calendarFromCalendar => '来自日历';
@@ -1846,9 +1846,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get activity => '活动';
-
-  @override
-  String get activityLabel => '活动';
 
   @override
   String get activitySearchHint => '搜索活动';
@@ -2788,7 +2785,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get briefDescription => '简短描述';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated => '内置默认值——从不更新';
@@ -7257,6 +7254,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addReviewers => '添加审阅者';
 
   @override
+  String get reRequestReview => '重新请求审阅';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '向 $label 重新请求审阅';
+  }
+
+  @override
   String get addAssignees => '添加经办人';
 
   @override
@@ -7418,6 +7423,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get meetingStatusRecording => '录制中';
 
   @override
+  String get meetingStatusPaused => '已暂停';
+
+  @override
   String get meetingStatusProcessing => '处理中';
 
   @override
@@ -7444,34 +7452,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 场会议',
-      one: '1 场会议',
-      zero: '暂无会议',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => '未完成待办';
-
-  @override
-  String get meetingsLedgerDecisions => '决策';
-
-  @override
   String get meetingsLiveOpen => '打开录制';
 
   @override
   String get meetingTemplateShort => '模板';
-
-  @override
-  String get meetingsStatThisWeek => '本周';
-
-  @override
-  String get meetingsStatRecorded => '已录制';
 
   @override
   String get meetingsFilterAll => '全部';
@@ -7515,9 +7499,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total 项待办';
   }
-
-  @override
-  String get meetingsEnhancedPill => '已增强';
 
   @override
   String get meetingsTranscribing => '正在转写并生成摘要…';
@@ -7741,9 +7722,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get meetingDetectedSubtitleGeneric => '似乎正在开会。要录制吗？';
-
-  @override
-  String get meetingDetectedRecord => '录制';
 
   @override
   String get meetingDetectedDismiss => '忽略';
@@ -9222,6 +9200,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deviceNeverSeen => '从未连接';
 
   @override
+  String get deviceAwaitingApproval => '等待批准';
+
+  @override
   String get profileSectionLabel => '个人资料';
 
   @override
@@ -10040,12 +10021,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => '已失败';
-
-  @override
-  String get bannerMeetingJoin => '加入';
-
-  @override
-  String get bannerMeetingRecordAndLink => '录制并链接';
 
   @override
   String get bannerCalendarReconnect => '重新连接';
@@ -13241,6 +13216,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return '无法发布评论：$error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '第 $line 行';
   }
@@ -14661,16 +14641,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '关闭$tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 条评论',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -20581,9 +20551,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dispatchSettingsTitle => '定时';
 
   @override
-  String get dispatchSettingsSubtitle => '定时与监视的限制，以及无人回应的请求会如何处理。';
-
-  @override
   String get dispatchLimitsLabel => '定时限制';
 
   @override
@@ -20656,9 +20623,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => '目标';
-
-  @override
-  String get scheduleRecordCrumb => '定时';
 
   @override
   String get improvementRecordCrumb => '提议';
@@ -21037,6 +21001,39 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent / $cap，计入其链中每个定时的运行';
+  }
+
+  @override
+  String get ccLoading => '加载中';
+
+  @override
+  String get ccProgress => '进度';
+
+  @override
+  String get ccBreadcrumb => '面包屑导航';
+
+  @override
+  String get ccDialog => '对话框';
+
+  @override
+  String get ccResize => '调整大小';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label（未验证）';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '选择$title';
+  }
+
+  @override
+  String get prTableSelectAll => '选择所有 Pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return '回滚到版本 $version';
   }
 }
 
@@ -22073,13 +22070,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get calendarEmptyNoEvents => '此範圍內沒有活動';
 
   @override
-  String get calendarStartRecording => '開始錄製';
-
-  @override
-  String get calendarStartRecordingAndLink => '開始錄製並連結';
-
-  @override
   String get calendarJoinMeet => '加入會議';
+
+  @override
+  String get calendarJoinAndRecord => '加入並錄製';
+
+  @override
+  String get calendarRecordFailed => '無法開始錄製';
 
   @override
   String get calendarFromCalendar => '來自行事曆';
@@ -22882,9 +22879,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get activity => '活動';
-
-  @override
-  String get activityLabel => '活動';
 
   @override
   String get activitySearchHint => '搜尋活動';
@@ -28292,6 +28286,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get addReviewers => '新增審查者';
 
   @override
+  String get reRequestReview => '重新要求審查';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '向 $label 重新要求審查';
+  }
+
+  @override
   String get addAssignees => '新增負責人';
 
   @override
@@ -28453,6 +28455,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get meetingStatusRecording => '錄音中';
 
   @override
+  String get meetingStatusPaused => '已暫停';
+
+  @override
   String get meetingStatusProcessing => '處理中';
 
   @override
@@ -28479,34 +28484,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 場會議',
-      one: '1 場會議',
-      zero: '沒有會議',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => '未完成行動';
-
-  @override
-  String get meetingsLedgerDecisions => '決議';
-
-  @override
   String get meetingsLiveOpen => '開啟錄音';
 
   @override
   String get meetingTemplateShort => '範本';
-
-  @override
-  String get meetingsStatThisWeek => '本週';
-
-  @override
-  String get meetingsStatRecorded => '已錄製';
 
   @override
   String get meetingsFilterAll => '全部';
@@ -28550,9 +28531,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total 項行動項目';
   }
-
-  @override
-  String get meetingsEnhancedPill => '已增強';
 
   @override
   String get meetingsTranscribing => '轉錄並摘要中…';
@@ -28776,9 +28754,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get meetingDetectedSubtitleGeneric => '看起來正在進行會議。要錄製嗎？';
-
-  @override
-  String get meetingDetectedRecord => '錄製';
 
   @override
   String get meetingDetectedDismiss => '關閉';
@@ -30259,6 +30234,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get deviceNeverSeen => '從未連接';
 
   @override
+  String get deviceAwaitingApproval => '等待核准';
+
+  @override
   String get profileSectionLabel => '個人資料';
 
   @override
@@ -31077,12 +31055,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get evalsStatusFailed => '失敗';
-
-  @override
-  String get bannerMeetingJoin => '加入';
-
-  @override
-  String get bannerMeetingRecordAndLink => '錄製並連結';
 
   @override
   String get bannerCalendarReconnect => '重新連接';
@@ -34280,6 +34252,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return '無法張貼評論：$error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '第 $line 行';
   }
@@ -35700,16 +35677,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String closeTabNamed(String tab) {
     return '關閉$tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 則留言',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -41624,9 +41591,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get dispatchSettingsTitle => '排程';
 
   @override
-  String get dispatchSettingsSubtitle => '排程與監看的限制，以及無人回應的請求會如何處理。';
-
-  @override
   String get dispatchLimitsLabel => '排程限制';
 
   @override
@@ -41699,9 +41663,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get goalRecordCrumb => '目標';
-
-  @override
-  String get scheduleRecordCrumb => '排程';
 
   @override
   String get improvementRecordCrumb => '提案';
@@ -42080,6 +42041,39 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent / $cap，計入其鏈中每個排程';
+  }
+
+  @override
+  String get ccLoading => '載入中';
+
+  @override
+  String get ccProgress => '進度';
+
+  @override
+  String get ccBreadcrumb => '麵包屑導覽';
+
+  @override
+  String get ccDialog => '對話方塊';
+
+  @override
+  String get ccResize => '調整大小';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label（未驗證）';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '選擇 $title';
+  }
+
+  @override
+  String get prTableSelectAll => '選擇所有 Pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return '還原到版本 $version';
   }
 }
 
@@ -43116,13 +43110,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get calendarEmptyNoEvents => '此範圍內沒有活動';
 
   @override
-  String get calendarStartRecording => '開始錄製';
-
-  @override
-  String get calendarStartRecordingAndLink => '開始錄製並連結';
-
-  @override
   String get calendarJoinMeet => '加入會議';
+
+  @override
+  String get calendarJoinAndRecord => '加入並錄製';
+
+  @override
+  String get calendarRecordFailed => '無法開始錄製';
 
   @override
   String get calendarFromCalendar => '來自行事曆';
@@ -43925,9 +43919,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get activity => '活動';
-
-  @override
-  String get activityLabel => '活動';
 
   @override
   String get activitySearchHint => '搜尋活動';
@@ -49335,6 +49326,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get addReviewers => '新增審查者';
 
   @override
+  String get reRequestReview => '重新要求審查';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '向 $label 重新要求審查';
+  }
+
+  @override
   String get addAssignees => '新增負責人';
 
   @override
@@ -49496,6 +49495,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get meetingStatusRecording => '錄音中';
 
   @override
+  String get meetingStatusPaused => '已暫停';
+
+  @override
   String get meetingStatusProcessing => '處理中';
 
   @override
@@ -49522,34 +49524,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 場會議',
-      one: '1 場會議',
-      zero: '沒有會議',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => '未完成行動';
-
-  @override
-  String get meetingsLedgerDecisions => '決議';
-
-  @override
   String get meetingsLiveOpen => '開啟錄音';
 
   @override
   String get meetingTemplateShort => '範本';
-
-  @override
-  String get meetingsStatThisWeek => '本週';
-
-  @override
-  String get meetingsStatRecorded => '已錄製';
 
   @override
   String get meetingsFilterAll => '全部';
@@ -49593,9 +49571,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total 項行動項目';
   }
-
-  @override
-  String get meetingsEnhancedPill => '已增強';
 
   @override
   String get meetingsTranscribing => '轉錄並摘要中…';
@@ -49819,9 +49794,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get meetingDetectedSubtitleGeneric => '看起來正在進行會議。要錄製嗎？';
-
-  @override
-  String get meetingDetectedRecord => '錄製';
 
   @override
   String get meetingDetectedDismiss => '關閉';
@@ -51302,6 +51274,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get deviceNeverSeen => '從未連線';
 
   @override
+  String get deviceAwaitingApproval => '等待核准';
+
+  @override
   String get profileSectionLabel => '個人資料';
 
   @override
@@ -52120,12 +52095,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get evalsStatusFailed => '失敗';
-
-  @override
-  String get bannerMeetingJoin => '加入';
-
-  @override
-  String get bannerMeetingRecordAndLink => '錄製並連結';
 
   @override
   String get bannerCalendarReconnect => '重新連線';
@@ -55323,6 +55292,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return '無法張貼評論：$error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '第 $line 行';
   }
@@ -56744,16 +56718,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String closeTabNamed(String tab) {
     return '關閉$tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 則留言',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -62669,9 +62633,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get dispatchSettingsTitle => '排程';
 
   @override
-  String get dispatchSettingsSubtitle => '排程與監看的限制，以及無人回應的請求會如何處理。';
-
-  @override
   String get dispatchLimitsLabel => '排程限制';
 
   @override
@@ -62744,9 +62705,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get goalRecordCrumb => '目標';
-
-  @override
-  String get scheduleRecordCrumb => '排程';
 
   @override
   String get improvementRecordCrumb => '提案';
@@ -63125,5 +63083,38 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent / $cap，計入其鏈中所有排程';
+  }
+
+  @override
+  String get ccLoading => '載入中';
+
+  @override
+  String get ccProgress => '進度';
+
+  @override
+  String get ccBreadcrumb => '麵包屑導覽';
+
+  @override
+  String get ccDialog => '對話方塊';
+
+  @override
+  String get ccResize => '調整大小';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label（未驗證）';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '選擇 $title';
+  }
+
+  @override
+  String get prTableSelectAll => '選擇所有 Pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return '回復到版本 $version';
   }
 }

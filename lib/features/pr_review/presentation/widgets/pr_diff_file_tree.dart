@@ -9,6 +9,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:material_ui/material_ui.dart';
 
 /// Horizontal inset of the file-tree filter field. The Diff toolbar uses the
@@ -27,6 +28,7 @@ class PrDiffFileTree extends StatefulWidget {
     required this.onSelectFile,
     this.selectedFileIndex,
     this.viewedPaths = const <String>{},
+    this.unresolvedByPath = const <String, int>{},
     this.onOpenSearch,
     this.onOpenFileInEditor,
   });
@@ -42,6 +44,11 @@ class PrDiffFileTree extends StatefulWidget {
 
   /// Paths the user has marked viewed. Rendered with a subtle "viewed" dot.
   final Set<String> viewedPaths;
+
+  /// Open review conversations per file path. A file with any shows the count
+  /// on its row, so a thread in a collapsed or off-screen file is findable
+  /// from the tree.
+  final Map<String, int> unresolvedByPath;
 
   /// Switches the sidebar into "search in files" mode (the filter bar's search
   /// button, mirrored by ⌘F). Null hides the affordance.
@@ -329,6 +336,7 @@ class _PrDiffFileTreeState extends State<PrDiffFileTree> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _FilterBar(
+                roots: widget.roots,
                 onChanged: _onFilterChanged,
                 statusFilter: _statusFilter,
                 onStatusFilterChanged: (s) => setState(() => _statusFilter = s),
@@ -401,6 +409,8 @@ class _PrDiffFileTreeState extends State<PrDiffFileTree> {
                               onSelectFile: widget.onSelectFile,
                               selectedFileIndex: widget.selectedFileIndex,
                               viewedPaths: widget.viewedPaths,
+                              unresolved:
+                                  widget.unresolvedByPath[spec.node.path] ?? 0,
                               palette: palette,
                               onOpenFileInEditor: widget.onOpenFileInEditor,
                               focusNode: focusNode,
@@ -532,12 +542,15 @@ class _FlatRowSpec {
 
 class _FilterBar extends StatefulWidget {
   const _FilterBar({
+    required this.roots,
     required this.onChanged,
     required this.statusFilter,
     required this.onStatusFilterChanged,
     this.onOpenSearch,
   });
 
+  /// The unfiltered tree, counted per status for the menu rows.
+  final List<DiffTreeNode> roots;
   final ValueChanged<String> onChanged;
   final String? statusFilter;
   final ValueChanged<String?> onStatusFilterChanged;
@@ -550,15 +563,40 @@ class _FilterBar extends StatefulWidget {
 class _FilterBarState extends State<_FilterBar> {
   final _ctrl = TextEditingController();
 
-  /// Whether the status-filter chips are shown. Hidden by default so the bar
-  /// stays a single line; revealed by the "Search filters" disclosure under
-  /// the field (same affordance as the content-search panel).
-  bool _showChips = false;
+  /// Drives the status menu from the in-field trigger (itself a button, so
+  /// the menu must not wrap it in a second tappable).
+  final _statusMenu = CcOverlayController();
+
+  /// File count per status, recounted only when the tree itself changes.
+  Map<String, int>? _statusCounts;
+  List<DiffTreeNode>? _statusCountsRoots;
 
   @override
   void dispose() {
+    _statusMenu.dispose();
     _ctrl.dispose();
     super.dispose();
+  }
+
+  Map<String, int> _countsFor(List<DiffTreeNode> roots) {
+    final cached = _statusCounts;
+    if (cached != null && identical(_statusCountsRoots, roots)) {
+      return cached;
+    }
+    final counts = <String, int>{};
+    void walk(List<DiffTreeNode> nodes) {
+      for (final node in nodes) {
+        if (node.isDirectory) {
+          walk(node.children);
+        } else {
+          counts[node.status] = (counts[node.status] ?? 0) + 1;
+        }
+      }
+    }
+
+    walk(roots);
+    _statusCountsRoots = roots;
+    return _statusCounts = counts;
   }
 
   @override
@@ -570,178 +608,135 @@ class _FilterBarState extends State<_FilterBar> {
             : DesignSystemTokens.light());
     final l10n = AppLocalizations.of(context);
     final palette = DiffPalette.of(context);
-    // The disclosure reads "active" when a status filter is applied (so a
-    // hidden filter still signals it's on) or the chip row is open.
-    final filtersActive = widget.statusFilter != null || _showChips;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            kPrDiffTreeFilterInset,
-            6,
-            kPrDiffTreeFilterInset,
-            5,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: CcTextField(
-                  controller: _ctrl,
-                  size: CcTextFieldSize.sm,
-                  hintText: l10n.filterFilesHint,
-                  onChanged: widget.onChanged,
-                  prefix: Icon(
-                    AppIcons.listFilter,
-                    size: 13,
-                    color: tokens.textTertiary,
-                  ),
-                  suffix: PrFieldClearButton(
+    final counts = _countsFor(widget.roots);
+    final number = NumberFormat.decimalPattern(l10n.localeName);
+    final selected = widget.statusFilter;
+
+    CcMenuItem statusItem(String status, String label, Color dot) {
+      final count = counts[status] ?? 0;
+      // A status with no files filters to nothing; it stays reachable only
+      // while it is the applied one, so it can still be seen and cleared.
+      final enabled = count > 0 || selected == status;
+      return CcMenuItem(
+        label: label,
+        selected: selected == status,
+        enabled: enabled,
+        trailing: number.format(count),
+        leading: (_) =>
+            _StatusDot(color: enabled ? dot : dot.withValues(alpha: 0.38)),
+        onSelected: () => widget.onStatusFilterChanged(status),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        kPrDiffTreeFilterInset,
+        6,
+        kPrDiffTreeFilterInset,
+        5,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: CcTextField(
+              controller: _ctrl,
+              size: CcTextFieldSize.sm,
+              hintText: l10n.filterFilesHint,
+              onChanged: widget.onChanged,
+              prefix: Icon(
+                AppIcons.listFilter,
+                size: 13,
+                color: tokens.textTertiary,
+              ),
+              suffix: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PrFieldClearButton(
                     controller: _ctrl,
                     onCleared: () => widget.onChanged(''),
                   ),
-                ),
+                  CcMenu(
+                    controller: _statusMenu,
+                    toggleOnTargetTap: false,
+                    targetAnchor: AlignmentDirectional.bottomEnd,
+                    followerAnchor: AlignmentDirectional.topEnd,
+                    minWidth: 200,
+                    semanticLabel: l10n.prFilterCategoryStatus,
+                    items: [
+                      CcMenuItem(
+                        label: l10n.all,
+                        selected: selected == null,
+                        trailing: number.format(
+                          counts.values.fold<int>(0, (a, b) => a + b),
+                        ),
+                        // Empty slot so "All" lines up with the dotted rows.
+                        leading: (_) => const SizedBox(width: 16),
+                        onSelected: () => widget.onStatusFilterChanged(null),
+                      ),
+                      const CcMenuItem.divider(),
+                      statusItem('added', l10n.added, palette.additionAccent),
+                      statusItem(
+                        'modified',
+                        l10n.modified,
+                        palette.modifiedAccent,
+                      ),
+                      statusItem(
+                        'removed',
+                        l10n.removed,
+                        palette.deletionAccent,
+                      ),
+                      statusItem('renamed', l10n.renamed, tokens.textTertiary),
+                    ],
+                    target: ListenableBuilder(
+                      listenable: _statusMenu,
+                      builder: (context, _) => PrSuffixIconButton(
+                        icon: AppIcons.slidersHorizontal,
+                        tooltip: l10n.prFilterCategoryStatus,
+                        // Lit while a status is applied, so a filter hidden
+                        // behind the closed menu still shows it is on.
+                        active: selected != null || _statusMenu.isOpen,
+                        onPressed: _statusMenu.toggle,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              if (widget.onOpenSearch != null) ...[
-                const SizedBox(width: 4),
-                CcIconButton(
-                  size: CcButtonSize.sm,
-                  icon: AppIcons.search,
-                  tooltip: l10n.searchInFiles,
-                  onPressed: widget.onOpenSearch,
-                ),
-              ],
-            ],
-          ),
-        ),
-        PrSidebarFilterToggle(
-          label: l10n.ideSearchFilters,
-          active: filtersActive,
-          onToggle: () => setState(() => _showChips = !_showChips),
-        ),
-        if (_showChips)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              kPrDiffTreeFilterInset,
-              0,
-              kPrDiffTreeFilterInset,
-              6,
-            ),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                _StatusChip(
-                  label: l10n.all,
-                  dot: null,
-                  selected: widget.statusFilter == null,
-                  onTap: () => widget.onStatusFilterChanged(null),
-                ),
-                _StatusChip(
-                  label: l10n.added,
-                  dot: palette.additionAccent,
-                  selected: widget.statusFilter == 'added',
-                  onTap: () => widget.onStatusFilterChanged('added'),
-                ),
-                _StatusChip(
-                  label: l10n.modified,
-                  dot: palette.modifiedAccent,
-                  selected: widget.statusFilter == 'modified',
-                  onTap: () => widget.onStatusFilterChanged('modified'),
-                ),
-                _StatusChip(
-                  label: l10n.removed,
-                  dot: palette.deletionAccent,
-                  selected: widget.statusFilter == 'removed',
-                  onTap: () => widget.onStatusFilterChanged('removed'),
-                ),
-                _StatusChip(
-                  label: l10n.renamed,
-                  dot: tokens.textTertiary,
-                  selected: widget.statusFilter == 'renamed',
-                  onTap: () => widget.onStatusFilterChanged('renamed'),
-                ),
-              ],
             ),
           ),
-      ],
+          if (widget.onOpenSearch != null) ...[
+            const SizedBox(width: 4),
+            CcIconButton(
+              size: CcButtonSize.sm,
+              icon: AppIcons.search,
+              tooltip: l10n.searchInFiles,
+              onPressed: widget.onOpenSearch,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
-/// One status-filter pill — a small status dot (matching the tree rows' dot
-/// colors) plus the label, filled when selected.
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.label,
-    required this.dot,
-    required this.selected,
-    required this.onTap,
-  });
+/// The status dot leading a status-menu row: the same accent as the tree
+/// rows' dots, centred in the 16px icon slot.
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.color});
 
-  final String label;
-
-  /// The status accent dot; null renders a dot-less chip ("All").
-  final Color? dot;
-  final bool selected;
-  final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
-    return CcTappable(
-      onPressed: onTap,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final Color background;
-        if (selected) {
-          background = tokens.textPrimary;
-        } else if (hovered) {
-          background = tokens.bgSecondary;
-        } else {
-          background = tokens.bgSecondary.withValues(alpha: 0.5);
-        }
-        return Semantics(
-          selected: selected,
-          child: Container(
-            height: 22,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (dot != null) ...[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: dot,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                ],
-                Text(
-                  label,
-                  style: CcTypography.caption.copyWith(
-                    color: selected ? tokens.bgPrimary : tokens.textTertiary,
-                    fontWeight: FontWeight.w600,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return SizedBox(
+      width: 16,
+      height: 16,
+      child: Center(
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
     );
   }
 }
@@ -756,11 +751,15 @@ class _TreeRow extends StatelessWidget {
     required this.selectedFileIndex,
     required this.viewedPaths,
     required this.palette,
+    this.unresolved = 0,
     this.onOpenFileInEditor,
     this.focusNode,
   });
 
   final DiffTreeNode node;
+
+  /// Open review conversations on this file (always 0 for a folder).
+  final int unresolved;
   final int depth;
   final bool Function(String path) isOpen;
   final void Function(String path) onToggle;
@@ -791,7 +790,6 @@ class _TreeRow extends StatelessWidget {
           color: tokens.textTertiary,
         ),
         name: node.name,
-        secondaryLabel: '${node.fileCount}',
         onTap: () => onToggle(node.path),
         selected: false,
         viewed: false,
@@ -815,6 +813,9 @@ class _TreeRow extends StatelessWidget {
       'renamed' => l10n.renamed,
       _ => l10n.modified,
     };
+    final rowLabel = viewed
+        ? l10n.diffTreeFileSemanticsViewed(node.name, status)
+        : l10n.diffTreeFileSemantics(node.name, status);
     return _Row(
       depth: depth,
       leading: Container(
@@ -823,7 +824,11 @@ class _TreeRow extends StatelessWidget {
         decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
       ),
       name: node.name,
-      secondaryLabel: null,
+      additions: node.additions,
+      deletions: node.deletions,
+      additionColor: palette.additionAccent,
+      deletionColor: palette.deletionAccent,
+      unresolved: unresolved,
       onTap: () => onSelectFile(node.fileIndex!),
       onOpenInEditor: onOpenFileInEditor == null
           ? null
@@ -832,9 +837,9 @@ class _TreeRow extends StatelessWidget {
       viewed: viewed,
       statusAccent: accent,
       focusNode: focusNode,
-      semanticLabel: viewed
-          ? l10n.diffTreeFileSemanticsViewed(node.name, status)
-          : l10n.diffTreeFileSemantics(node.name, status),
+      semanticLabel: unresolved > 0
+          ? '$rowLabel, ${l10n.diffFileUnresolvedConversations(unresolved)}'
+          : rowLabel,
     );
   }
 }
@@ -844,12 +849,16 @@ class _Row extends StatelessWidget {
     required this.depth,
     required this.leading,
     required this.name,
-    required this.secondaryLabel,
     required this.onTap,
     required this.selected,
     required this.viewed,
     required this.statusAccent,
     required this.semanticLabel,
+    this.additions = 0,
+    this.deletions = 0,
+    this.additionColor,
+    this.deletionColor,
+    this.unresolved = 0,
     this.onOpenInEditor,
     this.focusNode,
     this.expanded,
@@ -858,7 +867,16 @@ class _Row extends StatelessWidget {
   final int depth;
   final Widget leading;
   final String name;
-  final String? secondaryLabel;
+
+  /// Lines added and removed in this file; both 0 on a folder row, which
+  /// shows no stat.
+  final int additions;
+  final int deletions;
+  final Color? additionColor;
+  final Color? deletionColor;
+
+  /// Open review conversations on this file; 0 shows no badge.
+  final int unresolved;
   final VoidCallback onTap;
 
   /// Opens this file in an editable tab — shown as a hover affordance at the
@@ -882,6 +900,15 @@ class _Row extends StatelessWidget {
     horizontal: 4,
     vertical: 1,
   );
+
+  /// Height of a row's content, set by the tallest thing a row can carry (the
+  /// unresolved badge). Every row takes it, so the list's prototype row is
+  /// right whichever row it happens to be.
+  static const double _contentHeight = 18;
+
+  /// Narrowest row content that still shows the line stat. Below it the name
+  /// would be squeezed to an ellipsis, and the name is what the tree is for.
+  static const double _statMinWidth = 170;
 
   @override
   Widget build(BuildContext context) {
@@ -912,7 +939,7 @@ class _Row extends StatelessWidget {
         } else {
           background = Colors.transparent;
         }
-        // The label above names the row; the painted text, count pill and
+        // The label above names the row; the painted text, line stat, badge and
         // hover-only editor button are excluded so they aren't read again.
         // The editor button is offered as a custom action instead, which a
         // screen reader can reach without hovering.
@@ -963,18 +990,25 @@ class _Row extends StatelessWidget {
                           6,
                           3,
                         ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: 12, child: Center(child: leading)),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                name,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: CcTypography.caption
-                                    .copyWith(color: context.ds.textTertiary)
-                                    .copyWith(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => SizedBox(
+                            height: _contentHeight,
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 12,
+                                  child: Center(child: leading),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    // Caption's 16/12 line box: a shorter one
+                                    // clips Manrope's descenders (g/p/y) on an
+                                    // ellipsized name.
+                                    style: CcTypography.caption.copyWith(
                                       color: viewed
                                           ? tokens.textTertiary
                                           : tokens.textPrimary,
@@ -985,65 +1019,72 @@ class _Row extends StatelessWidget {
                                           ? TextDecoration.lineThrough
                                           : null,
                                       decorationColor: tokens.textTertiary,
-                                      // Keep caption's 16/12 line box: at 1.2 the
-                                      // box is shorter than Manrope's descenders,
-                                      // and an ellipsized paragraph clips to its
-                                      // box, cutting g/p/y on long names. Still no
-                                      // taller than the folder rows' count pill,
-                                      // so the list's row extent is unchanged.
                                     ),
-                              ),
+                                  ),
+                                ),
+                                // Hover affordance: open this file in an
+                                // editable tab (file rows only). Ahead of the
+                                // stat and badge so they keep their place when
+                                // it appears. A square button the height of
+                                // the row content (a 32px CcIconButton would
+                                // inflate the compact row), with its own
+                                // hover wash.
+                                if (onOpenInEditor != null && hovered) ...[
+                                  const SizedBox(width: 4),
+                                  CcTooltip(
+                                    message: l10n.openInEditor,
+                                    child: CcTappable(
+                                      onPressed: onOpenInEditor,
+                                      // Hover-only: never a Tab stop (it would
+                                      // vanish as soon as the row lost hover).
+                                      canRequestFocus: false,
+                                      mouseCursor: SystemMouseCursors.click,
+                                      borderRadius: AppRadii.brSm,
+                                      builder: (context, states) {
+                                        final over = states.contains(
+                                          WidgetState.hovered,
+                                        );
+                                        return Container(
+                                          width: _contentHeight,
+                                          height: _contentHeight,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: over
+                                                ? tokens.hoverStrong
+                                                : Colors.transparent,
+                                            borderRadius: AppRadii.brSm,
+                                          ),
+                                          child: Icon(
+                                            AppIcons.fileCode,
+                                            size: 14,
+                                            color: over
+                                                ? tokens.textPrimary
+                                                : tokens.textSecondary,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                                if ((additions > 0 || deletions > 0) &&
+                                    constraints.maxWidth >= _statMinWidth) ...[
+                                  const SizedBox(width: 6),
+                                  _LineStat(
+                                    additions: additions,
+                                    deletions: deletions,
+                                    additionColor:
+                                        additionColor ?? tokens.textTertiary,
+                                    deletionColor:
+                                        deletionColor ?? tokens.textTertiary,
+                                  ),
+                                ],
+                                if (unresolved > 0) ...[
+                                  const SizedBox(width: 6),
+                                  _UnresolvedPill(count: unresolved),
+                                ],
+                              ],
                             ),
-                            // Hover affordance: open this file in an editable tab.
-                            // Only on file rows (onOpenInEditor != null); shown on
-                            // hover so it doesn't compete with the folder count. A
-                            // lightweight control (not CcIconButton) so it doesn't
-                            // inflate the compact row height.
-                            if (onOpenInEditor != null && hovered) ...[
-                              const SizedBox(width: 4),
-                              CcTooltip(
-                                message: l10n.openInEditor,
-                                child: CcTappable(
-                                  onPressed: onOpenInEditor,
-                                  // Hover-only: never a Tab stop (it would vanish
-                                  // as soon as the row lost hover).
-                                  canRequestFocus: false,
-                                  mouseCursor: SystemMouseCursors.click,
-                                  builder: (context, states) => Icon(
-                                    AppIcons.fileCode,
-                                    size: 14,
-                                    color: states.contains(WidgetState.hovered)
-                                        ? tokens.textPrimary
-                                        : tokens.textTertiary,
-                                  ),
-                                ),
-                              ),
-                            ] else if (secondaryLabel != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: tokens.bgSecondary.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  secondaryLabel!,
-                                  style: CcTypography.caption
-                                      .copyWith(color: context.ds.textTertiary)
-                                      .copyWith(
-                                        color: tokens.textTertiary,
-                                        fontWeight: FontWeight.w600,
-                                        height: 1.2,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
                       ),
                       // Left accent rule for the selected file — tucked just inside
@@ -1069,6 +1110,93 @@ class _Row extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// A file row's "+12 −3": lines added and removed, a side left out when zero.
+class _LineStat extends StatelessWidget {
+  const _LineStat({
+    required this.additions,
+    required this.deletions,
+    required this.additionColor,
+    required this.deletionColor,
+  });
+
+  final int additions;
+  final int deletions;
+  final Color additionColor;
+  final Color deletionColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final number = NumberFormat.decimalPattern(
+      AppLocalizations.of(context).localeName,
+    );
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (additions > 0)
+            TextSpan(
+              text: '+${number.format(additions)}',
+              style: TextStyle(color: additionColor),
+            ),
+          if (additions > 0 && deletions > 0) const TextSpan(text: ' '),
+          if (deletions > 0)
+            TextSpan(
+              text: '−${number.format(deletions)}',
+              style: TextStyle(color: deletionColor),
+            ),
+        ],
+      ),
+      maxLines: 1,
+      // RTL carve-out: a diff stat reads added-then-removed in every locale.
+      textDirection: TextDirection.ltr,
+      style: CcTypography.caption.copyWith(
+        fontWeight: FontWeight.w600,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+  }
+}
+
+/// A file row's count of open review conversations: the diff file header's
+/// badge at tree-row size, in the same brand tint so the two read as one fact.
+class _UnresolvedPill extends StatelessWidget {
+  const _UnresolvedPill({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.ds;
+    final l10n = AppLocalizations.of(context);
+    return CcTooltip(
+      message: l10n.diffFileUnresolvedConversations(count),
+      child: Container(
+        height: _Row._contentHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: t.bgBrandPrimary,
+          borderRadius: AppRadii.brSm,
+          border: Border.all(color: t.borderBrand.withValues(alpha: 0.30)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.messageSquare, size: 10, color: t.textBrandPrimary),
+            const SizedBox(width: 3),
+            Text(
+              NumberFormat.decimalPattern(l10n.localeName).format(count),
+              style: CcTypography.caption.copyWith(
+                color: t.textBrandPrimary,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

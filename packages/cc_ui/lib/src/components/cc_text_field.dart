@@ -2,6 +2,7 @@ import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_context_menu.dart';
 import 'package:cc_ui/src/foundation/cc_browser_text_menu.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
+import 'package:cc_ui/src/foundation/cc_submit_keeps_focus.dart';
 import 'package:cc_ui/src/foundation/cc_text_selection_gestures.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -24,7 +25,10 @@ enum CcTextFieldSize {
 /// + 1px bottom underline; focus draws 2px [CcInputTokens.borderFocused] via
 /// `foregroundDecoration` (no layout shift). [errorText] → danger outline.
 /// Desktop: no selection handles; pointer select via
-/// [TextSelectionGestureDetectorBuilder].
+/// [TextSelectionGestureDetectorBuilder]. A screen reader hears [label] as the
+/// field's name, [helperText] (else [hintText]) as its hint, and an
+/// [errorText] as soon as it appears. On desktop and web Enter in a
+/// single-line field keeps focus (unless [textInputAction] moves it).
 class CcTextField extends StatefulWidget {
   /// Creates a [CcTextField].
   const CcTextField({
@@ -161,6 +165,8 @@ class CcTextField extends StatefulWidget {
   final bool expands;
 
   /// Called when the user finishes editing (Enter / focus loss on desktop).
+  /// Replaces the default, which on desktop and web keeps focus in a
+  /// single-line field.
   final VoidCallback? onEditingComplete;
 
   /// Whether this field spans more than one line.
@@ -326,7 +332,11 @@ class _CcTextFieldState extends State<CcTextField>
           (widget.isMultiline ? TextInputType.multiline : TextInputType.text),
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
-      onEditingComplete: widget.onEditingComplete,
+      onEditingComplete:
+          widget.onEditingComplete ??
+          (widget.isMultiline
+              ? null
+              : ccSubmitKeepsFocus(_controller, widget.textInputAction)),
       inputFormatters: [
         ...?widget.inputFormatters,
         if (widget.maxLength != null)
@@ -379,13 +389,16 @@ class _CcTextFieldState extends State<CcTextField>
               alignment: widget.isMultiline
                   ? AlignmentDirectional.topStart
                   : AlignmentDirectional.centerStart,
-              child: Text(
-                widget.hintText!,
-                style: hintStyle,
-                maxLines: widget.isMultiline ? null : 1,
-                overflow: widget.isMultiline
-                    ? TextOverflow.clip
-                    : TextOverflow.ellipsis,
+              // Read as the field's hint, not as text in it.
+              child: ExcludeSemantics(
+                child: Text(
+                  widget.hintText!,
+                  style: hintStyle,
+                  maxLines: widget.isMultiline ? null : 1,
+                  overflow: widget.isMultiline
+                      ? TextOverflow.clip
+                      : TextOverflow.ellipsis,
+                ),
               ),
             ),
           ),
@@ -452,13 +465,21 @@ class _CcTextFieldState extends State<CcTextField>
       child: box,
     );
 
+    final showLabel = widget.label != null;
+    final showError = hasError;
+    final showWarn = hasWarn;
+    final showHelper = widget.helperText != null && !showError && !showWarn;
+
     // EditableText needs its host to declare enabled semantics. Without this,
     // Flutter web creates a disabled accessibility input even for an editable
-    // field, and may merge the field with the surrounding dialog.
+    // field, and may merge the field with the surrounding dialog. The visible
+    // label names the field and the helper (or placeholder) is its hint.
     final fieldWithMouse = Semantics(
       container: true,
       enabled: enabled,
       readOnly: !enabled || widget.readOnly,
+      label: widget.label,
+      hint: showHelper ? widget.helperText : widget.hintText,
       child: MouseRegion(
         cursor: enabled ? SystemMouseCursors.text : SystemMouseCursors.basic,
         onEnter: (_) {
@@ -476,10 +497,6 @@ class _CcTextFieldState extends State<CcTextField>
     // Field anatomy: an optional persistent label above the box and a
     // helper or error message below. When none are supplied the field renders
     // as the bare box.
-    final showLabel = widget.label != null;
-    final showError = hasError;
-    final showWarn = hasWarn;
-    final showHelper = widget.helperText != null && !showError && !showWarn;
     if (!showLabel && !showHelper && !showError && !showWarn) {
       return fieldWithMouse;
     }
@@ -488,27 +505,35 @@ class _CcTextFieldState extends State<CcTextField>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showLabel) ...[
-          Text(
-            widget.label!,
-            style: CcTypography.caption.copyWith(color: t.textSecondary),
+          // Already the field's name.
+          ExcludeSemantics(
+            child: Text(
+              widget.label!,
+              style: CcTypography.caption.copyWith(color: t.textSecondary),
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
         ],
         fieldWithMouse,
         if (showError) ...[
           const SizedBox(height: AppSpacing.xs),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(CcIcons.circleX, size: 13, color: t.danger),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: Text(
-                  widget.errorText!,
-                  style: CcTypography.caption.copyWith(color: t.danger),
+          // Announced when it appears, not only when someone reads past it.
+          Semantics(
+            container: true,
+            liveRegion: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(CcIcons.circleX, size: 13, color: t.danger),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    widget.errorText!,
+                    style: CcTypography.caption.copyWith(color: t.danger),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ] else if (showWarn) ...[
           const SizedBox(height: AppSpacing.xs),
@@ -527,9 +552,12 @@ class _CcTextFieldState extends State<CcTextField>
           ),
         ] else if (showHelper) ...[
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            widget.helperText!,
-            style: CcTypography.caption.copyWith(color: t.textTertiary),
+          // Already the field's hint.
+          ExcludeSemantics(
+            child: Text(
+              widget.helperText!,
+              style: CcTypography.caption.copyWith(color: t.textTertiary),
+            ),
           ),
         ],
       ],

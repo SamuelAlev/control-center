@@ -235,7 +235,8 @@ void _scanLine(
   _scanInline(source, flags, blocked, contentStart, lineEnd);
 }
 
-/// Code spans first (nothing inside one is Markdown), then links, then
+/// Code spans and backslash escapes first (nothing inside a code span is
+/// Markdown, and an escaped character is never a delimiter), then links, then
 /// emphasis over a copy where claimed characters read as [_placeholder].
 void _scanInline(
   String source,
@@ -310,10 +311,26 @@ void _scanInline(
 
 /// Pairs backtick runs of equal length on the line, marks them, and claims
 /// their characters so later passes skip them.
+///
+/// Backslash escapes are settled in the same left-to-right walk, because the
+/// two depend on each other: `\*` outside a code span is a literal asterisk
+/// (and an escaped backtick opens no span), while a backslash inside a code
+/// span is just a backslash. An escape's backslash is dimmed as a marker and
+/// both characters are claimed, so no later pass reads the escaped one as a
+/// delimiter.
 void _scanCodeSpans(List<int> units, Uint16List flags, int offset) {
   const backtick = 0x60;
+  const backslash = 0x5C;
   var i = 0;
   while (i < units.length) {
+    if (units[i] == backslash &&
+        i + 1 < units.length &&
+        _isAsciiPunctuation(units[i + 1])) {
+      _fill(flags, offset + i, offset + i + 1, ComposerMarkdownFlag.marker);
+      _claim(units, i, i + 2);
+      i += 2;
+      continue;
+    }
     if (units[i] != backtick) {
       i++;
       continue;
@@ -361,6 +378,13 @@ void _scanCodeSpans(List<int> units, Uint16List flags, int offset) {
     i = closeEnd;
   }
 }
+
+/// The characters a backslash can escape in Markdown.
+bool _isAsciiPunctuation(int unit) =>
+    (unit >= 0x21 && unit <= 0x2F) ||
+    (unit >= 0x3A && unit <= 0x40) ||
+    (unit >= 0x5B && unit <= 0x60) ||
+    (unit >= 0x7B && unit <= 0x7E);
 
 void _delimit(
   Uint16List flags,

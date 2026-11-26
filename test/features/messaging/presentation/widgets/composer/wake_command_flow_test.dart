@@ -21,8 +21,7 @@ void main() {
   late List<ComposerSubmission> submitted;
   final l10n = AppLocalizationsEn();
   final noon = DateTime(2026, 11, 20, 12);
-  // The list sets its section headings in capitals.
-  final whenHeader = l10n.scheduleWhenLabel.toUpperCase();
+  final whenHeader = l10n.scheduleWhenLabel;
 
   setUp(() {
     controller = ComposerTextController();

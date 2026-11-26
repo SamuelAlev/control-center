@@ -1,10 +1,11 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 
-/// A full-width footer row that adds a new item, shared by the action-item and
-/// decision tabs (an accent "+ {label}" affordance at the bottom of the list).
+/// The footer of the action-item and decision lists: a quiet ghost button that
+/// adds an item by hand.
 class MeetingAddRow extends StatelessWidget {
   /// Creates a [MeetingAddRow].
   const MeetingAddRow({super.key, required this.label, required this.onTap});
@@ -12,29 +13,83 @@ class MeetingAddRow extends StatelessWidget {
   /// The button label (e.g. "Add action item").
   final String label;
 
-  /// Called when tapped.
+  /// Called when pressed.
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ds = context.ds;
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
+    return Padding(
+      // The button's own 12px inset lands its glyph on the rows' 16px edge.
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.sm,
+      ),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: CcButton(
+          variant: CcButtonVariant.ghost,
+          size: CcButtonSize.sm,
+          icon: AppIcons.plus,
+          onPressed: onTap,
+          child: Text(label),
         ),
+      ),
+    );
+  }
+}
+
+/// A list row whose actions appear while the pointer is over it.
+///
+/// The row is not itself a button, so it gets no pointer cursor; the wash only
+/// ties the revealed actions to the line they act on. [actions] stay in the
+/// tree while hidden (keyboard focus reveals them, a screen reader always finds
+/// them) and stay visible on a client with no pointer to hover with.
+class MeetingHoverActionsRow extends StatefulWidget {
+  /// Creates a [MeetingHoverActionsRow].
+  const MeetingHoverActionsRow({
+    super.key,
+    required this.padding,
+    required this.children,
+    required this.actions,
+  });
+
+  /// Inset around the row's content.
+  final EdgeInsetsGeometry padding;
+
+  /// The row's always-visible content, laid out from the start.
+  final List<Widget> children;
+
+  /// The trailing actions revealed on hover or focus.
+  final List<Widget> actions;
+
+  @override
+  State<MeetingHoverActionsRow> createState() => _MeetingHoverActionsRowState();
+}
+
+class _MeetingHoverActionsRowState extends State<MeetingHoverActionsRow> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.ds;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: CcMotion.resolveFade(context, CcMotion.fast),
+        curve: CcMotion.standard,
+        color: _hovered ? ds.hover : ds.hover.withValues(alpha: 0),
+        padding: widget.padding,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(AppIcons.plus, size: 15, color: ds.accent),
+            ...widget.children,
             const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: ds.accent,
+            SettingsHoverReveal(
+              active: _hovered,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: widget.actions,
               ),
             ),
           ],
@@ -89,47 +144,6 @@ class MeetingTabEmptyState extends StatelessWidget {
           onPressed: onAdd,
           icon: AppIcons.plus,
           child: Text(actionLabel),
-        ),
-      ),
-    );
-  }
-}
-
-/// A compact ghost icon button used for per-row edit/delete actions in the
-/// action-item and decision tabs.
-class MeetingRowIconButton extends StatelessWidget {
-  /// Creates a [MeetingRowIconButton].
-  const MeetingRowIconButton({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  /// The icon to show.
-  final IconData icon;
-
-  /// The hover/long-press tooltip.
-  final String tooltip;
-
-  /// Called when tapped.
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.ds;
-    return CcTooltip(
-      message: tooltip,
-      child: CcTappable(
-        onPressed: onTap,
-        semanticLabel: tooltip,
-        builder: (context, states) => Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(
-            icon,
-            size: 15,
-            color: states.contains(WidgetState.hovered) ? ds.fg : ds.muted,
-          ),
         ),
       ),
     );

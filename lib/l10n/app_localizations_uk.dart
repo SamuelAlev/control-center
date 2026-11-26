@@ -1094,13 +1094,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get calendarEmptyNoEvents => 'У цьому діапазоні немає подій';
 
   @override
-  String get calendarStartRecording => 'Почати запис';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Почати запис і прив’язати';
-
-  @override
   String get calendarJoinMeet => 'Приєднатися до зустрічі';
+
+  @override
+  String get calendarJoinAndRecord => 'Приєднатися та записати';
+
+  @override
+  String get calendarRecordFailed => 'Не вдалося почати запис';
 
   @override
   String get calendarFromCalendar => 'З календаря';
@@ -1945,9 +1945,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get activity => 'Активність';
-
-  @override
-  String get activityLabel => 'АКТИВНІСТЬ';
 
   @override
   String get activitySearchHint => 'Пошук активності';
@@ -4507,7 +4504,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'ПИТАННЯ';
+  String get questionLabel => 'Питання';
 
   @override
   String get queued => 'У черзі';
@@ -7575,6 +7572,14 @@ class AppLocalizationsUk extends AppLocalizations {
   String get addReviewers => 'Додати рецензентів';
 
   @override
+  String get reRequestReview => 'Повторно запросити перевірку';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Повторно запросити перевірку у $label';
+  }
+
+  @override
   String get addAssignees => 'Додати виконавців';
 
   @override
@@ -7741,6 +7746,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get meetingStatusRecording => 'Запис';
 
   @override
+  String get meetingStatusPaused => 'Призупинено';
+
+  @override
   String get meetingStatusProcessing => 'Обробка';
 
   @override
@@ -7770,36 +7778,10 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count зустрічі',
-      many: '$count зустрічей',
-      few: '$count зустрічі',
-      one: '1 зустріч',
-      zero: 'Немає зустрічей',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Відкриті пункти дій';
-
-  @override
-  String get meetingsLedgerDecisions => 'Рішення';
-
-  @override
   String get meetingsLiveOpen => 'Відкрити запис';
 
   @override
   String get meetingTemplateShort => 'Шаблон';
-
-  @override
-  String get meetingsStatThisWeek => 'Цього тижня';
-
-  @override
-  String get meetingsStatRecorded => 'Записано';
 
   @override
   String get meetingsFilterAll => 'Усі';
@@ -7845,9 +7827,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total пунктів дій';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'покращено';
 
   @override
   String get meetingsTranscribing => 'транскрибування й підсумок…';
@@ -8081,9 +8060,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Схоже, триває зустріч. Записати?';
-
-  @override
-  String get meetingDetectedRecord => 'Записати';
 
   @override
   String get meetingDetectedDismiss => 'Відхилити';
@@ -9621,6 +9597,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get deviceNeverSeen => 'Ніколи не підключався';
 
   @override
+  String get deviceAwaitingApproval => 'Очікує підтвердження';
+
+  @override
   String get profileSectionLabel => 'Профіль';
 
   @override
@@ -10454,12 +10433,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Помилка';
-
-  @override
-  String get bannerMeetingJoin => 'Приєднатися';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Записати й прив’язати';
 
   @override
   String get bannerCalendarReconnect => 'Підключити знову';
@@ -13856,6 +13829,11 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Не вдалося опублікувати коментар: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Рядок $line';
   }
@@ -15360,19 +15338,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Закрити $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count коментаря',
-      many: '$count коментарів',
-      few: '$count коментарі',
-      one: '$count коментар',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21729,10 +21694,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get dispatchSettingsTitle => 'Розклади';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Ліміти для розкладів і спостережень, а також що відбувається із запитами, на які ніхто не відповідає.';
-
-  @override
   String get dispatchLimitsLabel => 'Ліміти розкладів';
 
   @override
@@ -21811,9 +21772,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Ціль';
-
-  @override
-  String get scheduleRecordCrumb => 'Розклад';
 
   @override
   String get improvementRecordCrumb => 'Пропозиція';
@@ -22226,5 +22184,38 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent із $cap, враховуючи кожен розклад у ланцюжку';
+  }
+
+  @override
+  String get ccLoading => 'Завантаження';
+
+  @override
+  String get ccProgress => 'Перебіг';
+
+  @override
+  String get ccBreadcrumb => 'Навігаційний шлях';
+
+  @override
+  String get ccDialog => 'Діалогове вікно';
+
+  @override
+  String get ccResize => 'Змінити розмір';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (не перевірено)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Вибрати $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Вибрати всі pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Повернути до версії $version';
   }
 }

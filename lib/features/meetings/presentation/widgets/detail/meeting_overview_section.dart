@@ -3,7 +3,7 @@ import 'package:control_center/features/meetings/presentation/utils/meeting_them
 import 'package:control_center/features/meetings/presentation/widgets/meeting_common.dart';
 import 'package:flutter/widgets.dart';
 
-/// A rail section: a mono heading with an optional count, its body, and an
+/// A rail section: a heading with an optional count, its body, and an
 /// optional footer of links.
 class MeetingOverviewSection extends StatelessWidget {
   /// Creates a [MeetingOverviewSection].
@@ -15,7 +15,7 @@ class MeetingOverviewSection extends StatelessWidget {
     this.footer = const [],
   });
 
-  /// The section heading, rendered as a mono label.
+  /// The section heading, rendered as an eyebrow label.
   final String title;
 
   /// How many things the section covers, shown beside [title].
@@ -54,7 +54,7 @@ class MeetingOverviewSection extends StatelessWidget {
                   color: ds.hoverStrong,
                   child: Text(
                     '$count',
-                    style: meetingMono(context, fontSize: 11, color: ds.muted),
+                    style: meetingMeta(context, fontSize: 11, color: ds.muted),
                   ),
                 ),
               ],

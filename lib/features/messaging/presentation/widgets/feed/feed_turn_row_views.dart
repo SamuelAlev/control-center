@@ -58,11 +58,7 @@ class TurnHeadRowView extends ConsumerWidget {
           hover: turn.hover,
           child: SizedBox(
             width: double.infinity,
-            child: AgentTurnHeader(
-              message: message,
-              codeFont: ref.watch(codeFontFamilyProvider),
-              collapseHeader: collapse,
-            ),
+            child: AgentTurnHeader(message: message, collapseHeader: collapse),
           ),
         ),
       ),
@@ -133,7 +129,6 @@ class TurnFootRowView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = row.item.message;
-    final codeFont = ref.watch(codeFontFamilyProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -150,7 +145,6 @@ class TurnFootRowView extends ConsumerWidget {
             child: AgentTurnFooter(
               listed: message,
               shown: message,
-              codeFont: codeFont,
               canRetry: row.item.canRetry,
             ),
           ),

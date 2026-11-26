@@ -52,17 +52,15 @@ class PipelineNodeVisual {
 }
 
 /// Eyebrow style shared by palette section headers and the on-canvas
-/// "When this happens" / "Do this" labels — small, tracked, uppercase, mono.
+/// "When this happens" / "Do this" labels — small and tracked.
 TextStyle pipelineNodeEyebrowStyle(DesignSystemTokens tokens) {
-  return CcFonts.code(
-    textStyle: TextStyle(
-      color: tokens.textTertiary,
-      fontSize: 10,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
-      height: 1.2,
-      decoration: TextDecoration.none,
-    ),
+  return TextStyle(
+    color: tokens.textTertiary,
+    fontSize: 10,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.2,
+    height: 1.2,
+    decoration: TextDecoration.none,
   );
 }
 

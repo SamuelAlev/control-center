@@ -1096,13 +1096,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Niciun eveniment în acest interval';
 
   @override
-  String get calendarStartRecording => 'Pornește înregistrarea';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Pornește înregistrarea și leagă';
-
-  @override
   String get calendarJoinMeet => 'Intră în întâlnire';
+
+  @override
+  String get calendarJoinAndRecord => 'Intră și înregistrează';
+
+  @override
+  String get calendarRecordFailed => 'Nu s-a putut porni înregistrarea';
 
   @override
   String get calendarFromCalendar => 'Din calendar';
@@ -1948,9 +1948,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get activity => 'Activitate';
-
-  @override
-  String get activityLabel => 'ACTIVITATE';
 
   @override
   String get activitySearchHint => 'Caută activitate';
@@ -2912,7 +2909,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get briefDescription => 'Descriere scurtă';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4507,7 +4504,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get pullRequests => 'Pull request-uri';
 
   @override
-  String get questionLabel => 'ÎNTREBARE';
+  String get questionLabel => 'Întrebare';
 
   @override
   String get queued => 'În coadă';
@@ -4522,7 +4519,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get reasoningEffort => 'Efort de raționament';
 
   @override
-  String get recommendLabel => 'RECOMANDĂ';
+  String get recommendLabel => 'Recomandă';
 
   @override
   String recordingFromDevice(String device) {
@@ -5194,7 +5191,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get suggestion => 'Sugestie';
 
   @override
-  String get suggestLabel => 'SUGEREAZĂ';
+  String get suggestLabel => 'Sugerează';
 
   @override
   String get superseded => 'Înlocuit';
@@ -5239,7 +5236,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get thisCannotBeUndone => 'Această acțiune nu poate fi anulată.';
 
   @override
-  String get ticketLabel => 'TICHET';
+  String get ticketLabel => 'Tichet';
 
   @override
   String get titleLabel => 'Titlu';
@@ -7567,6 +7564,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addReviewers => 'Adaugă recenzenți';
 
   @override
+  String get reRequestReview => 'Solicită din nou recenzia';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Solicită din nou recenzia de la $label';
+  }
+
+  @override
   String get addAssignees => 'Adaugă asignați';
 
   @override
@@ -7734,6 +7739,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get meetingStatusRecording => 'Se înregistrează';
 
   @override
+  String get meetingStatusPaused => 'Pauză';
+
+  @override
   String get meetingStatusProcessing => 'Se procesează';
 
   @override
@@ -7762,35 +7770,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# de întâlniri',
-      few: '# întâlniri',
-      one: '1 întâlnire',
-      zero: 'Nicio întâlnire',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Acțiuni deschise';
-
-  @override
-  String get meetingsLedgerDecisions => 'Decizii';
-
-  @override
   String get meetingsLiveOpen => 'Deschide înregistrarea';
 
   @override
   String get meetingTemplateShort => 'Șablon';
-
-  @override
-  String get meetingsStatThisWeek => 'Săptămâna aceasta';
-
-  @override
-  String get meetingsStatRecorded => 'Înregistrate';
 
   @override
   String get meetingsFilterAll => 'Toate';
@@ -7835,9 +7818,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total elemente de acțiune';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'îmbunătățit';
 
   @override
   String get meetingsTranscribing => 'se transcrie și se rezumă…';
@@ -8073,9 +8053,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Se pare că are loc o întâlnire. O înregistrezi?';
-
-  @override
-  String get meetingDetectedRecord => 'Înregistrează';
 
   @override
   String get meetingDetectedDismiss => 'Închide';
@@ -9617,6 +9594,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deviceNeverSeen => 'Niciodată conectat';
 
   @override
+  String get deviceAwaitingApproval => 'Se așteaptă aprobarea';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10448,12 +10428,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Eșuat';
-
-  @override
-  String get bannerMeetingJoin => 'Intră';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Înregistrează și leagă';
 
   @override
   String get bannerCalendarReconnect => 'Reconectează';
@@ -13828,6 +13802,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Nu s-a putut posta comentariul: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Linia $line';
   }
@@ -15328,18 +15307,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Închide $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de comentarii',
-      few: '$count comentarii',
-      one: '1 comentariu',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21661,10 +21628,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dispatchSettingsTitle => 'Programe';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limite pentru programe și urmăriri și ce se întâmplă cu cererile la care nimeni nu răspunde.';
-
-  @override
   String get dispatchLimitsLabel => 'Limite de programe';
 
   @override
@@ -21743,9 +21706,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Obiectiv';
-
-  @override
-  String get scheduleRecordCrumb => 'Program';
 
   @override
   String get improvementRecordCrumb => 'Propunere';
@@ -22154,5 +22114,38 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent din $cap, incluzând fiecare program din lanțul său';
+  }
+
+  @override
+  String get ccLoading => 'Se încarcă';
+
+  @override
+  String get ccProgress => 'Progres';
+
+  @override
+  String get ccBreadcrumb => 'Cale de navigare';
+
+  @override
+  String get ccDialog => 'Casetă de dialog';
+
+  @override
+  String get ccResize => 'Redimensionează';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (neverificat)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Selectează $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Selectează toate pull request-urile';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Revino la versiunea $version';
   }
 }

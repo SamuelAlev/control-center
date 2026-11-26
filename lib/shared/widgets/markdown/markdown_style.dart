@@ -183,11 +183,13 @@ CcMarkdownStyle appMarkdownStyle(
 
   final built = CcMarkdownStyle(
     paragraph: body,
-    h1: ui(CcTypography.title).copyWith(
-      fontSize: compact ? 18 : 20,
-      fontWeight: FontWeight.w700,
-      color: fg,
-      height: 1.25,
+    h1: ui(
+      CcTypography.title.copyWith(
+        fontSize: compact ? 18 : 20,
+        fontWeight: FontWeight.w700,
+        color: fg,
+        height: 1.25,
+      ),
     ),
     h1Padding: EdgeInsets.only(top: compact ? 10 : 14),
     h2: ui(CcTypography.title).copyWith(
@@ -205,12 +207,18 @@ CcMarkdownStyle appMarkdownStyle(
     ),
     h3Padding: EdgeInsets.only(top: compact ? 6 : 10),
     h4: ui(
-      CcTypography.body,
-    ).copyWith(fontSize: 14, fontWeight: FontWeight.w600, color: fg),
-    h5: ui(CcTypography.body).copyWith(fontWeight: FontWeight.w600, color: fg),
+      CcTypography.body.copyWith(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: fg,
+      ),
+    ),
+    h5: ui(
+      CcTypography.body.copyWith(fontWeight: FontWeight.w600, color: fg),
+    ),
     h6: ui(
-      CcTypography.caption,
-    ).copyWith(fontWeight: FontWeight.w600, color: muted),
+      CcTypography.caption.copyWith(fontWeight: FontWeight.w600, color: muted),
+    ),
     code: code.copyWith(height: 1.5),
     inlineCode: code,
     link: body.copyWith(color: tokens.textBrandPrimary).withLinkUnderline(),
@@ -221,12 +229,16 @@ CcMarkdownStyle appMarkdownStyle(
     // blockquotePadding is deliberately unset: the field is typed EdgeInsets,
     // and the renderer's default (EdgeInsetsDirectional.only(start: 12, top: 2,
     // bottom: 2)) carries the same values while mirroring under RTL.
-    bold: TextStyle(fontWeight: FontWeight.w700, color: fg),
-    italic: TextStyle(fontStyle: FontStyle.italic, color: fg),
+    bold: uiWithEmoji(const TextStyle(fontWeight: FontWeight.w700)),
+    italic: uiWithEmoji(const TextStyle(fontStyle: FontStyle.italic)),
     listBullet: body,
     tableHead: uiWithEmoji(
-      CcTypography.body,
-    ).copyWith(fontSize: bodyFontSize, fontWeight: FontWeight.w600, color: fg),
+      CcTypography.body.copyWith(
+        fontSize: bodyFontSize,
+        fontWeight: FontWeight.w600,
+        color: fg,
+      ),
+    ),
     tableBody: uiWithEmoji(
       CcTypography.body,
     ).copyWith(fontSize: bodyFontSize, color: fg),

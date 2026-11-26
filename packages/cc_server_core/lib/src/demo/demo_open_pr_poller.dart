@@ -31,6 +31,14 @@ class _OfflineOpenPrFetchPort implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     String? workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
+  }) async => const {};
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    String? workspaceId,
   }) async => const {};
 
   @override

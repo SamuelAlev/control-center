@@ -67,7 +67,7 @@ class MemoryFactRow extends ConsumerWidget {
           ),
         ),
         if (repo != null)
-          SettingsMetaFact(value: repo, icon: AppIcons.folderGit),
+          SettingsMetaFact(value: repo, icon: AppIcons.folderGit, code: true),
         if (fact.memoryType != MemoryType.fact)
           Text(fact.memoryType.label, style: caption),
         AppTimestamp.relative(fact.updatedAt, style: caption),

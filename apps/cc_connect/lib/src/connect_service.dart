@@ -744,6 +744,8 @@ final class ConnectService {
         return ('POST', (c, b) => _grants.refresh(c, b, ConnectProvider.slack));
       case 'github/scope':
         return ('POST', _grants.githubScope);
+      case 'github/review_comments':
+        return ('POST', _grants.githubReviewComments);
       case 'github/installations':
         return ('POST', _grants.githubInstallations);
       case 'github/revoke':
@@ -795,7 +797,10 @@ final class ConnectService {
       {'reason': reason, 'ip': ip, 'install': ?install},
     );
 
-    final body = await readCappedBody(request, connectMaxRequestBytes);
+    final maxBytes = path == '/v1/github/review_comments'
+        ? connectMaxReviewCommentsRequestBytes
+        : connectMaxRequestBytes;
+    final body = await readCappedBody(request, maxBytes);
     if (body == null) {
       response.persistentConnection = false;
       return sendError(response, ConnectErrorCode.invalidRequest);

@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/offline/offline_queue_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
@@ -8,6 +9,7 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
 import 'package:control_center/features/shell/presentation/layout/shell_title_bar.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
+import 'package:control_center/features/shell/presentation/widgets/banner_rail.dart';
 import 'package:control_center/features/shell/presentation/widgets/notification_bell.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/soundscape/device_location_reader.dart';
@@ -18,10 +20,12 @@ import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:riverpod/misc.dart';
 
 /// Offline queue stub: no pending mutations, always online.
 class _NoOpOfflineQueue extends OfflineQueueController {
@@ -117,8 +121,8 @@ void main() {
     // destinations have no section header.
     expect(find.byType(AppSidebar), findsOneWidget);
     expect(find.text('Inbox'), findsWidgets);
-    expect(find.text('WORKSPACE'), findsNothing);
-    expect(find.text('SPACES'), findsOneWidget);
+    expect(find.text('Workspace'), findsNothing);
+    expect(find.text('Spaces'), findsOneWidget);
   });
 
   testWidgets('renders workspace switcher with no workspace', (tester) async {
@@ -300,12 +304,11 @@ void main() {
     tester.takeException();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Settings groups are SCOPES now — You / Workspace / Server — uppercased
-    // by CcSidebarGroup. The scope name is the whole statement of who a change
-    // below it affects.
-    expect(find.text('YOU'), findsWidgets);
-    expect(find.text('WORKSPACE'), findsWidgets);
-    expect(find.text('SERVER'), findsWidgets);
+    // Settings groups are SCOPES now — You / Workspace / Server. The scope name is
+    // the whole statement of who a change below it affects.
+    expect(find.text('You'), findsWidgets);
+    expect(find.text('Workspace'), findsWidgets);
+    expect(find.text('Server'), findsWidgets);
     expect(find.text('Filter settings'), findsNothing);
     // The settings nav replaces the global one rather than sitting beside it.
     expect(find.text('Inbox'), findsNothing);
@@ -316,6 +319,8 @@ void main() {
     WidgetTester tester,
     String location, {
     TextDirection direction = TextDirection.ltr,
+    Widget page = const Text('Page Content'),
+    List<Override> overrides = const [],
   }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -323,10 +328,7 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final router = shellRouter(
-      const Text('Page Content'),
-      initialLocation: location,
-    );
+    final router = shellRouter(page, initialLocation: location);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -340,6 +342,7 @@ void main() {
           activeWorkspaceProvider.overrideWith((ref) => null),
           isOnlineProvider.overrideWithValue(true),
           offlineQueueControllerProvider.overrideWith(_NoOpOfflineQueue.new),
+          ...overrides,
         ],
         child: MaterialApp.router(
           localizationsDelegates: appLocalizationsDelegates,
@@ -393,6 +396,75 @@ void main() {
         expect(find.byType(CcResizable), findsOneWidget);
       },
     );
+  }
+
+  for (final direction in TextDirection.values) {
+    testWidgets('Tab visits the title bar, the sidebar, the page and then '
+        'the floating banner, one region at a time ($direction)', (
+      tester,
+    ) async {
+      await pumpShellAt(
+        tester,
+        pullRequestsRoute('ws-1'),
+        direction: direction,
+        page: const _FocusablePage(),
+        // A banner floats just under the title bar, level with the sidebar's
+        // first rows: a geometric sort over the window would reach it there.
+        overrides: [bannerQueueProvider.overrideWith(_OneBanner.new)],
+      );
+      expect(find.text('Standup starts soon'), findsOneWidget);
+
+      String regionOf(FocusNode? node) {
+        final context = node?.context;
+        if (context == null) {
+          return 'none';
+        }
+        // The sidebar's resize handle is a keyboard stop of the panes region,
+        // between the sidebar and the page.
+        if (node!.debugLabel == 'CcResizableDivider') {
+          return 'resize handle';
+        }
+        if (context.findAncestorWidgetOfExactType<ShellTitleBar>() != null) {
+          return 'title bar';
+        }
+        if (context.findAncestorWidgetOfExactType<AppSidebar>() != null) {
+          return 'sidebar';
+        }
+        if (context.findAncestorWidgetOfExactType<_FocusablePage>() != null) {
+          return 'page';
+        }
+        if (context.findAncestorWidgetOfExactType<BannerRail>() != null) {
+          return 'banner';
+        }
+        return 'other';
+      }
+
+      // Start on the title bar's first control, as a click on it would.
+      Focus.of(
+        tester.element(find.byIcon(AppIcons.panelLeftClose)),
+      ).requestFocus();
+      await tester.pump();
+      expect(regionOf(FocusManager.instance.primaryFocus), 'title bar');
+
+      // Each region is entered once, in order, until Tab comes back round.
+      final regions = <String>['title bar'];
+      for (var i = 0; i < 80; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final region = regionOf(FocusManager.instance.primaryFocus);
+        if (region == 'resize handle') {
+          expect(regions.last, 'sidebar', reason: 'the handle follows it');
+          continue;
+        }
+        if (region != regions.last) {
+          regions.add(region);
+        }
+        if (regions.length > 1 && region == 'title bar') {
+          break;
+        }
+      }
+      expect(regions, ['title bar', 'sidebar', 'page', 'banner', 'title bar']);
+    });
   }
 
   testWidgets('the footer is one icon strip, and a stack in the rail', (
@@ -488,7 +560,7 @@ void main() {
       settingsLandingRoute('ws-1'),
     );
     expect(find.text('Exit settings'), findsOneWidget);
-    expect(find.text('YOU'), findsOneWidget);
+    expect(find.text('You'), findsWidgets);
     // The global nav stays mounted beneath, offstage, to slide back to.
     expect(find.text('Inbox'), findsNothing);
     expect(find.text('Inbox', skipOffstage: false), findsOneWidget);
@@ -600,4 +672,45 @@ void main() {
       );
     },
   );
+}
+
+/// A routed page with two focusable controls, to see where Tab reaches it.
+///
+/// They sit level with the sidebar's top rows and with its middle, where one
+/// geometric sort over the window would weave them in among the sidebar's.
+class _FocusablePage extends StatelessWidget {
+  const _FocusablePage();
+
+  static final FocusNode first = FocusNode(debugLabel: 'page first');
+  static final FocusNode last = FocusNode(debugLabel: 'page last');
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Focus(focusNode: first, child: const SizedBox(width: 40, height: 40)),
+        const SizedBox(height: 300),
+        Focus(focusNode: last, child: const SizedBox(width: 40, height: 40)),
+      ],
+    );
+  }
+}
+
+/// A banner queue holding one meeting reminder.
+class _OneBanner extends BannerQueue {
+  @override
+  List<ActiveBanner> build() => const [
+    ActiveBanner(
+      id: 'banner-0',
+      seq: 0,
+      notification: AppNotification(
+        category: NotificationCategory.meetingStartsSoon,
+        title: 'Standup starts soon',
+        body: 'In 2 minutes',
+        route: '/',
+        workspaceId: 'ws-1',
+        presentation: NotificationPresentation.banner,
+      ),
+    ),
+  ];
 }

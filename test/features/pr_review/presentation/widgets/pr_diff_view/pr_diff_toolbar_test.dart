@@ -4,11 +4,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/pr_diff_toolbar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -227,6 +229,48 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('1 file'), findsOneWidget);
+    });
+
+    testWidgets('the comment inbox takes focus, and Escape closes it and '
+        'hands focus back to its chip', (tester) async {
+      final controller = PrInlineCommentsController((
+        workspaceId: 'ws',
+        repoFullName: 'owner/repo',
+        number: 1,
+        forge: null,
+      ));
+      await tester.pumpWidget(
+        _wrap(
+          PrDiffToolbar(
+            fileCount: 1,
+            additions: 0,
+            deletions: 0,
+            commentCount: 1,
+            inlineCommentsController: controller,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      final chip = find.widgetWithIcon(CcChip, AppIcons.messageSquare);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(find.byType(PrCommentsInbox), findsOneWidget);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<CcFocusTrap>(),
+        isNotNull,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(PrCommentsInbox), findsNothing);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<CcChip>()
+            ?.leadingIcon,
+        AppIcons.messageSquare,
+      );
     });
 
     testWidgets('renders view mode toggle when onSplitViewChanged provided', (

@@ -7,10 +7,13 @@ import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
+import 'package:cc_ui/src/foundation/cc_focus_trap.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_panel_search_field.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:cc_ui/src/foundation/cc_trigger_wash.dart';
+import 'package:cc_ui/src/foundation/cc_typeahead.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -20,6 +23,8 @@ import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+
+part 'cc_menu_rows.dart';
 
 /// One [CcMenu] row: action, select option, submenu, section heading, or divider.
 /// Short verb labels; don't repeat the trigger's shared action. Put
@@ -84,16 +89,16 @@ class CcMenuItem {
       children = const [];
 
   /// A non-interactive heading naming the group of rows beneath it, rendered
-  /// as a mono uppercase eyebrow (the same treatment as `CcSidebarGroup`).
+  /// as an eyebrow (the same treatment as `CcSidebarGroup`).
   ///
   /// A heading earns its place when it lets the rows below it SHED a word —
-  /// five labels ending in "(VM)" become five plain names under one VIRTUAL
-  /// MACHINE heading, which is the difference between reading to the end of
+  /// five labels ending in "(VM)" become five plain names under one "Virtual
+  /// machine" heading, which is the difference between reading to the end of
   /// every line and reading the first word. Pass [CcMenuItem.searchText] on
   /// those rows so the shed word still matches when the menu is searched.
   ///
-  /// Give [label] in sentence case like any other string; the uppercase is a
-  /// rendering treatment, not the copy.
+  /// Give [label] in sentence case like any other string; it is painted as
+  /// written.
   const CcMenuItem.section(this.label)
     : onSelected = _noop,
       icon = null,
@@ -177,6 +182,21 @@ int _firstSelectable(List<CcMenuItem> items) {
   return -1;
 }
 
+/// Index of the last row the highlight may land on, or -1.
+int _lastSelectable(List<CcMenuItem> items) {
+  for (var i = items.length - 1; i >= 0; i--) {
+    if (items[i].isSelectable) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/// The text typeahead matches row [index] on, or null for a row the
+/// highlight may not land on.
+String? _typeaheadLabel(List<CcMenuItem> items, int index) =>
+    items[index].isSelectable ? items[index].label : null;
+
 /// Moves a highlight index over [items] by [delta], wrapping around and
 /// skipping dividers, section headings and disabled rows. Returns [from]
 /// unchanged when nothing is selectable.
@@ -251,9 +271,11 @@ List<CcMenuItem> _filterItems(List<CcMenuItem> items, String query) {
 /// for a floating panel of [CcTappable] rows; destructive rows use `t.danger`.
 /// Selection closes then calls `onSelected`.
 ///
-/// Arrows move an index highlight (skip dividers/sections/disabled); Enter
-/// activates; Esc dismisses. Index (not focus) so [searchable] can keep focus
-/// in the search field. Flat only — no [CcMenuItem.submenu]; use [showCcMenuAt]
+/// Arrows move an index highlight (skip dividers/sections/disabled); Home/End
+/// jump to the ends; Enter activates (Space too when not [searchable]); typed
+/// letters jump to a matching row when not [searchable]; Esc dismisses and
+/// focus returns to the trigger. Index (not focus) so [searchable] can keep
+/// focus in the search field. Flat only — no [CcMenuItem.submenu]; use [showCcMenuAt]
 /// for cascading menus. Panel ≥ trigger width, grows to [maxWidth], then
 /// truncates with tooltip.
 class CcMenu extends StatefulWidget {
@@ -272,6 +294,7 @@ class CcMenu extends StatefulWidget {
     this.searchHint,
     this.emptySearchLabel,
     this.toggleOnTargetTap = true,
+    this.washTarget = false,
     this.semanticLabel,
   });
 
@@ -332,6 +355,14 @@ class CcMenu extends StatefulWidget {
   /// is a button at all.
   final bool toggleOnTargetTap;
 
+  /// Whether the trigger paints the ghost hover and press wash under [target],
+  /// the way a [CcPopover] trigger does.
+  ///
+  /// Turn this on for an inert target with no feedback of its own (a
+  /// [CcBadge]). Leave it off for a target that already draws its hover.
+  /// Ignored when [toggleOnTargetTap] is off.
+  final bool washTarget;
+
   /// Accessibility label for the trigger.
   final String? semanticLabel;
 
@@ -359,6 +390,8 @@ class _CcMenuState extends State<CcMenu> {
 
   /// Keeps the arrow-key highlight inside the scrolled viewport.
   final CcRowReveal _rows = CcRowReveal();
+
+  final CcTypeahead _typeahead = CcTypeahead();
 
   int _highlight = -1;
 
@@ -388,13 +421,19 @@ class _CcMenuState extends State<CcMenu> {
     _query.dispose();
     _field.dispose();
     _scroll.dispose();
+    _typeahead.dispose();
     super.dispose();
   }
 
   /// Resets per-session state as the panel opens — a reopened menu must not
-  /// inherit the last session's query or highlight.
+  /// inherit the last session's query or highlight. Rebuilds on close too,
+  /// so the trigger reports it collapsed.
   void _onOpenChanged() {
+    _typeahead.reset();
     if (!_controller.isOpen) {
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
     _query.clear();
@@ -429,8 +468,14 @@ class _CcMenuState extends State<CcMenu> {
 
   void _moveBy(int delta) {
     final items = _visibleItems;
+    _moveTo(_moveHighlight(items, _highlight, delta));
+  }
+
+  void _moveTo(int next) {
+    if (next < 0) {
+      return;
+    }
     final previous = _highlight;
-    final next = _moveHighlight(items, previous, delta);
     setState(() => _highlight = next);
     _rows.reveal(next, from: previous);
   }
@@ -461,12 +506,33 @@ class _CcMenuState extends State<CcMenu> {
       _moveBy(-1);
       return KeyEventResult.handled;
     }
+    final items = _visibleItems;
+    // In a search field Home/End move the caret and letters are the query.
+    if (!widget.searchable) {
+      if (key == LogicalKeyboardKey.home) {
+        _moveTo(_firstSelectable(items));
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.end) {
+        _moveTo(_lastSelectable(items));
+        return KeyEventResult.handled;
+      }
+      final typed = _typeahead.match(
+        event,
+        count: items.length,
+        current: _highlight,
+        labelAt: (index) => _typeaheadLabel(items, index),
+      );
+      if (typed != null) {
+        _moveTo(typed);
+        return KeyEventResult.handled;
+      }
+    }
     // Space activates only in a plain dropdown — in a search field it is a
     // character, and swallowing it would make two-word queries impossible.
     if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter ||
         (key == LogicalKeyboardKey.space && !widget.searchable)) {
-      final items = _visibleItems;
       if (_highlight >= 0 && _highlight < items.length) {
         _select(items[_highlight]);
       }
@@ -486,7 +552,13 @@ class _CcMenuState extends State<CcMenu> {
           ? CcTappable(
               onPressed: _controller.toggle,
               semanticLabel: widget.semanticLabel,
-              builder: (context, states) => widget.target,
+              semanticExpanded: _controller.isOpen,
+              borderRadius: widget.washTarget
+                  ? AppRadii.brSm
+                  : BorderRadius.zero,
+              builder: (context, states) => widget.washTarget
+                  ? CcTriggerWash(states: states, child: widget.target)
+                  : widget.target,
             )
           : widget.target,
       overlayBuilder: _buildPanel,
@@ -570,9 +642,8 @@ class _CcMenuState extends State<CcMenu> {
     _rows.resize(items.length);
     final showCheckGutter = items.any((i) => i.selected);
 
-    return FocusScope(
+    return CcFocusTrap(
       node: _panelScope,
-      autofocus: true,
       child: Focus(
         // Exactly one autofocus per scope: the field claims it when there is
         // one, otherwise this node does so the arrow keys have a listener.
@@ -624,7 +695,9 @@ class _CcMenuState extends State<CcMenu> {
 ///
 /// Selecting a row closes the menu first, then calls its `onSelected`; clicking
 /// away, right-clicking away, or pressing Escape dismisses it. Keyboard: up/down
-/// move the highlight, right/Enter open a submenu, left/Escape step back out.
+/// move the highlight, Home/End jump to the ends, letters jump to a matching
+/// row, right/Enter/Space open a submenu, left/Escape step back out. Focus
+/// moves into the menu while it is open and returns where it was on close.
 ///
 /// [onDismissed] fires exactly once when the panel closes, whichever way it
 /// went — for callers that paint an "acting on this row" state on whatever they
@@ -694,6 +767,7 @@ class _CcCascadeMenuOverlay extends StatefulWidget {
 
 class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
   final FocusNode _focus = FocusNode(debugLabel: 'CcMenu');
+  final CcTypeahead _typeahead = CcTypeahead();
 
   // Grace timer for the diagonal-travel problem: when the pointer leaves a
   // submenu-parent row onto a sibling leaf, don't close the flyout instantly —
@@ -710,6 +784,7 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
   void dispose() {
     _closeTimer?.cancel();
     _focus.dispose();
+    _typeahead.dispose();
     super.dispose();
   }
 
@@ -778,8 +853,15 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
 
   void _moveColumnHighlight(int column, int delta) {
     final data = _columns[column];
-    final next = _moveHighlight(data.items, data.highlight, delta);
-    if (next != data.highlight) {
+    _setColumnHighlight(
+      column,
+      _moveHighlight(data.items, data.highlight, delta),
+    );
+  }
+
+  void _setColumnHighlight(int column, int next) {
+    final data = _columns[column];
+    if (next >= 0 && next != data.highlight) {
       setState(() => data.highlight = next);
     }
   }
@@ -809,6 +891,24 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
     }
     if (key == LogicalKeyboardKey.arrowUp) {
       _moveColumnHighlight(column, -1);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.home) {
+      _setColumnHighlight(column, _firstSelectable(data.items));
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.end) {
+      _setColumnHighlight(column, _lastSelectable(data.items));
+      return KeyEventResult.handled;
+    }
+    final typed = _typeahead.match(
+      event,
+      count: data.items.length,
+      current: data.highlight,
+      labelAt: (index) => _typeaheadLabel(data.items, index),
+    );
+    if (typed != null) {
+      _setColumnHighlight(column, typed);
       return KeyEventResult.handled;
     }
     // Horizontal arrows follow reading direction: the key pointing toward the
@@ -868,49 +968,57 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
       ),
     );
 
-    return Focus(
-      focusNode: _focus,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: Stack(
-        children: [
-          // Dismiss barrier. The interceptor keeps it (and the panels) above
-          // any embedded iframe on web (no-op elsewhere).
-          Positioned.fill(
-            child: PointerInterceptor(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onDismiss,
-                onSecondaryTap: widget.onDismiss,
+    // The entry sits in the root overlay, where an autofocus is dropped while
+    // the page holds focus; the trap takes it explicitly and gives it back.
+    return CcFocusTrap(
+      child: Focus(
+        focusNode: _focus,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: Stack(
+          children: [
+            // Dismiss barrier. The interceptor keeps it (and the panels) above
+            // any embedded iframe on web (no-op elsewhere).
+            Positioned.fill(
+              child: PointerInterceptor(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onDismiss,
+                  onSecondaryTap: widget.onDismiss,
+                ),
               ),
             ),
-          ),
-          for (var c = 0; c < _columns.length; c++)
-            Positioned.fill(
-              child: CustomSingleChildLayout(
-                delegate: c == 0
-                    ? _CcMenuAtLayoutDelegate(widget.position)
-                    : _SubmenuLayoutDelegate(
-                        _columns[c].anchor!,
-                        Directionality.of(context),
+            for (var c = 0; c < _columns.length; c++)
+              Positioned.fill(
+                child: CustomSingleChildLayout(
+                  delegate: c == 0
+                      ? _CcMenuAtLayoutDelegate(widget.position)
+                      : _SubmenuLayoutDelegate(
+                          _columns[c].anchor!,
+                          Directionality.of(context),
+                        ),
+                  child: PointerInterceptor(
+                    child: DefaultTextStyle(
+                      style: menuTextStyle,
+                      child: _CcMenuColumn(
+                        key: _columns[c].key,
+                        items: _columns[c].items,
+                        minWidth: widget.minWidth,
+                        maxWidth: widget.maxWidth,
+                        highlight: _columns[c].highlight,
+                        expandedRow: c + 1 < _columns.length
+                            ? _columns[c].highlight
+                            : -1,
+                        onRowHover: (row, rect) => _hoverRow(c, row, rect),
+                        onRowActivate: (row, rect) =>
+                            _activateRow(c, row, rect),
                       ),
-                child: PointerInterceptor(
-                  child: DefaultTextStyle(
-                    style: menuTextStyle,
-                    child: _CcMenuColumn(
-                      key: _columns[c].key,
-                      items: _columns[c].items,
-                      minWidth: widget.minWidth,
-                      maxWidth: widget.maxWidth,
-                      highlight: _columns[c].highlight,
-                      onRowHover: (row, rect) => _hoverRow(c, row, rect),
-                      onRowActivate: (row, rect) => _activateRow(c, row, rect),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -925,6 +1033,7 @@ class _CcMenuColumn extends StatefulWidget {
     required this.minWidth,
     required this.maxWidth,
     required this.highlight,
+    required this.expandedRow,
     required this.onRowHover,
     required this.onRowActivate,
   });
@@ -933,6 +1042,9 @@ class _CcMenuColumn extends StatefulWidget {
   final double minWidth;
   final double maxWidth;
   final int highlight;
+
+  /// The row whose flyout is open, or -1.
+  final int expandedRow;
   final void Function(int row, Rect globalRect) onRowHover;
   final void Function(int row, Rect globalRect) onRowActivate;
 
@@ -993,6 +1105,7 @@ class _CcMenuColumnState extends State<_CcMenuColumn> {
                 item: widget.items[row],
                 showCheckGutter: showCheckGutter,
                 highlighted: row == widget.highlight,
+                expanded: row == widget.expandedRow,
                 focusable: false,
                 onActivate: () =>
                     widget.onRowActivate(row, rectOf(row) ?? Rect.zero),
@@ -1186,201 +1299,4 @@ class _SubmenuLayoutDelegate extends SingleChildLayoutDelegate {
   bool shouldRelayout(_SubmenuLayoutDelegate oldDelegate) =>
       oldDelegate.anchor != anchor ||
       oldDelegate.textDirection != textDirection;
-}
-
-/// The hairline separator rendered for a [CcMenuItem.divider].
-class _CcMenuDivider extends StatelessWidget {
-  const _CcMenuDivider({this.flush = false});
-
-  /// Whether to drop the vertical breathing room — used under the search
-  /// field, where the hairline IS the field's bottom edge.
-  final bool flush;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final line = SizedBox(
-      height: 1,
-      child: ColoredBox(color: t.borderSecondary),
-    );
-    return flush
-        ? line
-        : Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: line,
-          );
-  }
-}
-
-/// The mono uppercase eyebrow rendered for a [CcMenuItem.section] — the same
-/// treatment as `CcSidebarGroup`'s label, so a grouped menu reads as part of
-/// the same system as the grouped sidebar.
-class _CcMenuSection extends StatelessWidget {
-  const _CcMenuSection({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    return Padding(
-      // Symmetric horizontals, so direction-neutral by construction.
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.xxs,
-      ),
-      child: Text(
-        label.toUpperCase(),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: CcFonts.code(
-          textStyle: CcTypography.label,
-          family: context.ccTheme?.monoFontFamily,
-        ).copyWith(color: t.textTertiary),
-      ),
-    );
-  }
-}
-
-/// The "nothing matched" row of a searchable menu.
-class _CcMenuEmpty extends StatelessWidget {
-  const _CcMenuEmpty({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
-      ),
-      child: Text(
-        label,
-        style: CcTypography.bodySm.copyWith(color: t.textTertiary),
-      ),
-    );
-  }
-}
-
-class _CcMenuRow extends StatelessWidget {
-  const _CcMenuRow({
-    required this.item,
-    required this.onActivate,
-    this.showCheckGutter = false,
-    this.highlighted = false,
-    this.focusable = true,
-  });
-
-  final CcMenuItem item;
-  final VoidCallback onActivate;
-
-  /// Whether to reserve the leading check-mark gutter (any selectable sibling).
-  final bool showCheckGutter;
-
-  /// Whether this row is the keyboard-highlighted one.
-  final bool highlighted;
-
-  /// Whether the row participates in Tab focus traversal, or is driven purely
-  /// by [highlighted] (keys handled upstream).
-  final bool focusable;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final fg = item.destructive ? t.danger : t.textPrimary;
-
-    return CcTappable(
-      onPressed: item.enabled ? onActivate : null,
-      borderRadius: AppRadii.brSm,
-      showFocusRing: false,
-      canRequestFocus: focusable,
-      semanticLabel: item.label,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final pressed = states.contains(WidgetState.pressed);
-        final focused = states.contains(WidgetState.focused);
-        final disabled = states.contains(WidgetState.disabled);
-        final fluidActive = CcFluidHover.isItemActive(context);
-        final active = hovered || focused || highlighted;
-        final wash = pressed
-            ? t.hoverStrong
-            : fluidActive
-            ? const Color(0x00000000)
-            : (active ? t.hover : const Color(0x00000000));
-        final color = disabled ? t.textDisabled : fg;
-        final checkColor = disabled ? t.textDisabled : t.accent;
-
-        return Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          alignment: AlignmentDirectional.centerStart,
-          decoration: BoxDecoration(color: wash),
-          // A 2px inset accent bar marks the keyboard-focused/highlighted row
-          // (edge-to-edge menu items have no radius, so focus rides the edge).
-          foregroundDecoration: (focused || highlighted) && !disabled
-              ? BoxDecoration(
-                  border: BorderDirectional(
-                    start: BorderSide(color: t.accent, width: 2),
-                  ),
-                )
-              : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                if (showCheckGutter) ...[
-                  SizedBox(
-                    width: 16,
-                    child: item.selected
-                        ? Icon(CcIcons.check, size: 14, color: checkColor)
-                        : null,
-                  ),
-                  AppSpacing.hGapSm,
-                ],
-                if (item.leading case final leading?) ...[
-                  leading(color),
-                  AppSpacing.hGapSm,
-                ] else if (item.icon != null) ...[
-                  Icon(item.icon, size: 16, color: color),
-                  AppSpacing.hGapSm,
-                ],
-                Expanded(
-                  child: CcTruncatedText(
-                    item.label,
-                    style: CcTypography.bodySm.copyWith(color: color),
-                  ),
-                ),
-                if (item.trailingChild != null) ...[
-                  AppSpacing.hGapMd,
-                  item.trailingChild!,
-                ] else if (item.trailing != null) ...[
-                  AppSpacing.hGapMd,
-                  Text(
-                    item.trailing!,
-                    style: CcTypography.caption.copyWith(
-                      color: disabled ? t.textDisabled : t.textTertiary,
-                    ),
-                  ),
-                ],
-                if (item.hasChildren) ...[
-                  AppSpacing.hGapSm,
-                  Icon(
-                    CcIcons.chevronRight,
-                    size: 14,
-                    color: disabled ? t.textDisabled : t.textTertiary,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }

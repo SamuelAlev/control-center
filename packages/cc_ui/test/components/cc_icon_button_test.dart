@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -226,6 +227,98 @@ void main() {
       ),
     );
     expect(paint.size, const Size(16, 16));
+  });
+
+  testWidgets('a button that turns busy keeps focus', (tester) async {
+    final loading = ValueNotifier(false);
+    final node = FocusNode();
+    addTearDown(loading.dispose);
+    addTearDown(node.dispose);
+    var presses = 0;
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<bool>(
+          valueListenable: loading,
+          builder: (context, busy, _) => CcIconButton(
+            icon: const IconData(0xe800),
+            tooltip: 'Refresh',
+            focusNode: node,
+            loading: busy,
+            onPressed: () => presses++,
+          ),
+        ),
+      ),
+    );
+    node.requestFocus();
+    await tester.pump();
+
+    loading.value = true;
+    await tester.pump();
+    expect(node.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(presses, 0);
+    // Dispose so the spinning ticker is torn down cleanly.
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('every variant rings 2px clear of its fill', (tester) async {
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          children: [
+            for (final variant in CcButtonVariant.values)
+              CcIconButton(
+                icon: const IconData(0xe800),
+                variant: variant,
+                onPressed: _noop,
+              ),
+          ],
+        ),
+      ),
+    );
+    final t = CcThemeData.light().tokens;
+    final rings = tester.widgetList<FocusRing>(find.byType(FocusRing));
+    expect(rings, hasLength(CcButtonVariant.values.length));
+    for (final ring in rings) {
+      expect(ring.offset, 2);
+      expect(ring.color, t.focusRing);
+    }
+  });
+
+  testWidgets('the box keeps its size at 1x and grows with a scaled glyph', (
+    tester,
+  ) async {
+    final scale = ValueNotifier<double>(1);
+    addTearDown(scale.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<double>(
+          valueListenable: scale,
+          builder: (context, factor, _) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(factor)),
+            child: const IconTheme(
+              data: IconThemeData(applyTextScaling: true),
+              child: Center(
+                child: CcIconButton(icon: IconData(0xe800), onPressed: _noop),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(CcIconButton)), const Size(40, 40));
+
+    scale.value = 2;
+    await tester.pumpAndSettle();
+    final box = tester.getRect(find.byType(CcIconButton));
+    final glyph = tester.getRect(find.byType(CcIcon));
+    expect(box.height, greaterThan(40));
+    expect(box.contains(glyph.topLeft), isTrue);
+    expect(box.bottom, greaterThanOrEqualTo(glyph.bottom));
   });
 }
 

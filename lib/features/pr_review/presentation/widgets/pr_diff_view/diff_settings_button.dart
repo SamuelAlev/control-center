@@ -156,9 +156,7 @@ class _ViewModeOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: active ? t.bgSecondary : const Color(0x00000000),
-            borderRadius: const BorderRadius.all(
-              Radius.circular(AppRadii.pill),
-            ),
+            borderRadius: AppRadii.brSm,
             border: Border.all(
               color: active ? t.borderPrimary : t.borderSecondary,
             ),

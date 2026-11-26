@@ -14,9 +14,9 @@ class WorkRecordStates<T> extends StatelessWidget {
     super.key,
     required this.value,
     required this.notFound,
-    required this.backLabel,
-    required this.onBack,
     required this.builder,
+    this.backLabel,
+    this.onBack,
   });
 
   /// The record as it loads.
@@ -25,11 +25,11 @@ class WorkRecordStates<T> extends StatelessWidget {
   /// What a missing record says.
   final String notFound;
 
-  /// The back button's label.
-  final String backLabel;
+  /// The back button's label, when a back action is offered.
+  final String? backLabel;
 
-  /// Leaves the page.
-  final VoidCallback onBack;
+  /// Leaves the page, when a back action is offered.
+  final VoidCallback? onBack;
 
   /// Builds the record.
   final Widget Function(T record) builder;
@@ -44,6 +44,8 @@ class WorkRecordStates<T> extends StatelessWidget {
       return const Center(child: CcSpinner());
     }
     final error = value.error;
+    final back = onBack;
+    final label = backLabel;
     return Align(
       alignment: AlignmentDirectional.topStart,
       child: Padding(
@@ -53,13 +55,15 @@ class WorkRecordStates<T> extends StatelessWidget {
           message: error != null
               ? dispatchFailureMessage(l10n, error)
               : notFound,
-          action: CcButton(
-            variant: CcButtonVariant.secondary,
-            size: CcButtonSize.sm,
-            icon: AppIcons.arrowLeft,
-            onPressed: onBack,
-            child: Text(backLabel),
-          ),
+          action: back != null && label != null
+              ? CcButton(
+                  variant: CcButtonVariant.secondary,
+                  size: CcButtonSize.sm,
+                  icon: AppIcons.arrowLeft,
+                  onPressed: back,
+                  child: Text(label),
+                )
+              : null,
         ),
       ),
     );
@@ -105,7 +109,11 @@ class WorkListStates<T> extends StatelessWidget {
       return builder(rows);
     }
     if (value.isLoading && !value.hasValue) {
-      return const Center(child: CcSpinner());
+      // Padded so the spinner keeps its room in a card that sizes to it.
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: Center(child: CcSpinner()),
+      );
     }
     final error = value.error;
     return Align(

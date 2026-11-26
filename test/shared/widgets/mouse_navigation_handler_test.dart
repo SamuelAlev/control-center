@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,5 +121,105 @@ void main() {
     expect(router.state.uri.toString(), '/a?tab=diff');
     expect(history().canGoBack, isTrue);
     expect(history().canGoForward, isFalse);
+  });
+
+  testWidgets('replace reports whether a handler is attached', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(container.read(navigationHistoryProvider.notifier).replace('/b'), isFalse);
+
+    final (:router, container: mounted) = await _pump(tester);
+    expect(
+      mounted.read(navigationHistoryProvider.notifier).replace('/b'),
+      isTrue,
+    );
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/b');
+  });
+
+  testWidgets('unrelated rebuild before replace lands does not leak to back', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final tick = ValueNotifier<int>(0);
+    addTearDown(tick.dispose);
+    Completer<String?>? pendingRedirect;
+
+    final router = GoRouter(
+      initialLocation: '/a',
+      redirect: (context, state) {
+        if (state.uri.toString() == '/c' && pendingRedirect != null) {
+          return pendingRedirect.future;
+        }
+        return null;
+      },
+      routes: [
+        ShellRoute(
+          builder: (context, state, child) => ValueListenableBuilder<int>(
+            valueListenable: tick,
+            builder: (context, _, _) => Consumer(
+              builder: (context, ref, _) => MouseNavigationHandler(
+                historyController: ref.read(navigationHistoryProvider.notifier),
+                child: child,
+              ),
+            ),
+          ),
+          routes: [
+            for (final path in const ['/a', '/b', '/c'])
+              GoRoute(
+                path: path,
+                builder: (context, state) => const SizedBox.shrink(),
+              ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final history = container.read(navigationHistoryProvider.notifier);
+    router.go('/b');
+    await tester.pumpAndSettle();
+
+    pendingRedirect = Completer<String?>();
+    history.replace('/c');
+    tick.value++;
+    await tester.pump();
+    expect(router.state.uri.toString(), '/b');
+
+    pendingRedirect.complete(null);
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/c');
+
+    history.goBack();
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/a');
+  });
+
+  testWidgets('replace deduplicates matching top of back stack', (
+    tester,
+  ) async {
+    final (:router, :container) = await _pump(tester);
+    final history = container.read(navigationHistoryProvider.notifier);
+
+    router.go('/b?tab=1');
+    await tester.pumpAndSettle();
+    router.go('/b');
+    await tester.pumpAndSettle();
+    history.replace('/b?tab=1');
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/b?tab=1');
+
+    history.goBack();
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), '/a');
   });
 }

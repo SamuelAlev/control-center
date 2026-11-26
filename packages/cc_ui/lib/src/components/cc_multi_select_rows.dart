@@ -25,6 +25,8 @@ class _CcMultiSelectAllRow extends StatelessWidget {
       showFocusRing: false,
       canRequestFocus: false,
       semanticLabel: label,
+      semanticChecked: allSelected || someSelected,
+      semanticMixed: someSelected && !allSelected,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         return DecoratedBox(
@@ -37,23 +39,22 @@ class _CcMultiSelectAllRow extends StatelessWidget {
             child: Row(
               children: [
                 // Passive mirror, same as the option rows: the row is the tap
-                // target.
-                IgnorePointer(
-                  child: CcCheckbox(
-                    value: allSelected,
-                    indeterminate: someSelected && !allSelected,
-                    onChanged: (_) {},
-                  ),
+                // target, the Tab stop and the checked state.
+                _PassiveCheckbox(
+                  value: allSelected,
+                  indeterminate: someSelected && !allSelected,
                 ),
                 AppSpacing.hGapMd,
                 Expanded(
-                  child: Text(
-                    label,
-                    style: CcTypography.bodySm.copyWith(
-                      color: t.textPrimary,
-                      fontWeight: CcTypography.mediumWeight,
+                  child: ExcludeSemantics(
+                    child: Text(
+                      label,
+                      style: CcTypography.bodySm.copyWith(
+                        color: t.textPrimary,
+                        fontWeight: CcTypography.mediumWeight,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -80,7 +81,7 @@ class _CcMultiSelectClearRow extends StatelessWidget {
       borderRadius: AppRadii.brSm,
       showFocusRing: false,
       canRequestFocus: false,
-      semanticLabel: 'Clear all',
+      semanticLabel: context.ccStrings.clearAll,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         return DecoratedBox(
@@ -90,9 +91,11 @@ class _CcMultiSelectClearRow extends StatelessWidget {
               horizontal: AppSpacing.md,
               vertical: AppSpacing.sm,
             ),
-            child: Text(
-              'Clear all',
-              style: CcTypography.caption.copyWith(color: t.accent),
+            child: ExcludeSemantics(
+              child: Text(
+                context.ccStrings.clearAll,
+                style: CcTypography.caption.copyWith(color: t.accent),
+              ),
             ),
           ),
         );
@@ -126,6 +129,8 @@ class _CcMultiSelectRow<T> extends StatelessWidget {
       // Enter/Space itself and toggle the focused row, not the highlighted one.
       canRequestFocus: false,
       semanticLabel: option.label,
+      semanticChecked: checked,
+      semanticSelected: highlighted,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
@@ -149,14 +154,14 @@ class _CcMultiSelectRow<T> extends StatelessWidget {
               children: [
                 // The row is the tap target; the checkbox is a passive mirror so
                 // its own gesture never competes with the row's CcTappable.
-                IgnorePointer(
-                  child: CcCheckbox(value: checked, onChanged: (_) {}),
-                ),
+                _PassiveCheckbox(value: checked),
                 AppSpacing.hGapMd,
                 Expanded(
-                  child: CcTruncatedText(
-                    option.label,
-                    style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+                  child: ExcludeSemantics(
+                    child: CcTruncatedText(
+                      option.label,
+                      style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+                    ),
                   ),
                 ),
               ],
@@ -164,6 +169,30 @@ class _CcMultiSelectRow<T> extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// A checkbox drawn only for show: the row around it takes the taps, the Tab
+/// stop and reports the checked state, so the box adds none of those.
+class _PassiveCheckbox extends StatelessWidget {
+  const _PassiveCheckbox({required this.value, this.indeterminate = false});
+
+  final bool value;
+  final bool indeterminate;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: ExcludeFocus(
+        child: ExcludeSemantics(
+          child: CcCheckbox(
+            value: value,
+            indeterminate: indeterminate,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
     );
   }
 }

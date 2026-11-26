@@ -148,8 +148,7 @@ void main() {
   ) async {
     await pump(tester, status: _inheritHosted());
 
-    // Section labels render uppercase.
-    expect(find.text(l10n.connectTitle.toUpperCase()), findsOneWidget);
+    expect(find.text(l10n.connectTitle), findsOneWidget);
     expect(find.text(l10n.workspaceConnectDescription), findsOneWidget);
     // Facts row: the choice (also the radio title), health, version.
     expect(find.text(l10n.workspaceConnectModeInherit), findsNWidgets(2));

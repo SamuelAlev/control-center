@@ -257,6 +257,38 @@ void main() {
       expect(find.widgetWithText(CcButton, l10n.retry), findsOneWidget);
     });
 
+    testWidgets('after a retry the code field takes focus although Close had '
+        'it before', (tester) async {
+      var begins = 0;
+      host.onCall = (op, args) => switch (op) {
+        'oauth.begin' =>
+          begins++ == 0
+              ? _attempt(mode: 'own', status: 'failed', error: 'scope_mismatch')
+              : _attempt(),
+        _ => throw StateError('unexpected op $op'),
+      };
+      await tester.pumpWidget(scope(launcher()));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+
+      // Retry leaves the dialog as it starts again, handing focus to the
+      // dialog button that held it before.
+      Focus.of(tester.element(find.text(l10n.close))).requestFocus();
+      await tester.pump();
+      await tester.tap(find.widgetWithText(CcButton, l10n.retry));
+      await settle(tester);
+
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<EditableText>(),
+        isNotNull,
+      );
+      tester.testTextInput.enterText('K7Q2');
+      await tester.pump();
+      expect(find.text('K7Q2'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('an account another person holds gets its own sentence', (
       tester,
     ) async {

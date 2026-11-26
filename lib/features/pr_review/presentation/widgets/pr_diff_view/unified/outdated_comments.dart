@@ -7,6 +7,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
+import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -58,19 +59,26 @@ PartitionedServerComments partitionServerCommentsForFile(
   Iterable<PrCodeReviewComment> comments,
   String filename,
 ) {
+  final fileComments = [
+    for (final c in comments)
+      if (c.path == filename) c,
+  ];
+  final outdatedIds = <int>{
+    for (final c in fileComments)
+      if (c.isOutdated || (!c.isFileLevel && c.anchorLine == null)) c.id,
+  };
   final anchored = <String, List<PrCodeReviewComment>>{};
   final outdated = <PrCodeReviewComment>[];
   final fileLevel = <PrCodeReviewComment>[];
-  for (final c in comments) {
-    if (c.path != filename) {
-      continue;
-    }
-    if (c.isFileLevel) {
+  for (final c in fileComments) {
+    if (c.isFileLevel && !c.isOutdated) {
       fileLevel.add(c);
       continue;
     }
+    final isReplyToOutdated =
+        c.inReplyToId != null && outdatedIds.contains(c.inReplyToId);
     final anchor = c.anchorLine;
-    if (anchor == null) {
+    if (c.isOutdated || anchor == null || isReplyToOutdated) {
       outdated.add(c);
       continue;
     }
@@ -90,9 +98,10 @@ PartitionedServerComments partitionServerCommentsForFile(
 ///
 /// Rendered as a small "outdated" badge that toggles a floating panel; the
 /// panel is hidden by default, so outdated comments never compete with the live
-/// diff, yet are no longer dropped. Each entry shows the comment body and the
-/// original diff-hunk snippet the author saw, so the reviewer keeps the context
-/// even though the line is gone. Never anchored to a real diff row.
+/// diff, yet are no longer dropped. Each conversation shows the root comment,
+/// its replies, and the original diff-hunk snippet the author saw, so the
+/// reviewer keeps the context even though the line is gone. Never anchored to a
+/// real diff row.
 class OutdatedCommentsGroup extends StatelessWidget {
   /// Creates an [OutdatedCommentsGroup]. [comments] must be non-empty (callers
   /// omit the group when a file has no outdated comments).
@@ -104,16 +113,17 @@ class OutdatedCommentsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final threads = groupServerReviewThreads(comments);
     return CcPopover(
       targetAnchor: AlignmentDirectional.bottomEnd,
       followerAnchor: AlignmentDirectional.topEnd,
       semanticLabel: l10n.outdatedComments,
       overlayBuilder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460, maxHeight: 420),
-        child: _OutdatedPanel(comments: comments),
+        child: _OutdatedPanel(threads: threads),
       ),
       target: CcBadge(
-        label: l10n.outdatedCountLabel(comments.length),
+        label: l10n.outdatedCountLabel(threads.length),
         variant: CcBadgeVariant.warning,
         icon: AppIcons.clock,
       ),
@@ -121,11 +131,11 @@ class OutdatedCommentsGroup extends StatelessWidget {
   }
 }
 
-/// The floating panel body listing every outdated comment for a file.
+/// The floating panel body listing every outdated conversation for a file.
 class _OutdatedPanel extends StatelessWidget {
-  const _OutdatedPanel({required this.comments});
+  const _OutdatedPanel({required this.threads});
 
-  final List<PrCodeReviewComment> comments;
+  final List<ServerReviewThread> threads;
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +163,7 @@ class _OutdatedPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: const EdgeInsetsDirectional.fromSTEB(
                 AppSpacing.md,
                 AppSpacing.sm,
                 AppSpacing.md,
@@ -178,19 +188,19 @@ class _OutdatedPanel extends StatelessWidget {
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(
+                padding: const EdgeInsetsDirectional.fromSTEB(
                   AppSpacing.md,
                   0,
                   AppSpacing.md,
                   AppSpacing.md,
                 ),
-                itemCount: comments.length,
+                itemCount: threads.length,
                 separatorBuilder: (_, _) => const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: CcDivider(),
                 ),
                 itemBuilder: (context, i) =>
-                    _OutdatedCommentTile(comment: comments[i]),
+                    _OutdatedThreadTile(thread: threads[i]),
               ),
             ),
           ],
@@ -200,12 +210,12 @@ class _OutdatedPanel extends StatelessWidget {
   }
 }
 
-/// A single outdated comment: author, an "outdated" badge, the original
-/// diff-hunk snippet and the comment body.
-class _OutdatedCommentTile extends ConsumerWidget {
-  const _OutdatedCommentTile({required this.comment});
+/// A single outdated conversation: root author, "outdated" (and optional
+/// "resolved") badges, the original diff-hunk snippet, root body, and replies.
+class _OutdatedThreadTile extends ConsumerWidget {
+  const _OutdatedThreadTile({required this.thread});
 
-  final PrCodeReviewComment comment;
+  final ServerReviewThread thread;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,50 +225,116 @@ class _OutdatedCommentTile extends ConsumerWidget {
         (Theme.of(context).brightness == Brightness.dark
             ? DesignSystemTokens.dark()
             : DesignSystemTokens.light());
-    final login = comment.user?.login ?? l10n.unknownAuthor;
+    final root = thread.root;
+    final codeFontFamily = ref.watch(codeFontFamilyProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            GitHubUserAvatar(
-              login: login,
-              avatarUrl: comment.user?.avatarUrl,
-              size: 18,
-              showHoverCard: false,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                login,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: tokens.textPrimary,
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ),
+        _OutdatedCommentHeader(
+          comment: root,
+          tokens: tokens,
+          l10n: l10n,
+          badges: [
             const SizedBox(width: 8),
             CcBadge(
               label: l10n.outdated,
               variant: CcBadgeVariant.warning,
               icon: AppIcons.clock,
             ),
+            if (thread.isResolved) ...[
+              const SizedBox(width: 6),
+              CcBadge(
+                label: l10n.resolved,
+                variant: CcBadgeVariant.success,
+              ),
+            ],
           ],
         ),
-        if (comment.diffHunk.trim().isNotEmpty) ...[
+        if (root.diffHunk.trim().isNotEmpty) ...[
           const SizedBox(height: 6),
-          ReviewDiffHunkSnippet(hunk: comment.diffHunk, path: comment.path),
+          ReviewDiffHunkSnippet(hunk: root.diffHunk, path: root.path),
         ],
         const SizedBox(height: 6),
         GitHubMarkdownBody(
-          data: comment.body,
+          data: root.body,
           compact: true,
-          codeFontFamily: ref.watch(codeFontFamilyProvider),
+          codeFontFamily: codeFontFamily,
         ),
+        for (final reply in thread.comments.skip(1))
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              top: AppSpacing.xs,
+              start: AppSpacing.md,
+            ),
+            child: Container(
+              padding: const EdgeInsetsDirectional.only(start: AppSpacing.sm),
+              decoration: BoxDecoration(
+                border: BorderDirectional(
+                  start: BorderSide(color: tokens.borderSecondary, width: 2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _OutdatedCommentHeader(
+                    comment: reply,
+                    tokens: tokens,
+                    l10n: l10n,
+                  ),
+                  const SizedBox(height: 4),
+                  GitHubMarkdownBody(
+                    data: reply.body,
+                    compact: true,
+                    codeFontFamily: codeFontFamily,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _OutdatedCommentHeader extends StatelessWidget {
+  const _OutdatedCommentHeader({
+    required this.comment,
+    required this.tokens,
+    required this.l10n,
+    this.badges = const [],
+  });
+
+  final PrCodeReviewComment comment;
+  final DesignSystemTokens tokens;
+  final AppLocalizations l10n;
+  final List<Widget> badges;
+
+  @override
+  Widget build(BuildContext context) {
+    final login = comment.user?.login ?? l10n.unknownAuthor;
+    return Row(
+      children: [
+        GitHubUserAvatar(
+          login: login,
+          avatarUrl: comment.user?.avatarUrl,
+          size: 18,
+          showHoverCard: false,
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            login,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: tokens.textPrimary,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        ...badges,
       ],
     );
   }

@@ -76,9 +76,12 @@ AppNotification? mapWorkNotificationFrame(
       return note(
         title,
         _plain(p['summary']),
-        goalId == null
-            ? _conversation(workspaceId, p)
-            : goalRoute(workspaceId, goalId),
+        goalId != null &&
+                goalId.isNotEmpty &&
+                spaceId != null &&
+                spaceId.isNotEmpty
+            ? spaceRoute(workspaceId, spaceId, tab: goalTabKey(goalId))
+            : _conversation(workspaceId, p),
       );
     case 'notifications/wake_rule_ended':
       final ruleId = p['rule_id'] as String?;
@@ -109,8 +112,8 @@ AppNotification? mapWorkNotificationFrame(
         l10n.notifImprovementProposed(count),
         '',
         ids.length == 1 && ids.single is String
-            ? improvementRoute(workspaceId, ids.single as String)
-            : improvementsRoute(workspaceId),
+            ? memoryImprovementRoute(workspaceId, ids.single as String)
+            : memoryImprovementsRoute(workspaceId),
       );
     case 'notifications/pipeline_run_held':
       final spent = (p['spent_micros'] as num?)?.toInt() ?? 0;
@@ -135,11 +138,23 @@ String waitingDigestItemRoute(String workspaceId, Map<String, dynamic> item) {
   final id = item['id'] as String? ?? '';
   return switch (item['type']) {
     'goal_review' ||
-    'goal_person' when id.isNotEmpty => goalRoute(workspaceId, id),
-    'improvement' when id.isNotEmpty => improvementRoute(workspaceId, id),
+    'goal_person' when id.isNotEmpty => _goalInSpace(workspaceId, item, id),
+    'improvement' when id.isNotEmpty => memoryImprovementRoute(workspaceId, id),
     'held_wake' || 'request' => _conversation(workspaceId, item),
     _ => _conversation(workspaceId, item),
   };
+}
+
+String _goalInSpace(
+  String workspaceId,
+  Map<String, dynamic> item,
+  String goalId,
+) {
+  final spaceId = item['space_id'] as String?;
+  if (spaceId == null || spaceId.isEmpty) {
+    return _conversation(workspaceId, item);
+  }
+  return spaceRoute(workspaceId, spaceId, tab: goalTabKey(goalId));
 }
 
 String _conversation(String workspaceId, Map<String, dynamic> p) {

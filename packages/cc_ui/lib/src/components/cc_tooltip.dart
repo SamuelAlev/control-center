@@ -63,6 +63,7 @@ class CcTooltip extends StatefulWidget {
     this.followerAnchor,
     this.offset,
     this.maxWidth = 280,
+    this.semanticLabel,
   }) : assert(
          message != null || tip != null,
          'CcTooltip needs a message or a tip',
@@ -79,6 +80,10 @@ class CcTooltip extends StatefulWidget {
   /// inside the dark panel chrome instead of [message]. Provide exactly one of
   /// [message] or [tip].
   final Widget? tip;
+
+  /// What a screen reader hears for a rich [tip], which it cannot read from
+  /// the panel. Ignored when [message] is set: the message itself is read.
+  final String? semanticLabel;
 
   /// Alignment of the message text within the panel.
   final AlignmentGeometry? alignment;
@@ -354,9 +359,13 @@ class _CcTooltipState extends State<CcTooltip> {
           },
           // Expose the message to assistive tech as a tooltip hint (parity with
           // Material's Tooltip) so an icon-only trigger keeps an accessible name
-          // even though the panel itself is never read.
-          target: widget.message != null
-              ? Semantics(tooltip: widget.message, child: widget.child)
+          // even though the panel itself is never read. A rich tip is read
+          // through its semanticLabel.
+          target: (widget.message ?? widget.semanticLabel) != null
+              ? Semantics(
+                  tooltip: widget.message ?? widget.semanticLabel,
+                  child: widget.child,
+                )
               : widget.child,
           overlayBuilder: (context, targetSize) => _CcTooltipPanel(
             message: widget.message,
@@ -585,11 +594,6 @@ class _CcTooltipPanelState extends State<_CcTooltipPanel> {
     Widget body,
     ({Offset trigger, Size panel}) geometry,
   ) {
-    // The caret centre must stay within [lo, hi] so the triangle never rides
-    // past the panel's corners. The bound is the panel's own corner radius
-    // (square by design-system rule, so ~zero) plus half the caret — a fixed
-    // inset would exceed a one-line panel's half-height, inverting the window
-    // and pinning the caret to the panel's far edge instead of the trigger.
     // The caret centre must stay within [lo, hi] so the triangle never rides
     // past the panel's corners. The bound is the panel's own corner radius
     // (square by design-system rule, so ~zero) plus half the caret — a fixed

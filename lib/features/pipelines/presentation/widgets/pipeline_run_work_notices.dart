@@ -110,7 +110,15 @@ class _GoalLink extends ConsumerWidget {
           CcButton(
             variant: CcButtonVariant.ghost,
             size: CcButtonSize.sm,
-            onPressed: () => context.go(goalRoute(run.workspaceId, goalId)),
+            onPressed: goal == null
+                ? null
+                : () => context.go(
+                    spaceRoute(
+                      run.workspaceId,
+                      goal.spaceId,
+                      tab: goalTabKey(goalId),
+                    ),
+                  ),
             child: Text(l10n.pipelineRunOpenGoal),
           ),
         ],

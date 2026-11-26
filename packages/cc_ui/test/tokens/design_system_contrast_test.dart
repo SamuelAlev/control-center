@@ -130,6 +130,12 @@ void main() {
         soft(t.dangerSoft, t.canvas),
         bodyFloor,
       ),
+      (
+        'mergedText on mergedSoft',
+        t.textMergedPrimary,
+        soft(t.mergedSoft, t.canvas),
+        bodyFloor,
+      ),
       // White on solid status fills (destructive button, solid banners).
       ('white on bgErrorSolid', t.textWhite, t.bgErrorSolid, bodyFloor),
       ('white on bgSuccessSolid', t.textWhite, t.bgSuccessSolid, bodyFloor),
@@ -151,6 +157,16 @@ void main() {
       ('accent dot/ring on panel', t.accent, t.panel, nonTextFloor),
       ('warn dot on canvas', t.warn, t.canvas, nonTextFloor),
       ('success dot on canvas', t.success, t.canvas, nonTextFloor),
+      ('fgMergedPrimary icon on canvas', t.fgMergedPrimary, t.canvas, nonTextFloor),
+      // The faintest meaningful icon colour, on every surface it sits on.
+      ('fgQuaternary icon on canvas', t.fgQuaternary, t.canvas, nonTextFloor),
+      ('fgQuaternary icon on panel', t.fgQuaternary, t.panel, nonTextFloor),
+      ('fgQuaternary icon on surface', t.fgQuaternary, t.surface, nonTextFloor),
+      // The keyboard focus ring against the surfaces a control rests on.
+      ('focusRing on canvas', t.focusRing, t.canvas, nonTextFloor),
+      ('focusRing on panel', t.focusRing, t.panel, nonTextFloor),
+      ('focusRing on surface', t.focusRing, t.surface, nonTextFloor),
+      ('focusRing on sidebar', t.focusRing, t.sidebar, nonTextFloor),
       (
         'fgBrandPrimary icon on bgBrandPrimary',
         t.fgBrandPrimary,

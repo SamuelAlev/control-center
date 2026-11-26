@@ -113,7 +113,7 @@ class _CcSpinnerState extends State<CcSpinner>
     // Always announce loading state to assistive tech as a live region
     // (role=status), so a newly-mounted spinner is spoken without focus.
     return Semantics(
-      label: widget.semanticLabel ?? 'Loading',
+      label: widget.semanticLabel ?? context.ccStrings.loading,
       liveRegion: true,
       child: spinner,
     );

@@ -173,7 +173,6 @@ class _ConnectStatusCardState extends ConsumerState<ConnectStatusCard> {
               SettingsFact(
                 label: l10n.connectFactMode,
                 value: connectModeLabel(l10n, status.mode),
-                mono: false,
               ),
               SettingsFact(
                 label: l10n.connectFactHealth,
@@ -187,7 +186,6 @@ class _ConnectStatusCardState extends ConsumerState<ConnectStatusCard> {
                     : healthy
                     ? CcStatusTone.positive
                     : CcStatusTone.negative,
-                mono: false,
               ),
               if (status.epoch != null)
                 SettingsFact(

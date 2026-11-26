@@ -86,4 +86,31 @@ void main() {
       expect(text.overflow, TextOverflow.ellipsis);
     });
   });
+
+  testWidgets('marks the node that carries the tap as a link', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _host(
+        CcTappable(
+          onPressed: () {},
+          semanticButton: false,
+          builder: (context, states) =>
+              const CcLinkText('Docs', style: TextStyle(fontSize: 14)),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(CcTappable)),
+      matchesSemantics(
+        label: 'Docs',
+        isLink: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+  });
 }

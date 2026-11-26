@@ -441,10 +441,10 @@ class _AddFeedFormState extends ConsumerState<_AddFeedForm> {
           ],
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => setState(() => _showAdvanced = !_showAdvanced),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        CcTappable(
+          onPressed: () => setState(() => _showAdvanced = !_showAdvanced),
+          semanticExpanded: _showAdvanced,
+          builder: (context, _) => Row(
             children: [
               Icon(
                 _showAdvanced ? AppIcons.chevronDown : AppIcons.chevronRight,

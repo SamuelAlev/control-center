@@ -478,6 +478,19 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
         }
       });
     }
+    // A shell opens to be typed into. Asked for outright: the control that
+    // opened the tab keeps focus, and the view's autofocus yields to it. A
+    // tab mounted hidden, or someone typing in another field, is left alone.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          !_focusNode.hasFocus &&
+          Visibility.of(context) &&
+          FocusManager.instance.primaryFocus?.context
+                  ?.findAncestorWidgetOfExactType<EditableText>() ==
+              null) {
+        _focusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -614,62 +627,67 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
   ///    is below, would otherwise shadow it.
   ///  * [Listener] focuses the terminal on any pointer-down, so a drag
   ///    selection is copied by the terminal's ⌘C (see [_focusNode]).
+  ///
+  /// [CcFocusKeeper] sits outside all of it: clicking the ports button or a
+  /// tab-bar control leaves the keyboard in the shell.
   Widget _terminalSurface(
     TerminalSessionController controller,
     TerminalTheme termTheme,
     String codeFont,
-  ) => Padding(
-    padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-    child: TextInputSurface(
-      child: DropRegion(
-        formats: Formats.standardFormats,
-        hitTestBehavior: HitTestBehavior.opaque,
-        // Copy, never move: dropping a file onto a shell must not invite the
-        // source application to delete the original.
-        onDropOver: (_) => DropOperation.copy,
-        onPerformDrop: _acceptDrop,
-        child: Actions(
-          actions: {
-            TerminalRichPasteIntent: CallbackAction<TerminalRichPasteIntent>(
-              onInvoke: (_) {
-                unawaited(_richPaste());
-                return null;
-              },
-            ),
-          },
-          // RTL carve-out: a terminal is a column-addressed LTR grid (shell
-          // output, prompts and cursor math are all left-to-right), so the
-          // view is pinned rather than letting an RTL app locale reach
-          // xterm's painter or its selection gestures.
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: Listener(
-              onPointerDown: (_) {
-                if (!_focusNode.hasFocus) {
-                  _focusNode.requestFocus();
-                }
-              },
-              child: TerminalView(
-                controller.terminal,
-                controller: _termCtl,
-                focusNode: _focusNode,
-                autofocus: true,
-                // Someone else's terminal: watch and select, never type.
-                readOnly: !controller.canDrive,
-                onKeyEvent: controller.onKeyEvent,
-                shortcuts: _shortcuts,
-                theme: termTheme,
-                backgroundOpacity: 0,
-                // Fira Code renders visually large for its point size (tall
-                // x-height, wide advance); 12/1.25 matches the density of native
-                // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
-                // oversized.
-                textStyle: CcTerminalStyle(
-                  family: codeFont,
-                  fontSize: 12,
-                  height: 1.25,
+  ) => CcFocusKeeper(
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+      child: TextInputSurface(
+        child: DropRegion(
+          formats: Formats.standardFormats,
+          hitTestBehavior: HitTestBehavior.opaque,
+          // Copy, never move: dropping a file onto a shell must not invite the
+          // source application to delete the original.
+          onDropOver: (_) => DropOperation.copy,
+          onPerformDrop: _acceptDrop,
+          child: Actions(
+            actions: {
+              TerminalRichPasteIntent: CallbackAction<TerminalRichPasteIntent>(
+                onInvoke: (_) {
+                  unawaited(_richPaste());
+                  return null;
+                },
+              ),
+            },
+            // RTL carve-out: a terminal is a column-addressed LTR grid (shell
+            // output, prompts and cursor math are all left-to-right), so the
+            // view is pinned rather than letting an RTL app locale reach
+            // xterm's painter or its selection gestures.
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Listener(
+                onPointerDown: (_) {
+                  if (!_focusNode.hasFocus) {
+                    _focusNode.requestFocus();
+                  }
+                },
+                child: TerminalView(
+                  controller.terminal,
+                  controller: _termCtl,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  // Someone else's terminal: watch and select, never type.
+                  readOnly: !controller.canDrive,
+                  onKeyEvent: controller.onKeyEvent,
+                  shortcuts: _shortcuts,
+                  theme: termTheme,
+                  backgroundOpacity: 0,
+                  // Fira Code renders visually large for its point size (tall
+                  // x-height, wide advance); 12/1.25 matches the density of native
+                  // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
+                  // oversized.
+                  textStyle: CcTerminalStyle(
+                    family: codeFont,
+                    fontSize: 12,
+                    height: 1.25,
+                  ),
+                  padding: const EdgeInsets.all(2),
                 ),
-                padding: const EdgeInsets.all(2),
               ),
             ),
           ),

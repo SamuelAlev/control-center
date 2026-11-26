@@ -37,7 +37,8 @@ Future<void> showAddMeetingDecisionDialog(
 }
 
 /// The Decisions tab: a numbered list of the decisions the agent extracted,
-/// each editable/deletable, with a footer row to add a custom decision. Each
+/// each revealing edit and delete on hover, with a footer button to add a
+/// custom decision. Each
 /// decision's first sentence reads as a heading, the remainder as body.
 class MeetingDecisionsTab extends ConsumerWidget {
   /// Creates a [MeetingDecisionsTab].
@@ -134,23 +135,42 @@ class _DecisionRow extends ConsumerWidget {
     final ds = context.ds;
     final (heading, body) = _split(decision.content);
     final number = (index + 1).toString().padLeft(2, '0');
-    return Padding(
+    return MeetingHoverActionsRow(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
+        vertical: AppSpacing.sm,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
+      actions: [
+        CcIconButton(
+          icon: AppIcons.pencil,
+          size: CcButtonSize.sm,
+          tooltip: l10n.meetingEditDecision,
+          onPressed: () => _edit(context, ref),
+        ),
+        CcIconButton(
+          icon: AppIcons.trash2,
+          size: CcButtonSize.sm,
+          tooltip: l10n.meetingDeleteDecision,
+          onPressed: () => _delete(ref),
+        ),
+      ],
+      children: [
+        // The 6px top inset centers a one-line decision on the 32px actions
+        // beside it, so a short row is not top-heavy.
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: SizedBox(
             width: 30,
             child: Text(
               number,
-              style: meetingMono(context, fontSize: 14, color: ds.accent),
+              style: meetingMeta(context, fontSize: 14, color: ds.accent),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -177,19 +197,8 @@ class _DecisionRow extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          MeetingRowIconButton(
-            icon: AppIcons.pencil,
-            tooltip: l10n.meetingEditDecision,
-            onTap: () => _edit(context, ref),
-          ),
-          MeetingRowIconButton(
-            icon: AppIcons.trash2,
-            tooltip: l10n.meetingDeleteDecision,
-            onTap: () => _delete(ref),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

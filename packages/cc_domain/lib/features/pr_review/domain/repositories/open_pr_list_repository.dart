@@ -149,8 +149,9 @@ abstract interface class OpenPrListRepository {
   /// linked repositories, including exact outcome counts and delivery metrics.
   Future<GitHubProfileActivity> profileActivityForUser(
     String workspaceId,
-    String login,
-  );
+    String login, {
+    bool force = false,
+  });
 
   /// All-state GitHub PR activity authored by members of [organization]/[slug]
   /// across [workspaceId]'s linked repositories.
@@ -161,6 +162,7 @@ abstract interface class OpenPrListRepository {
   Future<GitHubProfileActivity> profileActivityForTeam(
     String workspaceId,
     String organization,
-    String slug,
-  );
+    String slug, {
+    bool force = false,
+  });
 }

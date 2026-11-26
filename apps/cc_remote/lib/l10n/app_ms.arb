@@ -125,7 +125,6 @@
   "eventNotFound": "Acara tidak dijumpai",
   "eventNotFoundDescription": "Ia mungkin di luar tetingkap agenda, atau telah dibuang di hulu.",
   "joinMeeting": "Sertai mesyuarat",
-  "join": "Sertai",
   "attendeesCount": "Hadirin ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

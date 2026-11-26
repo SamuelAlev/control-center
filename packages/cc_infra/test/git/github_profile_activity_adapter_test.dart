@@ -119,4 +119,104 @@ void main() {
       expect(activity.repos.single.prs.map((pr) => pr.number), [3, 2, 1]);
     },
   );
+
+  test(
+    'skips search queries for repo chunks with zero PR counts',
+    () async {
+      final fake = TestHttpClient(
+        handler: (request) {
+          final body =
+              (request.body! as HttpBodyJson).json as Map<String, dynamic>;
+          final variables = body['variables'] as Map;
+          if (variables.containsKey('open')) {
+            final openQuery = variables['open'] as String;
+            final hasRepo0 = openQuery.contains('repo:acme/repo-0');
+            return httpTextResponse(request, {
+              'data': {
+                'open': {'issueCount': hasRepo0 ? 1 : 0},
+                'draft': {'issueCount': 0},
+                'merged': {'issueCount': 0},
+                'closed': {'issueCount': 0},
+              },
+            });
+          }
+          return httpTextResponse(request, {
+            'data': {
+              'search': {
+                'issueCount': 1,
+                'nodes': [
+                  {
+                    ..._node(number: 9, state: 'OPEN', additions: 4, deletions: 1),
+                    'repository': {'nameWithOwner': 'acme/repo-0'},
+                  },
+                ],
+                'pageInfo': {'hasNextPage': false},
+              },
+            },
+          });
+        },
+      );
+      final adapter = GitHubProfileActivityAdapter(GitHubApiClient(fake));
+      final repos = [
+        for (var i = 0; i < 11; i++)
+          Repo(
+            id: 'repo-$i',
+            name: 'acme/repo-$i',
+            path: '/repos/acme/repo-$i',
+            remoteOwner: 'acme',
+            remoteName: 'repo-$i',
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+      ];
+
+      final activity = await adapter.fetch(repos: repos, logins: ['ada']);
+
+      // 2 count queries (11 repos = 2 chunks) + 1 search query (chunk 0 only).
+      expect(fake.requests, hasLength(3));
+      expect(activity.metrics.open, 1);
+      expect(activity.repos.single.repoId, 'repo-0');
+    },
+  );
+
+  test(
+    'returns empty activity with zero search queries when all count chunks are zero',
+    () async {
+      final fake = TestHttpClient(
+        handler: (request) {
+          final body =
+              (request.body! as HttpBodyJson).json as Map<String, dynamic>;
+          final variables = body['variables'] as Map;
+          expect(variables.containsKey('open'), isTrue);
+          return httpTextResponse(request, {
+            'data': {
+              'open': {'issueCount': 0},
+              'draft': {'issueCount': 0},
+              'merged': {'issueCount': 0},
+              'closed': {'issueCount': 0},
+            },
+          });
+        },
+      );
+      final adapter = GitHubProfileActivityAdapter(GitHubApiClient(fake));
+      final repos = [
+        for (var i = 0; i < 11; i++)
+          Repo(
+            id: 'repo-$i',
+            name: 'acme/repo-$i',
+            path: '/repos/acme/repo-$i',
+            remoteOwner: 'acme',
+            remoteName: 'repo-$i',
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+      ];
+
+      final activity = await adapter.fetch(repos: repos, logins: ['ada']);
+
+      expect(fake.requests, hasLength(2));
+      expect(activity.metrics.total, 0);
+      expect(activity.repos, isEmpty);
+    },
+  );
 }

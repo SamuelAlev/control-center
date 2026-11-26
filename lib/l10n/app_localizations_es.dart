@@ -1094,13 +1094,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get calendarEmptyNoEvents => 'No hay eventos en este intervalo';
 
   @override
-  String get calendarStartRecording => 'Empezar a grabar';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Grabar y vincular';
-
-  @override
   String get calendarJoinMeet => 'Unirse a la reunión';
+
+  @override
+  String get calendarJoinAndRecord => 'Unirse y grabar';
+
+  @override
+  String get calendarRecordFailed => 'No se pudo iniciar la grabación';
 
   @override
   String get calendarFromCalendar => 'Desde el calendario';
@@ -1940,9 +1940,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get activity => 'Actividad';
-
-  @override
-  String get activityLabel => 'ACTIVIDAD';
 
   @override
   String get activitySearchHint => 'Buscar en la actividad';
@@ -2849,7 +2846,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get askAiReviewDescription => 'Pedir a la IA que revise esta PR';
 
   @override
-  String get assignees => 'ASIGNADOS';
+  String get assignees => 'Asignados';
 
   @override
   String get attachImage => 'Adjuntar imagen';
@@ -2903,7 +2900,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get briefDescription => 'Descripción breve';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4497,7 +4494,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'PREGUNTA';
+  String get questionLabel => 'Pregunta';
 
   @override
   String get queued => 'En cola';
@@ -4512,7 +4509,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reasoningEffort => 'Esfuerzo de razonamiento';
 
   @override
-  String get recommendLabel => 'RECOMENDAR';
+  String get recommendLabel => 'Recomendar';
 
   @override
   String recordingFromDevice(String device) {
@@ -4693,7 +4690,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reviewedByMe => 'Revisadas por mí';
 
   @override
-  String get reviewers => 'REVISORES';
+  String get reviewers => 'Revisores';
 
   @override
   String get roleLabel => 'Rol';
@@ -5182,7 +5179,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get suggestion => 'Sugerencia';
 
   @override
-  String get suggestLabel => 'SUGERIR';
+  String get suggestLabel => 'Sugerir';
 
   @override
   String get superseded => 'Sustituido';
@@ -5227,7 +5224,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get thisCannotBeUndone => 'Esta acción no se puede deshacer.';
 
   @override
-  String get ticketLabel => 'TICKET';
+  String get ticketLabel => 'Ticket';
 
   @override
   String get titleLabel => 'Título';
@@ -7539,6 +7536,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addReviewers => 'Añadir revisores';
 
   @override
+  String get reRequestReview => 'Volver a solicitar revisión';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Volver a solicitar revisión a $label';
+  }
+
+  @override
   String get addAssignees => 'Añadir asignados';
 
   @override
@@ -7706,6 +7711,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get meetingStatusRecording => 'Grabando';
 
   @override
+  String get meetingStatusPaused => 'En pausa';
+
+  @override
   String get meetingStatusProcessing => 'Procesando';
 
   @override
@@ -7733,34 +7741,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count reuniones',
-      one: '1 reunión',
-      zero: 'Ninguna reunión',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Tareas abiertas';
-
-  @override
-  String get meetingsLedgerDecisions => 'Decisiones';
-
-  @override
   String get meetingsLiveOpen => 'Abrir la grabación';
 
   @override
   String get meetingTemplateShort => 'Plantilla';
-
-  @override
-  String get meetingsStatThisWeek => 'Esta semana';
-
-  @override
-  String get meetingsStatRecorded => 'Grabado';
 
   @override
   String get meetingsFilterAll => 'Todas';
@@ -7804,9 +7788,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total tareas';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'mejorada';
 
   @override
   String get meetingsTranscribing => 'transcribiendo y resumiendo…';
@@ -8044,9 +8025,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Parece que hay una reunión en curso. ¿Grabarla?';
-
-  @override
-  String get meetingDetectedRecord => 'Grabar';
 
   @override
   String get meetingDetectedDismiss => 'Descartar';
@@ -9583,6 +9561,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deviceNeverSeen => 'Nunca conectado';
 
   @override
+  String get deviceAwaitingApproval => 'Pendiente de aprobación';
+
+  @override
   String get profileSectionLabel => 'Perfil';
 
   @override
@@ -10413,12 +10394,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Fallido';
-
-  @override
-  String get bannerMeetingJoin => 'Unirse';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Grabar y vincular';
 
   @override
   String get bannerCalendarReconnect => 'Reconectar';
@@ -13760,6 +13735,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'No se pudo publicar el comentario: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Línea $line';
   }
@@ -15252,17 +15232,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Cerrar $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count comentarios',
-      one: '1 comentario',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21570,10 +21539,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dispatchSettingsTitle => 'Programaciones';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Límites de programaciones y vigilancias, y qué pasa con las solicitudes que nadie responde.';
-
-  @override
   String get dispatchLimitsLabel => 'Límites de programaciones';
 
   @override
@@ -21652,9 +21617,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Objetivo';
-
-  @override
-  String get scheduleRecordCrumb => 'Programación';
 
   @override
   String get improvementRecordCrumb => 'Propuesta';
@@ -22057,6 +22019,39 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent de $cap, incluidas todas las programaciones de su cadena';
+  }
+
+  @override
+  String get ccLoading => 'Cargando';
+
+  @override
+  String get ccProgress => 'Progreso';
+
+  @override
+  String get ccBreadcrumb => 'Ruta de navegación';
+
+  @override
+  String get ccDialog => 'Cuadro de diálogo';
+
+  @override
+  String get ccResize => 'Cambiar tamaño';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (sin verificar)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Seleccionar $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Seleccionar todos los pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Restaurar la versión $version';
   }
 }
 

@@ -159,7 +159,7 @@ void main() {
       await tester.pumpWidget(_buildSection());
       await tester.pump();
 
-      expect(find.text('NOTIFICATIONS'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
     });
 
     testWidgets('orders sound and schedule above the event list', (
@@ -172,14 +172,14 @@ void main() {
 
       final order = [
         'Enable notifications',
-        'SOUND',
+        'Sound',
         'Notification sound',
         'Volume',
-        'SCHEDULE',
+        'Schedule',
         'Delivery schedule',
         'Quiet hours',
         'Alert lead time',
-        'EVENTS',
+        'Events',
         'Agent finished',
       ].map(top).toList();
       expect(order, [...order]..sort());
@@ -194,9 +194,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Enable notifications'), findsOneWidget);
-      expect(find.text('SOUND'), findsNothing);
-      expect(find.text('SCHEDULE'), findsNothing);
-      expect(find.text('EVENTS'), findsNothing);
+      expect(find.text('Sound'), findsNothing);
+      expect(find.text('Schedule'), findsNothing);
+      expect(find.text('Events'), findsNothing);
     });
 
     testWidgets('renders global enable toggle', (tester) async {
@@ -368,7 +368,7 @@ void main() {
       await tester.pumpWidget(_buildSection());
       await tester.pump();
 
-      expect(find.text('NOTIFICATIONS'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
       expect(find.byType(CcSwitch), findsWidgets);
     });
 
@@ -378,7 +378,7 @@ void main() {
       await tester.pumpWidget(_buildSection(prefs: prefs));
       await tester.pump();
 
-      expect(find.text('NOTIFICATIONS'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
       expect(find.text('Enable notifications'), findsOneWidget);
     });
   });

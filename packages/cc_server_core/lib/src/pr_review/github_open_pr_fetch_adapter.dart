@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:cc_domain/cc_domain.dart'
     show NetworkException, ValidationException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -44,14 +46,29 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     (owner: repo.remoteOwner, name: repo.remoteName),
   ];
 
-  /// Runs [each] over [repos], [_concurrency] at a time.
+  /// Runs [each] over [repos] using a work-queue of at most [_concurrency]
+  /// workers (no wave barriers).
   static Future<void> _bounded(
     List<Repo> repos,
     Future<void> Function(Repo repo) each,
   ) async {
-    for (var i = 0; i < repos.length; i += _concurrency) {
-      await Future.wait(repos.skip(i).take(_concurrency).map(each));
+    if (repos.isEmpty) {
+      return;
     }
+    var next = 0;
+    final workers = min(_concurrency, repos.length);
+    await Future.wait([
+      for (var w = 0; w < workers; w++)
+        () async {
+          while (true) {
+            final i = next++;
+            if (i >= repos.length) {
+              break;
+            }
+            await each(repos[i]);
+          }
+        }(),
+    ]);
   }
 
   Future<bool> _ownerSuspended(String owner, {String? workspaceId}) async =>
@@ -93,9 +110,42 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     await _bounded(repos, (repo) async {
       final client = _client(repo, workspaceId: workspaceId);
       final specs = _spec(repo);
+      final pipelinedChecks = <Future<Map<int, GitHubPrStatusOverlay>?>>[];
+      var missingNodeId = false;
+      Object? checksError;
+
       final GitHubPrBatchResult batch;
       try {
-        batch = await client.graphql.fetchOpenPullRequestsBatch(specs);
+        batch = await client.graphql.fetchOpenPullRequestsBatch(
+          specs,
+          onPage: (_, pageNodes) {
+            final ids = <String>[];
+            for (final node in pageNodes) {
+              final number = (node['number'] as num?)?.toInt() ?? 0;
+              final title = node['title'] as String? ?? '';
+              if (number <= 0 || title.isEmpty) {
+                continue;
+              }
+              final id = node['id'] as String?;
+              if (id == null || id.isEmpty) {
+                missingNodeId = true;
+              } else {
+                ids.add(id);
+              }
+            }
+            if (ids.isNotEmpty) {
+              pipelinedChecks.add(
+                client.graphql.fetchPullRequestStatusByIds(ids).then(
+                  (overlays) => overlays,
+                  onError: (Object e, StackTrace _) {
+                    checksError ??= e;
+                    return null;
+                  },
+                ),
+              );
+            }
+          },
+        );
       } on Object catch (e) {
         // Contribute nothing for this repo: it stays unresolved, so the
         // poller keeps its previous entries. Every other repo still lands.
@@ -104,29 +154,51 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
         );
         return;
       }
-      var checks = <int, Map<int, GitHubPrStatusOverlay>>{};
-      try {
-        checks = await client.graphql.fetchOpenPullRequestsChecks(specs);
-      } on Object catch (e) {
-        // Checks are best-effort for RENDERING — the rows still list. They
-        // are not best-effort for NOTIFYING: an unread rollup decodes to the
-        // same `none` as "this PR has no checks", so the poller carries the
-        // previous value forward rather than persisting the gap (see
-        // `_carryEnrichmentForward`).
-        CcHostLog.warning(
-          'open_pr_poll: checks overlay failed for ${repo.fullName} — '
-          'keeping the previous checks/review state: $e',
-        );
-      }
       final repoResult = batch.byIndex[0];
       if (repoResult == null) {
         return;
       }
       // Present in the batch = GitHub answered for this repo. Recorded
       // BEFORE the empty-group skip below, so a repo with a genuinely empty
-      // queue still counts as resolved.
+      // queue still counts as resolved (and skips checks requests completely).
       resolved.add(repo.id);
-      final repoChecks = checks[0];
+      if (repoResult.nodes.isEmpty) {
+        return;
+      }
+
+      var repoChecks = <int, GitHubPrStatusOverlay>{};
+      if (!missingNodeId && pipelinedChecks.isNotEmpty) {
+        final pages = await Future.wait(pipelinedChecks);
+        for (final page in pages) {
+          if (page != null) {
+            repoChecks.addAll(page);
+          }
+        }
+        if (checksError != null) {
+          CcHostLog.warning(
+            'open_pr_poll: checks overlay failed for ${repo.fullName} — '
+            'keeping the previous checks/review state: $checksError',
+          );
+        }
+      } else {
+        try {
+          final checks = await client.graphql.fetchOpenPullRequestsChecks(
+            specs,
+          );
+          repoChecks = checks[0] ?? const {};
+        } on Object catch (e) {
+          // Checks are best-effort for RENDERING — the rows still list. They
+          // are not best-effort for NOTIFYING: an unread rollup decodes to the
+          // same `none` as "this PR has no checks", so the poller carries the
+          // previous value forward rather than persisting the gap (see
+          // `_carryEnrichmentForward`).
+          CcHostLog.warning(
+            'open_pr_poll: checks overlay failed for ${repo.fullName} — '
+            'keeping the previous checks/review state: $e',
+          );
+        }
+      }
+
       final prs = <PullRequest>[];
       for (final node in repoResult.nodes) {
         final number = (node['number'] as num?)?.toInt() ?? 0;
@@ -135,7 +207,7 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
           continue;
         }
         var pr = pullRequestFromGraphQlNode(node, repoFullName: repo.fullName);
-        final overlay = repoChecks?[pr.number];
+        final overlay = repoChecks[pr.number];
         if (overlay != null) {
           pr = pr.copyWith(
             checksStatus: prChecksStatusFromRollup(overlay.checksRollup),
@@ -162,24 +234,35 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     String? workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
   }) async {
     final merged = <String, Map<int, PrStatusOverlay>>{};
 
     await _bounded(repos, (repo) async {
-      final Map<int, Map<int, GitHubPrStatusOverlay>> byIndex;
+      final knownIds = prNodeIdsByRepoId?[repo.id];
+      if (knownIds != null && knownIds.isEmpty) {
+        merged[repo.id] = const {};
+        return;
+      }
+      final Map<int, GitHubPrStatusOverlay> overlays;
       try {
-        byIndex = await _client(
-          repo,
-          workspaceId: workspaceId,
-        ).graphql.fetchOpenPullRequestsChecks(_spec(repo));
+        final graphql = _client(repo, workspaceId: workspaceId).graphql;
+        if (knownIds != null) {
+          overlays = await graphql.fetchPullRequestStatusByIds(knownIds);
+        } else {
+          final byIndex = await graphql.fetchOpenPullRequestsChecks(
+            _spec(repo),
+          );
+          final found = byIndex[0];
+          if (found == null) {
+            return;
+          }
+          overlays = found;
+        }
       } on Object catch (e) {
         CcHostLog.warning(
           'open_pr_poll: GitHub checks pass failed for ${repo.fullName}: $e',
         );
-        return;
-      }
-      final overlays = byIndex[0];
-      if (overlays == null) {
         return;
       }
       merged[repo.id] = {
@@ -192,6 +275,41 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     });
 
     return merged;
+  }
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    String? workspaceId,
+  }) async {
+    if (prNumbers.isEmpty) {
+      return const {};
+    }
+    try {
+      final nodes = await _client(
+        repo,
+        workspaceId: workspaceId,
+      ).graphql.fetchPullRequestsByNumbers(
+        owner: repo.remoteOwner,
+        repo: repo.remoteName,
+        numbers: prNumbers,
+      );
+      return {
+        for (final entry in nodes.entries)
+          if ((entry.value['title'] as String? ?? '').isNotEmpty)
+            entry.key: pullRequestFromGraphQlNode(
+              entry.value,
+              repoFullName: repo.fullName,
+            ),
+      };
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'open_pr_poll: surgical PR fetch failed for ${repo.fullName} '
+        '($prNumbers): $e',
+      );
+      return null;
+    }
   }
 
   /// The per-repo forge client the single-PR lookups share with every other

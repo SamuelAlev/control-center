@@ -70,7 +70,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('AUDIO DEVICES'), findsOneWidget);
+      expect(find.text('Audio devices'), findsOneWidget);
       expect(find.text('Output device'), findsOneWidget);
       // The device name shows twice: the row subtitle and the select's value.
       expect(find.text('Studio monitors'), findsNWidgets(2));

@@ -32,7 +32,7 @@ class SchedulePage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     void back() => ref
         .read(navigationHistoryProvider.notifier)
-        .backOr(schedulesRoute(workspaceId));
+        .backOr(settingsSchedulesRoute(workspaceId));
     return WorkRecordStates<WakeRuleView>(
       value: ref.watch(
         wakeRuleViewProvider((workspaceId: workspaceId, id: ruleId)),

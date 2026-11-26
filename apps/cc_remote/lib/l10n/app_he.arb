@@ -125,7 +125,6 @@
   "eventNotFound": "האירוע לא נמצא",
   "eventNotFoundDescription": "ייתכן שהוא מחוץ לחלון סדר היום, או שהוסר במקור.",
   "joinMeeting": "הצטרפות לפגישה",
-  "join": "הצטרפות",
   "attendeesCount": "משתתפים ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

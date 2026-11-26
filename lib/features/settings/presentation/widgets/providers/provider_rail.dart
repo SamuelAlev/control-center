@@ -143,9 +143,13 @@ class ProviderRail extends StatelessWidget {
     if (denied) {
       return CcStatusTone.negative;
     }
-    return p.enabled == HarnessProviderEnabled.disabled
-        ? CcStatusTone.neutral
-        : CcStatusTone.positive;
+    if (!p.connected) {
+      return CcStatusTone.neutral;
+    }
+    if (p.hasExpiredSignIn) {
+      return CcStatusTone.caution;
+    }
+    return CcStatusTone.positive;
   }
 
   static String _statusLabel(
@@ -156,8 +160,12 @@ class ProviderRail extends StatelessWidget {
     if (denied) {
       return l10n.denied;
     }
-    return p.enabled == HarnessProviderEnabled.disabled
-        ? l10n.providerNotConnected
-        : l10n.connectedLabel;
+    if (!p.connected) {
+      return l10n.providerNotConnected;
+    }
+    if (p.hasExpiredSignIn) {
+      return l10n.providerSignInExpired;
+    }
+    return l10n.connectedLabel;
   }
 }

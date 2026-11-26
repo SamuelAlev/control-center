@@ -272,6 +272,7 @@ class _ChipButton extends StatelessWidget {
         child: _HoverSurface(
           hoverColor: hover,
           onTap: onTap,
+          semanticLabel: display?.name ?? l10n.selectWorkspace,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 1),
             child: mark,
@@ -283,6 +284,7 @@ class _ChipButton extends StatelessWidget {
     return _HoverSurface(
       hoverColor: hover,
       onTap: onTap,
+      semanticLabel: display?.name ?? l10n.selectWorkspace,
       child: Padding(
         // 10px horizontal: the hover pill stays flush with the nav-item pills
         // below (both span the sidebar's content width), while the avatar's
@@ -321,44 +323,41 @@ class _ChipButton extends StatelessWidget {
   }
 }
 
-class _HoverSurface extends StatefulWidget {
+class _HoverSurface extends StatelessWidget {
   const _HoverSurface({
     required this.hoverColor,
     required this.onTap,
+    required this.semanticLabel,
     required this.child,
   });
 
   final Color hoverColor;
   final VoidCallback onTap;
+
+  /// The chip's accessible name: the workspace, or the invitation to pick one.
+  final String semanticLabel;
   final Widget child;
 
   @override
-  State<_HoverSurface> createState() => _HoverSurfaceState();
-}
-
-class _HoverSurfaceState extends State<_HoverSurface> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          decoration: ShapeDecoration(
-            color: _hover
-                ? widget.hoverColor
-                : widget.hoverColor.withValues(alpha: 0),
-            shape: const RoundedSuperellipseBorder(borderRadius: AppRadii.brSm),
-          ),
-          child: widget.child,
+    // A color wash, so reduced motion keeps a short fade rather than none.
+    final duration = CcMotion.resolveFade(context, CcMotion.moderateExit);
+    return CcTappable(
+      onPressed: onTap,
+      semanticLabel: semanticLabel,
+      borderRadius: AppRadii.brSm,
+      builder: (context, states) => AnimatedContainer(
+        duration: duration,
+        curve: Curves.easeOut,
+        decoration: ShapeDecoration(
+          color: states.contains(WidgetState.hovered)
+              ? hoverColor
+              : hoverColor.withValues(alpha: 0),
+          shape: const RoundedSuperellipseBorder(borderRadius: AppRadii.brSm),
         ),
+        // The label above names the chip; the avatar initials and the name
+        // text would only repeat it.
+        child: ExcludeSemantics(child: child),
       ),
     );
   }

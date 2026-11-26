@@ -95,7 +95,6 @@
   "eventNotFound": "Afspraak niet gevonden",
   "eventNotFoundDescription": "Die valt mogelijk buiten het agendavenster, of is elders verwijderd.",
   "joinMeeting": "Deelnemen aan vergadering",
-  "join": "Deelnemen",
   "attendeesCount": "Deelnemers ({count})",
   "details": "Details",
   "allDay": "Hele dag",

@@ -187,7 +187,7 @@ class _CcProgressBarState extends State<CcProgressBar>
     // hidden, but must be defined"). No live region — a progress indicator is
     // a static node the user navigates to, not a status announcement.
     return Semantics(
-      label: widget.semanticLabel ?? 'Progress',
+      label: widget.semanticLabel ?? context.ccStrings.progress,
       value: _isIndeterminate
           ? null
           : '${(widget.value!.clamp(0.0, 1.0) * 100).round()}%',

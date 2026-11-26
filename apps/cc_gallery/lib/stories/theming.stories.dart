@@ -101,10 +101,11 @@ class Theming extends StatelessWidget {
           title: 'Type & fonts',
           children: [
             DocText(
-              'Manrope for UI text, Fira Code for code. Resolve fonts via '
-              'CcFonts.ui / CcFonts.code — never a raw family string. Use the '
-              'CcTypography scale (display, title, body, caption, label) for '
-              'sizing.',
+              'Manrope for UI text, Fira Code for code only. Resolve fonts via '
+              'CcFonts.ui / CcFonts.code — never a raw family string. Counts, '
+              'durations, costs and timestamps stay in the UI font with '
+              'tabular figures via CcFonts.numeric. Use the CcTypography scale '
+              '(display, title, body, caption, label, numeric) for sizing.',
             ),
             DocText(
               'Hierarchy comes from size and color, never weight: the UI runs a '

@@ -105,7 +105,7 @@ void main() {
       tester,
     ) async {
       await pump(tester, const LinearAccountCard());
-      expect(find.text(l10n.ticketing.toUpperCase()), findsOneWidget);
+      expect(find.text(l10n.ticketing), findsOneWidget);
       expect(find.text(l10n.accountReachServer), findsOneWidget);
       expect(find.text(l10n.signInToProvider('Linear')), findsOneWidget);
       // The automation actor is the workspace's, not the person's.

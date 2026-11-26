@@ -150,7 +150,7 @@ void main() {
   testWidgets('collapsed row renders kind label', (tester) async {
     await tester.pumpWidget(_buildTestApp(_buildWidget()));
     await tester.pump();
-    expect(find.text('BUG'), findsOneWidget);
+    expect(find.text('Bug'), findsOneWidget);
   });
 
   testWidgets('collapsed row renders priority', (tester) async {
@@ -191,11 +191,11 @@ void main() {
     Finder body() => find.widgetWithText(CcButton, 'Fix');
     expect(body(), findsOneWidget);
 
-    await tester.tap(find.text('BUG'));
+    await tester.tap(find.text('Bug'));
     await tester.pumpAndSettle();
     expect(body(), findsNothing);
 
-    await tester.tap(find.text('BUG'));
+    await tester.tap(find.text('Bug'));
     await tester.pump();
     expect(body(), findsOneWidget);
   });
@@ -227,7 +227,7 @@ void main() {
   testWidgets('alwaysExpanded drops the collapse affordance', (tester) async {
     await tester.pumpWidget(_buildTestApp(_buildWidget(alwaysExpanded: true)));
     await tester.pump();
-    expect(find.text('BUG'), findsNothing, reason: 'no collapsed row');
+    expect(find.text('Bug'), findsNothing, reason: 'no collapsed row');
     expect(find.text('This is a bug finding'), findsOneWidget);
   });
 

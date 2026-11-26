@@ -205,6 +205,8 @@ const _actorLoginKeys = <String>[
   'approver_login',
   // Who wrote the comment (`pr_comment_mentioned` / `pr_thread_replied`).
   'author_login',
+  // Who resolved the review thread (`pr_thread_resolved`).
+  'resolved_by_login',
 ];
 
 /// Whether this frame describes something the operator did themselves.
@@ -253,6 +255,7 @@ AppNotification _prReadyToMerge(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   return AppNotification(
     category: NotificationCategory.prMergeReadiness,
+    tone: NotificationTone.positive,
     title: l10n.notificationPrReadyToMerge,
     body: l10n.notificationPrReadyToMergeBody(p['pr_title'] as String? ?? ''),
     route: _prDeepLink(workspaceId, p),
@@ -275,6 +278,7 @@ AppNotification _prMergeBlocked(Map<String, dynamic> p, AppLocalizations l10n) {
   };
   return AppNotification(
     category: NotificationCategory.prMergeReadiness,
+    tone: NotificationTone.negative,
     title: l10n.notificationPrMergeBlocked,
     body: body,
     route: _prDeepLink(workspaceId, p),
@@ -294,6 +298,7 @@ AppNotification _prApproved(Map<String, dynamic> p, AppLocalizations l10n) {
       : l10n.notificationPrApprovedBodyBy(approver, title);
   return AppNotification(
     category: NotificationCategory.prReviewDecision,
+    tone: NotificationTone.positive,
     title: l10n.notificationPrApproved,
     body: '$who — ${l10n.notificationPrReviewersRemaining(remaining)}',
     route: _prDeepLink(workspaceId, p),
@@ -310,6 +315,7 @@ AppNotification _prChangesRequested(
   final who = p['approver_login'] as String?;
   return AppNotification(
     category: NotificationCategory.prReviewDecision,
+    tone: NotificationTone.negative,
     title: l10n.notificationPrChangesRequested,
     body: (who == null || who.isEmpty)
         ? l10n.notificationPrChangesRequestedBody(title)
@@ -326,6 +332,7 @@ AppNotification _prReviewDismissed(
   final workspaceId = p['workspace_id'] as String?;
   return AppNotification(
     category: NotificationCategory.prReviewDecision,
+    tone: NotificationTone.neutral,
     title: l10n.notificationPrReviewDismissed,
     body: l10n.notificationPrReviewDismissedBody(
       p['pr_title'] as String? ?? '',
@@ -341,6 +348,7 @@ AppNotification _prChecksFailed(Map<String, dynamic> p, AppLocalizations l10n) {
   final check = p['check_name'] as String?;
   return AppNotification(
     category: NotificationCategory.prChecksStatus,
+    tone: NotificationTone.negative,
     title: l10n.notificationPrChecksFailed,
     body: (check == null || check.isEmpty)
         ? l10n.notificationPrChecksFailedBodyUnnamed(title)
@@ -359,6 +367,7 @@ AppNotification _prChecksRecovered(
   final workspaceId = p['workspace_id'] as String?;
   return AppNotification(
     category: NotificationCategory.prChecksStatus,
+    tone: NotificationTone.positive,
     title: l10n.notificationPrChecksRecovered,
     body: l10n.notificationPrChecksRecoveredBody(
       p['pr_title'] as String? ?? '',
@@ -603,12 +612,34 @@ AppNotification _meetingStartingSoon(
     category: NotificationCategory.meetingStartsSoon,
     title: l10n.notificationMeetingStartsSoon,
     body: p['title'] as String? ?? '',
-    // Opens the event detail, where the "Start recording & link" action lives.
+    // A click opens the event; the actions join or record without it.
     route: _wsRoute(workspaceId, (w) => calendarDetailRoute(w, eventId)),
     workspaceId: workspaceId,
     // Time-critical + actionable → earns the ambient banner rail (PRD 25 §1).
     presentation: NotificationPresentation.banner,
+    // A meeting about to start is worth an alert even with its event open.
+    suppressWhenViewingTarget: false,
+    meeting: NotificationMeeting(
+      workspaceId: workspaceId,
+      eventId: eventId,
+      meetingUrl: _meetingUrl(p['meeting_url']),
+    ),
   );
+}
+
+/// The call link of a meeting frame, or null when it is missing or is not an
+/// http(s) link: the value is opened in the browser, so nothing else passes.
+String? _meetingUrl(Object? raw) {
+  if (raw is! String) {
+    return null;
+  }
+  final uri = Uri.tryParse(raw);
+  if (uri == null ||
+      !uri.hasAuthority ||
+      !const {'http', 'https'}.contains(uri.scheme)) {
+    return null;
+  }
+  return raw;
 }
 
 AppNotification _calendarAuthExpired(
@@ -676,6 +707,7 @@ AppNotification _rigClosed(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   return AppNotification(
     category: NotificationCategory.rigStatusChanged,
+    tone: NotificationTone.negative,
     title: l10n.notificationRigFailed,
     body: l10n.notificationRigFailedBody,
     route: _wsRoute(workspaceId, settingsRigsRoute),

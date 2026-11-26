@@ -272,6 +272,9 @@ abstract class PrReviewRepository {
     String? body,
   });
 
+  /// Posts a top-level conversation comment on [prNumber].
+  Future<void> postIssueComment({required int prNumber, required String body});
+
   /// Replaces the body of a top-level conversation comment on [prNumber].
   ///
   /// Used to persist a GFM task-list checkbox toggle without opening the
@@ -592,6 +595,12 @@ class EmptyPrReviewRepository implements PrReviewRepository {
     required int prNumber,
     String? title,
     String? body,
+  }) async {}
+
+  @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
   }) async {}
 
   @override

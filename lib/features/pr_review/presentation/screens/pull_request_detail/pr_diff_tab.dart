@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_files_tab.dart';
@@ -43,8 +44,12 @@ class PrDiffTab extends ConsumerStatefulWidget {
     this.pendingFileJump,
     this.pendingCommentAnchor,
     this.onCommentNotInDiff,
+    this.isVisible = true,
     this.hasDiffUpdate = false,
+    this.isRefreshingDiff = false,
     this.onRefreshDiff,
+    this.onAutoRefreshDiff,
+    this.onDiffLoaded,
     this.onOpenFileInEditor,
   });
 
@@ -71,11 +76,23 @@ class PrDiffTab extends ConsumerStatefulWidget {
   /// nothing looks like a broken notification.
   final void Function(int commentId)? onCommentNotInDiff;
 
+  /// Whether this tab is currently the active visible pane.
+  final bool isVisible;
+
   /// Whether there is a pending diff update banner to show.
   final bool hasDiffUpdate;
 
+  /// Whether a diff refresh is currently in flight.
+  final bool isRefreshingDiff;
+
   /// Refreshes the diff when the pending-update banner is tapped.
   final VoidCallback? onRefreshDiff;
+
+  /// Automatically refreshes a stale diff when the user switches to this tab.
+  final VoidCallback? onAutoRefreshDiff;
+
+  /// Called when a fresh complete patch load arrives on [prFilesLoadProvider].
+  final VoidCallback? onDiffLoaded;
 
   /// Opens a file (repo-relative path) at an optional 1-based line in an
   /// editable code-server tab — the host (PR detail screen) owns the editor
@@ -137,6 +154,29 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
   /// The full-patch stream starts on the next frame so opening Diff paints
   /// from [prFileIndexProvider] inside the interaction budget.
   bool _listenForPatches = false;
+  bool _autoRefreshScheduled = false;
+
+  void _scheduleAutoRefreshIfStale() {
+    if (_autoRefreshScheduled ||
+        !widget.isVisible ||
+        !widget.hasDiffUpdate ||
+        widget.onAutoRefreshDiff == null) {
+      return;
+    }
+    _autoRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Wait one microtask after the frame so any buffered stream event
+      // flushed by `conflateWhilePaused` on TickerMode resume lands first
+      // and clears `hasDiffUpdate` via `onDiffLoaded` without a redundant fetch.
+      Future<void>.microtask(() {
+        _autoRefreshScheduled = false;
+        if (!mounted || !widget.isVisible) {
+          return;
+        }
+        widget.onAutoRefreshDiff?.call();
+      });
+    });
+  }
 
   @override
   void initState() {
@@ -146,11 +186,20 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     _maybeJumpToPendingFile();
     widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
     _maybeRevealPendingComment();
+    _scheduleAutoRefreshIfStale();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() => _listenForPatches = true);
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant PrDiffTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isVisible && widget.isVisible) {
+      _scheduleAutoRefreshIfStale();
+    }
   }
 
   /// Patched files once the heavy subscription is armed, otherwise the
@@ -233,6 +282,24 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (_listenForPatches) {
+      ref.listen<AsyncValue<PrFilesLoad>>(prFilesLoadProvider(widget.prRef), (
+        prev,
+        next,
+      ) {
+        final load = next.value;
+        if (prev != null &&
+            prev.hasValue &&
+            widget.hasDiffUpdate &&
+            !next.isLoading &&
+            !next.hasError &&
+            load != null &&
+            load.isComplete &&
+            !identical(prev.value, load)) {
+          widget.onDiffLoaded?.call();
+        }
+      });
+    }
     final treeVisible = ref.watch(prTreeVisibleProvider);
     final splitView = ref.watch(prDiffSplitViewProvider);
     return Column(
@@ -392,7 +459,10 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
                   .setVisible(visible: visible);
             },
           ),
-          if (widget.hasDiffUpdate && widget.onRefreshDiff != null) ...[
+          if (widget.isRefreshingDiff) ...[
+            const SizedBox(width: 12),
+            const DiffRefreshingIndicator(),
+          ] else if (widget.hasDiffUpdate && widget.onRefreshDiff != null) ...[
             const SizedBox(width: 16),
             DiffUpdateChip(onRefresh: widget.onRefreshDiff!),
           ],

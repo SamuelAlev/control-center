@@ -72,7 +72,11 @@ List<PrCodeReviewComment> withReviewThreadState(
   return [
     for (final c in comments)
       if (byComment[c.id] case final PrReviewThreadState t)
-        c.copyWith(threadId: t.id, isResolved: t.isResolved)
+        c.copyWith(
+          threadId: t.id,
+          isResolved: t.isResolved,
+          isOutdated: c.isOutdated || t.isOutdated,
+        )
       else
         c,
   ];

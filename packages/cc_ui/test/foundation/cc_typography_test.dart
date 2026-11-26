@@ -21,7 +21,7 @@ void main() {
       CcTypography.body,
       CcTypography.bodySm,
       CcTypography.caption,
-      CcTypography.monoNum,
+      CcTypography.numeric,
     ]) {
       expect(style.fontWeight, CcTypography.regularWeight);
     }

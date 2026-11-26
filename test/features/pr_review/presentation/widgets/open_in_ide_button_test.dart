@@ -266,12 +266,11 @@ void main() {
       await tester.tap(find.byIcon(AppIcons.chevronDown));
       await _settleTimers(tester);
 
-      // The not-installed section header uses .toUpperCase() of the l10n key.
       expect(find.text('VS Code'), findsOneWidget);
       expect(find.text('Sublime Text'), findsOneWidget);
-      // The "NOT INSTALLED" header appears (uppercased from l10n.ideNotInstalled).
+      // The "Not installed" header appears.
       expect(
-        find.textContaining('NOT INSTALLED', findRichText: true),
+        find.textContaining('Not installed', findRichText: true),
         findsOneWidget,
       );
     });
@@ -329,7 +328,7 @@ void main() {
 
       // Should not render the not-installed section header.
       expect(
-        find.textContaining('NOT INSTALLED', findRichText: true),
+        find.textContaining('Not installed', findRichText: true),
         findsNothing,
       );
     });

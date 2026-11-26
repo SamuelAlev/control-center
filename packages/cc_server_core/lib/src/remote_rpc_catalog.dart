@@ -702,6 +702,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // comparison, templates) so the composer works the same on every forge. Null
   // → those ops degrade to empty.
   ForgePrClientResolver? buildForgePrClient,
+  // Builds the workspace's bot/automation client for one repo, bounded by
+  // [actingUserId]. Used by `pr_review.commentFindings` so agent review
+  // findings post under the GitHub App bot (or automation token) rather than
+  // the caller's personal account.
+  ForgePrClientResolver? buildBotForgePrClient,
+  ConnectReviewCommentPoster? postConnectReviewComments,
+  AutomatedReviewAttribution? automatedReviewAttribution,
   // Detects the OS-native sandbox capabilities of the SERVER's machine (which
   // backends are available + the recommended one) for the Settings → Sandboxing
   // page. The sandbox runs on the host, so detection is a host-local capability
@@ -2181,17 +2188,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         )
       : null;
 
-  /// [userId] is the caller: it gates repo access, keys the cache and is
-  /// whose GitHub sign-in every read and write rides.
-  Future<PrReviewRepository> resolvePrReviewRepository(
+  /// Resolves the linked repo for ([owner], [repo]) in [workspaceId] and
+  /// checks both the member's repo grant and their own forge read access.
+  Future<Repo> resolveAuthorizedLinkedRepo(
     String workspaceId,
     String owner,
     String repo, {
     required String userId,
   }) async {
-    if (forgeProviderRegistryFor == null) {
-      return const EmptyPrReviewRepository();
-    }
     // Resolve the linked repo row for (owner, repo) in the bound workspace.
     final linked = await workspaceRepository
         .watchReposForWorkspace(workspaceId)
@@ -2219,6 +2223,50 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       repoId: match.id,
     );
     await requireForgeReadAccess(workspaceId, userId, match);
+    return match;
+  }
+
+  /// Resolves the workspace's bot/automation PR client for ([owner], [repo]),
+  /// gated by [resolveAuthorizedLinkedRepo] and bounded by [userId].
+  Future<({Repo repo, ForgePrClient client})?> resolveReviewBotClient(
+    String workspaceId,
+    String owner,
+    String repo, {
+    required String userId,
+  }) async {
+    final builder = buildBotForgePrClient;
+    if (builder == null) {
+      return null;
+    }
+    final match = await resolveAuthorizedLinkedRepo(
+      workspaceId,
+      owner,
+      repo,
+      userId: userId,
+    );
+    return (
+      repo: match,
+      client: builder(match, workspaceId: workspaceId, actingUserId: userId),
+    );
+  }
+
+  /// [userId] is the caller: it gates repo access, keys the cache and is
+  /// whose GitHub sign-in every read and write rides.
+  Future<PrReviewRepository> resolvePrReviewRepository(
+    String workspaceId,
+    String owner,
+    String repo, {
+    required String userId,
+  }) async {
+    if (forgeProviderRegistryFor == null) {
+      return const EmptyPrReviewRepository();
+    }
+    final match = await resolveAuthorizedLinkedRepo(
+      workspaceId,
+      owner,
+      repo,
+      userId: userId,
+    );
     // Cache key: forge + coordinate + acting user. Same owner/repo on two
     // forges are different repos; the cached instance holds the
     // authenticated write client (sharing would mis-attribute).
@@ -9836,8 +9884,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.workspaceId!,
           ctx.userId,
         )).visibleRepos;
+        final force = ctx.args['force'] == true;
         final kind = ctx.args['kind'] as String;
         late final List<String> logins;
+        late final String targetKey;
         switch (kind) {
           case 'user':
             final login = ctx.args['login'];
@@ -9847,6 +9897,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               );
             }
             logins = [login];
+            targetKey = 'user:${login.trim().toLowerCase()}';
           case 'team':
             final organization = ctx.args['organization'];
             final slug = ctx.args['slug'];
@@ -9869,7 +9920,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 'Team belongs to an organization not linked to this workspace',
               );
             }
-            final team = await read.teamProfile(organization, slug, ctx.userId);
+            final team = await read.teamProfile(
+              organization,
+              slug,
+              ctx.userId,
+              force: force,
+            );
             if (team == null) {
               throw const NotFoundException('GitHub team not found');
             }
@@ -9877,6 +9933,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               for (final member in team.members)
                 if (member.login.isNotEmpty) member.login,
             ];
+            targetKey =
+                'team:${organization.trim().toLowerCase()}/'
+                '${slug.trim().toLowerCase()}';
           default:
             throw const ValidationException(
               'Invalid argument: kind must be user or team',
@@ -9887,6 +9946,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           logins,
           ctx.userId,
           workspaceId: ctx.workspaceId!,
+          targetKey: targetKey,
+          force: force,
         );
         return {
           'metrics': activity.metrics.toWire(),
@@ -10046,6 +10107,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           'profile': await read?.userProfile(
             ctx.args['login'] as String,
             ctx.userId,
+            force: ctx.args['force'] == true,
           ),
         };
       },
@@ -10062,7 +10124,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final read = githubRead;
         final organization = ctx.args['organization'] as String;
         final slug = ctx.args['slug'] as String;
-        final profile = await read?.teamProfile(organization, slug, ctx.userId);
+        final profile = await read?.teamProfile(
+          organization,
+          slug,
+          ctx.userId,
+          force: ctx.args['force'] == true,
+        );
         return {'profile': profile?.toWire()};
       },
     ),
@@ -11643,6 +11710,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
 
     ...buildPrReviewOps(
       resolvePrReviewRepository: resolvePrReviewRepository,
+      resolveReviewBotClient: buildBotForgePrClient == null
+          ? null
+          : resolveReviewBotClient,
+      postConnectReviewComments: postConnectReviewComments,
+      automatedReviewAttribution: automatedReviewAttribution,
       requireRepoCoords: requireRepoCoords,
       previewSwr: previewSwr,
       assertSpaceOwned: assertSpaceOwned,

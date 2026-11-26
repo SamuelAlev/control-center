@@ -174,6 +174,21 @@ class FakeGitHubPrClient extends GitHubPrClient {
     CancelToken? cancelToken,
   }) async => issueComments['$owner/$repo/$number'] ?? const [];
 
+  /// Records each posted conversation comment.
+  final List<({int prNumber, String body})> createdIssueComments = [];
+
+  @override
+  Future<GitHubIssueComment> createIssueComment(
+    String owner,
+    String repo, {
+    required int prNumber,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    createdIssueComments.add((prNumber: prNumber, body: body));
+    return GitHubIssueComment(id: 1, body: body);
+  }
+
   /// Records each conversation-comment body edit.
   final List<({int commentId, String body})> updatedIssueComments = [];
 
@@ -218,6 +233,16 @@ class FakeGitHubPrClient extends GitHubPrClient {
     String headSha, {
     CancelToken? cancelToken,
   }) async => workflowRuns['$owner/$repo/$headSha'] ?? const [];
+
+  @override
+  Future<void> requestReviewers(
+    String owner,
+    String repo, {
+    required int prNumber,
+    List<String> reviewers = const [],
+    List<String> teamReviewers = const [],
+    CancelToken? cancelToken,
+  }) async {}
 }
 
 // FakeGitHubContentClient — minimal implementation
@@ -712,6 +737,12 @@ class FakePrReviewRepository implements PrReviewRepository {
     required int prNumber,
     String? title,
     String? body,
+  }) async {}
+
+  @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
   }) async {}
 
   @override
@@ -1585,6 +1616,73 @@ void main() {
 
       await sub.cancel();
     }, timeout: const Timeout(Duration(seconds: 30)));
+
+    test(
+      'requestReviewers settles an approved reviewer back to pending',
+      () async {
+        const approved = GitHubPrReviewState(
+          completedReviews: [
+            GitHubCompletedReview(
+              authorLogin: 'reviewer1',
+              authorAvatarUrl: 'https://avatars/reviewer1',
+              state: 'APPROVED',
+            ),
+          ],
+        );
+        const reRequested = GitHubPrReviewState(
+          pendingUsers: [
+            GitHubPendingUserRequest(
+              login: 'reviewer1',
+              avatarUrl: 'https://avatars/reviewer1',
+              asCodeOwner: false,
+            ),
+          ],
+          completedReviews: [
+            GitHubCompletedReview(
+              authorLogin: 'reviewer1',
+              authorAvatarUrl: 'https://avatars/reviewer1',
+              state: 'APPROVED',
+            ),
+          ],
+        );
+        // Read 1: initial load (approved). Read 2: stale GraphQL read right
+        // after REST requestReviewers. Read 3: GraphQL catches up with the new
+        // pending request alongside the prior completed review.
+        apiClient.graphqlStub.reviewStates = const [
+          approved,
+          approved,
+          reRequested,
+        ];
+
+        final repo = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          changeSignals: signals,
+        );
+
+        final emitted = <List<PrReviewSubmissionState>>[];
+        final sub = repo
+            .watchReviewers(7)
+            .listen((rs) => emitted.add([for (final r in rs) r.state]));
+        await pump();
+        expect(emitted, [
+          [PrReviewSubmissionState.approved],
+        ]);
+
+        await repo.requestReviewers(prNumber: 7, userLogins: ['reviewer1']);
+        await pump();
+        expect(emitted, hasLength(1));
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+        await pump();
+        expect(emitted, hasLength(2));
+        expect(emitted.last, [PrReviewSubmissionState.pending]);
+        expect(apiClient.graphqlStub.reviewStateReads, 3);
+
+        await sub.cancel();
+      },
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 
   // -- Reactive (signal-driven) watch streams --------------------------------
@@ -3003,6 +3101,21 @@ void main() {
       await repo.updatePullRequest(prNumber: 1);
     });
 
+    test('postIssueComment POSTs a conversation comment and invalidates caches', () async {
+      final repo = _makeRepo(db: db, apiClient: apiClient);
+      await db.cacheDao.put('ws1', 'prIssueComments', 'o/r#1', '[]');
+      await db.cacheDao.put('ws1', 'prTimelineEvents', 'o/r#1', '[]');
+      await db.cacheDao.put('ws1', 'prDetail', 'o/r#1', '{}');
+
+      await repo.postIssueComment(prNumber: 1, body: 'Looks good!');
+
+      expect(mockPr.createdIssueComments, [(prNumber: 1, body: 'Looks good!')]);
+      expect(mockPr.submittedReviewEvents, isEmpty);
+      expect(await db.cacheDao.read('ws1', 'prIssueComments', 'o/r#1'), isNull);
+      expect(await db.cacheDao.read('ws1', 'prTimelineEvents', 'o/r#1'), isNull);
+      expect(await db.cacheDao.read('ws1', 'prDetail', 'o/r#1'), isNull);
+    });
+
     test('updateIssueComment PATCHes the conversation comment', () async {
       final repo = _makeRepo(db: db, apiClient: apiClient);
       await repo.updateIssueComment(
@@ -3093,5 +3206,141 @@ void main() {
         {'alice', 'bob'},
       );
     });
+
+    test(
+      'watchPullRequest deletes cached diff and files when headSha changes',
+      () async {
+        await db.cacheDao.put('ws1', 'prDiff', 'o/r#42', 'old diff');
+        await db.cacheDao.put(
+          'ws1',
+          'prFiles',
+          'o/r#42',
+          '[{"filename":"old.dart","status":"modified","additions":1,'
+              '"deletions":0,"changes":1,"patch":""}]',
+        );
+        await db.cacheDao.put(
+          'ws1',
+          'prDetail',
+          'o/r#42',
+          '{"number":42,"title":"PR","body":"","state":"open","is_draft":false,'
+              '"author":{"login":"u","avatar_url":""},"html_url":"","external_id":"n",'
+              '"head_sha":"old-sha","head_ref":"f","base_sha":"base123","base_ref":"m",'
+              '"requested_reviewers":[],"assignees":[]}',
+        );
+
+        mockPr.pullRequests['o/r/42'] = _ghPr(headSha: 'new-sha');
+        mockPr.diffs['o/r/42'] = 'new diff';
+        final apiSource = FakePrDiffSource(
+          files: [
+            PrFile(
+              filename: 'new.dart',
+              status: PrFileStatus.added,
+              additions: 2,
+              deletions: 0,
+              patch: '@@ -1 +1 @@',
+            ),
+          ],
+        );
+
+        final repo = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          apiDiffSource: apiSource,
+        );
+
+        final prSnapshots = await repo.watchPullRequest(42).toList();
+        expect(prSnapshots.last?.headSha, 'new-sha');
+
+        // Stale diff & files rows were cleared before storing the new detail,
+        // so subsequent diff/files subscriptions immediately fetch fresh data.
+        expect(await db.cacheDao.read('ws1', 'prDiff', 'o/r#42'), isNull);
+        expect(await db.cacheDao.read('ws1', 'prFiles', 'o/r#42'), isNull);
+        expect(await repo.watchDiff(42).toList(), ['new diff']);
+        final files = await repo.watchFiles(42).toList();
+        expect(files.single.single.filename, 'new.dart');
+      },
+    );
+
+    test(
+      'watchPullRequest deletes cached diff and files when baseSha changes',
+      () async {
+        await db.cacheDao.put('ws1', 'prDiff', 'o/r#42', 'old diff');
+        await db.cacheDao.put(
+          'ws1',
+          'prFiles',
+          'o/r#42',
+          '[{"filename":"old.dart","status":"modified","additions":1,'
+              '"deletions":0,"changes":1,"patch":""}]',
+        );
+        await db.cacheDao.put(
+          'ws1',
+          'prDetail',
+          'o/r#42',
+          '{"number":42,"title":"PR","body":"","state":"open","is_draft":false,'
+              '"author":{"login":"u","avatar_url":""},"html_url":"","external_id":"n",'
+              '"head_sha":"abc123","head_ref":"f","base_sha":"old-base","base_ref":"m",'
+              '"requested_reviewers":[],"assignees":[]}',
+        );
+
+        mockPr.pullRequests['o/r/42'] = _ghPr(headSha: 'abc123');
+        mockPr.diffs['o/r/42'] = 'rebased diff';
+
+        final repo = _makeRepo(db: db, apiClient: apiClient);
+        await repo.watchPullRequest(42).toList();
+
+        expect(await db.cacheDao.read('ws1', 'prDiff', 'o/r#42'), isNull);
+        expect(await db.cacheDao.read('ws1', 'prFiles', 'o/r#42'), isNull);
+        expect(await repo.watchDiff(42).toList(), ['rebased diff']);
+      },
+    );
+
+    test(
+      'concurrent watchPullRequest and watchFiles still refreshes stale files',
+      () async {
+        await db.cacheDao.put(
+          'ws1',
+          'prFiles',
+          'o/r#42',
+          '[{"filename":"old.dart","status":"modified","additions":1,'
+              '"deletions":0,"changes":1,"patch":""}]',
+        );
+        await db.cacheDao.put(
+          'ws1',
+          'prDetail',
+          'o/r#42',
+          '{"number":42,"title":"PR","body":"","state":"open","is_draft":false,'
+              '"author":{"login":"u","avatar_url":""},"html_url":"","external_id":"n",'
+              '"head_sha":"old-sha","head_ref":"f","base_sha":"base123","base_ref":"m",'
+              '"requested_reviewers":[],"assignees":[]}',
+        );
+
+        mockPr.pullRequests['o/r/42'] = _ghPr(headSha: 'new-sha');
+        final apiSource = FakePrDiffSource(
+          files: [
+            PrFile(
+              filename: 'fresh.dart',
+              status: PrFileStatus.modified,
+              additions: 3,
+              deletions: 1,
+              patch: '@@ -1 +1 @@',
+            ),
+          ],
+        );
+
+        final repo = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          apiDiffSource: apiSource,
+        );
+
+        final results = await Future.wait([
+          repo.watchPullRequest(42).toList(),
+          repo.watchFiles(42).toList(),
+        ]);
+        final filesEmissions = results[1] as List<List<PrFile>>;
+        expect(filesEmissions.last.single.filename, 'fresh.dart');
+        expect(apiSource.watchFilesCalls, 1);
+      },
+    );
   });
 }

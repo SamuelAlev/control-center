@@ -77,7 +77,7 @@ class _ProviderModelListState extends ConsumerState<ProviderModelList> {
             const SizedBox(width: AppSpacing.sm),
             Text(
               '${widget.models.length}',
-              style: CcFonts.code(
+              style: CcFonts.numeric(
                 textStyle: CcTypography.caption.copyWith(
                   color: tokens.textTertiary,
                 ),
@@ -243,7 +243,7 @@ class _ModelRow extends ConsumerWidget {
                       '\$${outputCost.toStringAsFixed(2)}',
                     ),
                     textAlign: TextAlign.end,
-                    style: CcFonts.code(
+                    style: CcFonts.numeric(
                       textStyle: CcTypography.caption.copyWith(
                         color: tokens.textTertiary,
                       ),

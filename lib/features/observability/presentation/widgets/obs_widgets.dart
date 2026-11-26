@@ -379,10 +379,12 @@ class ObsKeyValue extends StatelessWidget {
           ),
           Text(
             value,
-            style: CcTypography.monoNum.copyWith(
-              color: valueTone == ObsTone.neutral
-                  ? t.textPrimary
-                  : obsToneColor(t, valueTone),
+            style: CcFonts.numeric(
+              textStyle: CcTypography.numeric.copyWith(
+                color: valueTone == ObsTone.neutral
+                    ? t.textPrimary
+                    : obsToneColor(t, valueTone),
+              ),
             ),
           ),
         ],
@@ -438,7 +440,11 @@ class ObsBar extends StatelessWidget {
               ),
               Text(
                 valueLabel,
-                style: CcTypography.monoNum.copyWith(color: t.textPrimary),
+                style: CcFonts.numeric(
+                  textStyle: CcTypography.numeric.copyWith(
+                    color: t.textPrimary,
+                  ),
+                ),
               ),
             ],
           ),

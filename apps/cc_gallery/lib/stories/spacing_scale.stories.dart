@@ -65,7 +65,11 @@ class SpacingScale extends StatelessWidget {
                   AppSpacing.hGapSm,
                   Text(
                     '${step.$2.toStringAsFixed(0)}px',
-                    style: CcTypography.monoNum.copyWith(color: t.textTertiary),
+                    style: CcFonts.numeric(
+                      textStyle: CcTypography.numeric.copyWith(
+                        color: t.textTertiary,
+                      ),
+                    ),
                   ),
                 ],
               ),

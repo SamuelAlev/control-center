@@ -474,9 +474,9 @@
   "calendarDisconnect": "Відключити",
   "calendarReconnect": "Підключити знову",
   "calendarEmptyNoEvents": "У цьому діапазоні немає подій",
-  "calendarStartRecording": "Почати запис",
-  "calendarStartRecordingAndLink": "Почати запис і прив’язати",
   "calendarJoinMeet": "Приєднатися до зустрічі",
+  "calendarJoinAndRecord": "Приєднатися та записати",
+  "calendarRecordFailed": "Не вдалося почати запис",
   "calendarFromCalendar": "З календаря",
   "calendarLinkedMeeting": "Прив’язана зустріч",
   "calendarToday": "Сьогодні",
@@ -899,7 +899,6 @@
   "actions": "Дії",
   "activate": "Активувати",
   "activity": "Активність",
-  "activityLabel": "АКТИВНІСТЬ",
   "activitySearchHint": "Пошук активності",
   "activityNoMatches": "Немає активності за вашими фільтрами",
   "activityPageRange": "{start}–{end} з {total}",
@@ -2612,7 +2611,7 @@
   "published": "Опубліковано",
   "pullRequestApproved": "Pull request схвалено",
   "pullRequests": "Pull requests",
-  "questionLabel": "ПИТАННЯ",
+  "questionLabel": "Питання",
   "queued": "У черзі",
   "react": "React",
   "readerPreferences": "Налаштування читача",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Шаблон",
   "prTemplateDefault": "Типовий",
   "addReviewers": "Додати рецензентів",
-  "addAssignees": "Додати виконавців",
+
+  "reRequestReview": "Повторно запросити перевірку",
+  "reRequestReviewFor": "Повторно запросити перевірку у {label}",  "addAssignees": "Додати виконавців",
   "addLabels": "Додати мітки",
   "searchLabels": "Шукати мітки…",
   "noMatchingLabels": "Немає відповідних міток",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Занотуйте коротко — агент розгорне нотатки після зустрічі.",
   "meetingSpeakerMe": "Ви",
   "meetingStatusRecording": "Запис",
+  "meetingStatusPaused": "Призупинено",
   "meetingStatusProcessing": "Обробка",
   "meetingStatusDone": "Готово",
   "meetingStatusFailed": "Помилка",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Немає зустрічей} one{1 зустріч} few{{count} зустрічі} many{{count} зустрічей} other{{count} зустрічі}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Відкриті пункти дій",
-  "meetingsLedgerDecisions": "Рішення",
   "meetingsLiveOpen": "Відкрити запис",
   "meetingTemplateShort": "Шаблон",
-  "meetingsStatThisWeek": "Цього тижня",
-  "meetingsStatRecorded": "Записано",
   "meetingsFilterAll": "Усі",
   "meetingsFilterDone": "Готово",
   "meetingsFilterProcessing": "Обробка",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "покращено",
   "meetingsTranscribing": "транскрибування й підсумок…",
   "meetingsOpenAction": "Відкрити",
   "meetingsStopProcessing": "Зупинити",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Схоже, триває зустріч. Записати?",
-  "meetingDetectedRecord": "Записати",
   "meetingDetectedDismiss": "Відхилити",
   "meetingAutoStopTitle": "Схоже, зустріч завершилася. Зупинити запис?",
   "meetingAutoStopStop": "Зупинити",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Ніколи не підключався",
+  "deviceAwaitingApproval": "Очікує підтвердження",
   "profileSectionLabel": "Профіль",
   "profileSectionDescription": "Як вас бачить команда й авторство git-комітів у цьому просторі. Порожні поля успадковують ім'я й пошту облікового запису.",
   "displayNameLabel": "Ім’я для відображення",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Виконується",
   "evalsStatusPassed": "Пройдено",
   "evalsStatusFailed": "Помилка",
-  "bannerMeetingJoin": "Приєднатися",
-  "bannerMeetingRecordAndLink": "Записати й прив’язати",
   "bannerCalendarReconnect": "Підключити знову",
   "bannerView": "Переглянути",
   "soundscapeTitle": "Soundscapes",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Не вдалося опублікувати коментар: {error}",
   "commentOnLine": "Рядок {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Завжди дозволяти копіювання із середовищ",
   "rigClipboardAlwaysCopyDescription": "Розміщувати вміст буфера обміну з будь-якого середовища на цьому пристрої без запиту.",
   "imageDiffBefore": "До",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Після",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Поруч",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Свайп",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Різниця",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "змінено {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Зображення",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Джерело",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Видалено",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} позначено як непереглянутий",
   "prLineChangesSemantics": "Додано рядків: {additions}, видалено рядків: {deletions}",
   "closeTabNamed": "Закрити {tab}",
-  "threadCommentCount": "{count, plural, one{{count} коментар} few{{count} коментарі} many{{count} коментарів} other{{count} коментаря}}",
   "notificationAgentAwaitingInput": "Агент потребує уваги",
   "notifyAgentAwaitingInput": "Коли агенту потрібні схвалення, відповідь або чинні облікові дані чи правило блокує дію",
   "notificationAgentNeedsApproval": "{agent} чекає на ваше схвалення",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Рішення ухвалює адміністратор",
   "improvementNotFound": "Цієї пропозиції не існує або вона в просторі, який ви не можете відкрити.",
   "dispatchSettingsTitle": "Розклади",
-  "dispatchSettingsSubtitle": "Ліміти для розкладів і спостережень, а також що відбувається із запитами, на які ніхто не відповідає.",
   "dispatchLimitsLabel": "Ліміти розкладів",
   "dispatchLimitsSubtitle": "Обмеження, скільки розкладів і спостережень можуть мати агенти, та їхні типові значення.",
   "dispatchLimitRange": "Від 1 до {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "У {zone}, часовий пояс вище.",
   "dispatchDigestHourRange": "Від 0 до 23",
   "goalRecordCrumb": "Ціль",
-  "scheduleRecordCrumb": "Розклад",
   "improvementRecordCrumb": "Пропозиція",
   "goalNodeNeedsAgent": "Виберіть агента, який виконує ціль.",
   "goalNodeNeedsObjective": "Напишіть завдання.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Це не той код, який показав ваш браузер. {count, plural, one{Залишилася {count} спроба.} few{Залишилося {count} спроби.} many{Залишилося {count} спроб.} other{Залишилося {count} спроби.}}",
   "mcpServerSignInEnded": "Це зайняло забагато часу, вхід відхилено або введено забагато неправильних кодів. Почніть знову, щоб отримати нову сторінку входу.",
   "mcpServerSignInStartAgain": "Почати знову",
-  "mcpServerSignedIn": "Вхід до {name} виконано."
+  "mcpServerSignedIn": "Вхід до {name} виконано.",
+  "ccLoading": "Завантаження",
+  "ccProgress": "Перебіг",
+  "ccBreadcrumb": "Навігаційний шлях",
+  "ccDialog": "Діалогове вікно",
+  "ccResize": "Змінити розмір",
+  "ccUnverifiedLabel": "{label} (не перевірено)",
+  "prRowSelect": "Вибрати {title}",
+  "prTableSelectAll": "Вибрати всі pull requests",
+  "planVersionRewind": "Повернути до версії {version}"
 }

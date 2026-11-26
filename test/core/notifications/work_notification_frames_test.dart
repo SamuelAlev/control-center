@@ -12,9 +12,10 @@ void main() {
   AppNotification? map(String method, Map<String, dynamic> params) =>
       mapNotificationFrame(method, params, l10n: l10n);
 
-  test('a settled goal opens its page; notify is quiet, review asks', () {
+  test('a settled goal opens its space tab; notify is quiet, review asks', () {
     final done = map('notifications/goal_settled', {
       'workspace_id': 'ws',
+      'space_id': 's1',
       'goal_id': 'g1',
       'status': 'completed',
       'notification_kind': 'notify',
@@ -23,12 +24,21 @@ void main() {
     })!;
     expect(done.title, 'Goal done');
     expect(done.body, 'Shipped [2J the **release**');
-    expect(done.route, '/workspaces/ws/goals/g1');
+    expect(done.route, spaceRoute('ws', 's1', tab: goalTabKey('g1')));
     expect(done.category, NotificationCategory.agentRunCompleted);
     expect(done.presentation, NotificationPresentation.centerOnly);
 
+    final withoutSpace = map('notifications/goal_settled', {
+      'workspace_id': 'ws',
+      'goal_id': 'g1',
+      'status': 'completed',
+      'notification_kind': 'notify',
+    })!;
+    expect(withoutSpace.route, inboxRoute('ws'));
+
     final review = map('notifications/goal_settled', {
       'workspace_id': 'ws',
+      'space_id': 's1',
       'goal_id': 'g1',
       'status': 'paused',
       'hold': 'needs_review',
@@ -76,7 +86,7 @@ void main() {
       'notification_kind': 'notify',
     })!;
     expect(n.title, 'A schedule ended');
-    expect(n.route, '/workspaces/ws/schedules/r1');
+    expect(n.route, scheduleRoute('ws', 'r1'));
     expect(n.category, NotificationCategory.agentRunCompleted);
   });
 
@@ -94,12 +104,20 @@ void main() {
     expect(n.body, 'Release goal\nTighten the prompt');
     expect(n.route, '/workspaces/ws/inbox');
     expect(
+      waitingDigestItemRoute('ws', {
+        'type': 'goal_review',
+        'id': 'g1',
+        'space_id': 's1',
+      }),
+      spaceRoute('ws', 's1', tab: goalTabKey('g1')),
+    );
+    expect(
       waitingDigestItemRoute('ws', {'type': 'goal_review', 'id': 'g1'}),
-      '/workspaces/ws/goals/g1',
+      inboxRoute('ws'),
     );
     expect(
       waitingDigestItemRoute('ws', {'type': 'improvement', 'id': 'p1'}),
-      '/workspaces/ws/improvements/p1',
+      memoryImprovementRoute('ws', 'p1'),
     );
     // A request (an approval or question of a run the server started) is
     // answered where it was asked: its conversation.
@@ -119,19 +137,19 @@ void main() {
     );
   });
 
-  test('proposals open the one proposal, or the list', () {
+  test('proposals open the one proposal, or the memory improvements tab', () {
     final one = map('notifications/improvement_proposed', {
       'workspace_id': 'ws',
       'proposal_ids': ['p1'],
     })!;
     expect(one.title, 'An improvement was proposed');
-    expect(one.route, '/workspaces/ws/improvements/p1');
+    expect(one.route, memoryImprovementRoute('ws', 'p1'));
     final many = map('notifications/improvement_proposed', {
       'workspace_id': 'ws',
       'proposal_ids': ['p1', 'p2'],
     })!;
     expect(many.title, '2 improvements were proposed');
-    expect(many.route, '/workspaces/ws/improvements');
+    expect(many.route, memoryImprovementsRoute('ws'));
   });
 
   test('a held pipeline run opens its conversation, money in the body', () {

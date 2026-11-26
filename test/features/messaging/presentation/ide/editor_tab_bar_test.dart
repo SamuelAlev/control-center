@@ -547,6 +547,38 @@ void main() {
       expect(selected, [2]);
     });
 
+    testWidgets('Shift+F10 and the menu key open the focused tab\'s menu', (
+      tester,
+    ) async {
+      final menus = <(int, Offset)>[];
+      int? selected;
+      await tester.pumpWidget(
+        _harness(
+          onTabSelected: (i) => selected = i,
+          onReorderDrop: (_, _) {},
+          onTabContextMenu: (index, position) async =>
+              menus.add((index, position)),
+        ),
+      );
+
+      tabNode(tester, 'A').requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.f10);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+      await tester.pumpAndSettle();
+
+      // Both open B's menu, anchored under the tab (there is no pointer), and
+      // neither selects it.
+      expect(menus.map((m) => m.$1), [1, 1]);
+      final tab = tester.getRect(_label('B'));
+      expect(menus.first.$2.dy, greaterThanOrEqualTo(tab.bottom));
+      expect(selected, isNull);
+    });
+
     testWidgets('arrow keys follow reading direction under RTL', (
       tester,
     ) async {

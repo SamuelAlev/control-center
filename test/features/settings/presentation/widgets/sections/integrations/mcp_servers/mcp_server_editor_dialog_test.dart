@@ -141,6 +141,50 @@ void main() {
     expect(find.byType(McpServerEditorDialog), findsNothing);
   });
 
+  testWidgets('Replace puts the cursor in the new value, and Undo hands focus '
+      'back to Replace', (tester) async {
+    final at = DateTime.utc(2026, 11);
+    final drafts = await open(
+      tester,
+      existing: McpServerDefinition(
+        id: 'srv-1',
+        workspaceId: 'ws-1',
+        name: 'github',
+        transport: McpServerTransport.stdio,
+        command: 'npx',
+        envNames: const ['REPLACE_ME'],
+        createdAt: at,
+        updatedAt: at,
+      ),
+    );
+    String? focusedLabel() {
+      final button = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcButton>();
+      final label = button?.child;
+      return label is Text ? label.data : null;
+    }
+
+    // The pressed button stays in the row (as Undo) and holds focus.
+    await tester.tap(inRow('REPLACE_ME', l10n.mcpServerSecretReplace));
+    await tester.pumpAndSettle();
+    final focusedField = FocusManager.instance.primaryFocus?.context
+        ?.findAncestorWidgetOfExactType<CcTextField>();
+    expect(focusedField?.hintText, l10n.mcpServerSecretNewValueHint);
+    tester.testTextInput.enterText('typed');
+    await tester.pump();
+
+    await tester.tap(inRow('REPLACE_ME', l10n.mcpServerSecretUndo));
+    await tester.pumpAndSettle();
+    expect(focusedLabel(), l10n.mcpServerSecretReplace);
+
+    await tester.tap(inRow('REPLACE_ME', l10n.mcpServerSecretReplace));
+    await tester.pumpAndSettle();
+    tester.testTextInput.enterText('fresh');
+    await tester.pump();
+    await save(tester);
+    expect(drafts.single.envSet, {'REPLACE_ME': 'fresh'});
+  });
+
   testWidgets('adding a remote server sends its URL and headers', (
     tester,
   ) async {

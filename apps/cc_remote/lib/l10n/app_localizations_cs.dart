@@ -314,9 +314,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get joinMeeting => 'Připojit se ke schůzce';
 
   @override
-  String get join => 'Připojit se';
-
-  @override
   String attendeesCount(int count) {
     return 'Účastníci ($count)';
   }

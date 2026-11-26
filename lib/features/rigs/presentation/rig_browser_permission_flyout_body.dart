@@ -59,11 +59,11 @@ class RigBrowserPermissionFlyoutBody extends StatelessWidget {
               AppSpacing.xs,
             ),
             child: Text(
-              l10n.rigBrowserPermissionsTitle.toUpperCase(),
+              l10n.rigBrowserPermissionsTitle,
               style: CcTypography.caption.copyWith(
                 color: t.textTertiary,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: 0.2,
               ),
             ),
           ),

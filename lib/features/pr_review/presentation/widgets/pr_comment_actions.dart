@@ -9,6 +9,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -338,6 +339,9 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
       ComposerTextController.markdownOnly();
   final FocusNode _focus = FocusNode();
   late bool _editing = _controller.text.isNotEmpty;
+  // Set when Edit opened the editor here; a draft that was already open when
+  // this slot was built again (scrolled back into view) does not take focus.
+  bool _opened = false;
   bool _saving = false;
 
   TextEditingController get _controller => widget.controller ?? _ownController;
@@ -354,12 +358,18 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
       return;
     }
     _controller.text = widget.initialBody;
-    setState(() => _editing = true);
+    setState(() {
+      _editing = true;
+      _opened = true;
+    });
   }
 
   void _close() {
     _controller.clear();
-    setState(() => _editing = false);
+    setState(() {
+      _editing = false;
+      _opened = false;
+    });
   }
 
   Future<void> _save() async {
@@ -385,7 +395,7 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final editor = _editing
+    final fields = _editing
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -395,7 +405,6 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
                 hintText: l10n.commentEdit,
                 owner: widget.owner,
                 repo: widget.repo,
-                autofocus: true,
                 minLines: 3,
                 maxLines: 12,
               ),
@@ -430,6 +439,12 @@ class _EditableCommentSlotState extends State<EditableCommentSlot> {
             ],
           )
         : null;
+    // Edit lives in the comment's toolbar, which stays (and keeps focus)
+    // beside the editor, so the field asks for focus itself, and Save or
+    // Cancel hand it back.
+    final editor = fields != null && _opened
+        ? FocusOnMount(focusNode: _focus, builder: (_, _) => fields)
+        : fields;
     return widget.builder(context, editor, _start);
   }
 }

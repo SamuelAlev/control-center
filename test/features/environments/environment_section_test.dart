@@ -449,7 +449,7 @@ void main() {
       tester,
     ) async {
       await _pump(tester, FakeEnvironmentRepository());
-      expect(find.text('ENVIRONMENT'), findsNothing);
+      expect(find.text('Environment'), findsNothing);
       expect(find.text('Start'), findsNothing);
     });
   });

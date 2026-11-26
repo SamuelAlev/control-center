@@ -54,7 +54,7 @@ class _OutcomeLedger extends StatelessWidget {
                           Text(
                             facts[index].value,
                             maxLines: 1,
-                            style: CcFonts.code(
+                            style: CcFonts.numeric(
                               textStyle: CcTypography.body.copyWith(
                                 color: t.textPrimary,
                               ),
@@ -178,7 +178,7 @@ class _ChartPane extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: CcFonts.code(
+                      style: CcFonts.numeric(
                         textStyle: CcTypography.caption.copyWith(
                           color: t.textSecondary,
                         ),
@@ -191,7 +191,7 @@ class _ChartPane extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   trailing!,
-                  style: CcFonts.code(
+                  style: CcFonts.numeric(
                     textStyle: CcTypography.bodySm.copyWith(
                       color: t.textPrimary,
                     ),
@@ -357,7 +357,7 @@ class _HistogramBarState extends State<_HistogramBar> {
                 widget.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: CcFonts.code(
+                style: CcFonts.numeric(
                   textStyle: CcTypography.caption.copyWith(
                     color: widget.emphasized || _hovered
                         ? t.textPrimary
@@ -390,7 +390,7 @@ class _HistogramBarState extends State<_HistogramBar> {
               child: Text(
                 '${widget.count}',
                 textAlign: TextAlign.end,
-                style: CcFonts.code(
+                style: CcFonts.numeric(
                   textStyle: CcTypography.caption.copyWith(
                     color: widget.count == 0 ? t.textTertiary : t.textPrimary,
                   ),
@@ -402,7 +402,7 @@ class _HistogramBarState extends State<_HistogramBar> {
               child: Text(
                 widget.percent,
                 textAlign: TextAlign.end,
-                style: CcFonts.code(
+                style: CcFonts.numeric(
                   textStyle: CcTypography.caption.copyWith(
                     color: t.textSecondary,
                   ),
@@ -446,7 +446,7 @@ class _MergeTrendChart extends StatelessWidget {
               ? Center(
                   child: Text(
                     '—',
-                    style: CcFonts.code(
+                    style: CcFonts.numeric(
                       textStyle: CcTypography.title.copyWith(
                         color: t.textTertiary,
                       ),
@@ -469,7 +469,7 @@ class _MergeTrendChart extends StatelessWidget {
     final last = points.length - 1;
     final stride = math.max(1, (points.length / 3).ceil());
     final sample = (axis.maxY - axis.minY) / 80;
-    final axisStyle = CcFonts.code(
+    final axisStyle = CcFonts.numeric(
       textStyle: CcTypography.caption.copyWith(
         color: t.textSecondary,
         fontSize: 9,
@@ -646,7 +646,7 @@ class _OpeningRhythmChart extends StatelessWidget {
                 8.0,
                 (constraints.maxWidth - dayWidth - totalWidth - gap * 9) / 8,
               );
-              final hourStyle = CcFonts.code(
+              final hourStyle = CcFonts.numeric(
                 textStyle: CcTypography.caption.copyWith(
                   color: t.textSecondary,
                   fontSize: 9,
@@ -802,7 +802,7 @@ class _HeatLegend extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           Text(
             '$value',
-            style: CcFonts.code(
+            style: CcFonts.numeric(
               textStyle: CcTypography.caption.copyWith(
                 color: t.textSecondary,
                 fontSize: 9,

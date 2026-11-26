@@ -371,7 +371,7 @@ void main() {
       );
     });
 
-    test('a resolved thread records its thread id', () async {
+    test('a resolved thread records its thread id and resolver when known', () async {
       bus.publish(
         PrThreadResolved(
           workspaceId: 'ws-1',
@@ -381,13 +381,34 @@ void main() {
           prTitle: 'Add widgets',
           threadId: 'PRRT_abc',
           commentId: 7,
+          resolvedByLogin: 'teammate',
+          occurredAt: at,
+        ),
+      );
+      bus.publish(
+        PrThreadResolved(
+          workspaceId: 'ws-1',
+          repoOwner: 'acme',
+          repoName: 'widgets',
+          prNumber: 42,
+          prTitle: 'Add widgets',
+          threadId: 'PRRT_anon',
+          commentId: 8,
           occurredAt: at,
         ),
       );
       await _pump();
-      final item = (await _feed(repository, 'ws-1')).single;
-      expect(item.method, 'notifications/pr_thread_resolved');
-      expect(item.params['thread_id'], 'PRRT_abc');
+      final items = await _feed(repository, 'ws-1');
+      final withResolver = items.firstWhere(
+        (i) => i.params['thread_id'] == 'PRRT_abc',
+      );
+      final withoutResolver = items.firstWhere(
+        (i) => i.params['thread_id'] == 'PRRT_anon',
+      );
+      expect(withResolver.method, 'notifications/pr_thread_resolved');
+      expect(withResolver.params['resolved_by_login'], 'teammate');
+      expect(withoutResolver.method, 'notifications/pr_thread_resolved');
+      expect(withoutResolver.params, isNot(contains('resolved_by_login')));
     });
 
     test('for_user_id rides along so the client can route it', () async {

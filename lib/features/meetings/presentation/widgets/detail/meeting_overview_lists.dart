@@ -91,7 +91,7 @@ class MeetingOverviewActionItems extends ConsumerWidget {
                         if (item.owner != null && item.owner!.isNotEmpty)
                           Text(
                             item.owner!,
-                            style: meetingMono(context, fontSize: 11),
+                            style: meetingMeta(context, fontSize: 11),
                           ),
                       ],
                     ),

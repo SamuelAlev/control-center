@@ -203,54 +203,44 @@ class _CandidateTile extends StatelessWidget {
       location,
       if (callersLabel != null) callersLabel,
     ].join(' · ');
+    final summary = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          candidate.qualifiedName.isNotEmpty
+              ? candidate.qualifiedName
+              : candidate.name,
+          style: CcTypography.bodySm.copyWith(color: tokens.textPrimary),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (!inDiff && canOpenEditor) ...[
+          const SizedBox(height: 2),
+          Text(
+            openInEditorLabel,
+            style: CcTypography.caption.copyWith(color: tokens.accent),
+          ),
+        ],
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: inDiff || canOpenEditor ? onSelect : null,
-            child: MouseRegion(
-              cursor: inDiff || canOpenEditor
-                  ? SystemMouseCursors.click
-                  : MouseCursor.defer,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    candidate.qualifiedName.isNotEmpty
-                        ? candidate.qualifiedName
-                        : candidate.name,
-                    style: CcTypography.bodySm.copyWith(
-                      color: tokens.textPrimary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textTertiary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (!inDiff && canOpenEditor) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      openInEditorLabel,
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.accent,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          // A candidate with nowhere to go is plain text, not a dead button.
+          if (inDiff || canOpenEditor)
+            CcTappable(onPressed: onSelect, builder: (context, _) => summary)
+          else
+            summary,
           if (candidate.implementors.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -261,21 +251,17 @@ class _CandidateTile extends StatelessWidget {
             for (final impl in candidate.implementors)
               Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onSelectImplementor(impl),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: Text(
-                      impl.qualifiedName.isNotEmpty
-                          ? impl.qualifiedName
-                          : impl.name,
-                      style: CcTypography.bodySm.copyWith(
-                        color: tokens.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                child: CcTappable(
+                  onPressed: () => onSelectImplementor(impl),
+                  builder: (context, _) => Text(
+                    impl.qualifiedName.isNotEmpty
+                        ? impl.qualifiedName
+                        : impl.name,
+                    style: CcTypography.bodySm.copyWith(
+                      color: tokens.textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),

@@ -178,7 +178,7 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
       _refreshChanges();
       ref
           .read(prDetailPollingProvider(widget.prRef).notifier)
-          .notifyDiffStale();
+          .notifyDiffStale(bustServerCache: true);
     }
   }
 
@@ -259,7 +259,9 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
         return;
       }
       _refreshChanges();
-      ref.read(prDetailPollingProvider(prRef).notifier).notifyDiffStale();
+      ref
+          .read(prDetailPollingProvider(prRef).notifier)
+          .notifyDiffStale(bustServerCache: true);
       final toast = CcToastScope.maybeOf(context);
       if (push) {
         toast?.show(

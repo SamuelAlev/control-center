@@ -124,7 +124,6 @@
   "eventNotFound": "لم يُعثر على الحدث",
   "eventNotFoundDescription": "قد يكون خارج نطاق جدول الأعمال، أو أُزيل من المصدر.",
   "joinMeeting": "الانضمام إلى الاجتماع",
-  "join": "انضمام",
   "attendeesCount": "الحاضرون ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

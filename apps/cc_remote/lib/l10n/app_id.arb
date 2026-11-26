@@ -95,7 +95,6 @@
   "eventNotFound": "Acara tidak ditemukan",
   "eventNotFoundDescription": "Mungkin di luar jendela agenda, atau sudah dihapus di sumbernya.",
   "joinMeeting": "Gabung rapat",
-  "join": "Gabung",
   "attendeesCount": "Peserta ({count})",
   "details": "Detail",
   "allDay": "Sepanjang hari",

@@ -54,9 +54,10 @@ class ScriptOriginLine extends StatelessWidget {
         Flexible(child: Text(l10n.scriptOriginLine, style: style)),
         if (show != null) ...[
           const SizedBox(width: AppSpacing.sm),
+          // Scrolls to the call: a link, named by its own text.
           CcTappable(
             onPressed: show,
-            semanticLabel: l10n.scriptOriginShow,
+            semanticButton: false,
             builder: (context, states) => CcLinkText(
               l10n.scriptOriginShow,
               style: style.copyWith(color: t.textSecondary),

@@ -8,6 +8,7 @@ import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/features/shell/presentation/widgets/server_disconnected_overlay.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,6 +54,7 @@ void main() {
     WidgetTester tester, {
     bool withSignIn = true,
     Locale locale = const Locale('en'),
+    FocusNode? beneath,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -72,7 +74,18 @@ void main() {
           locale: locale,
           home: CcTheme(
             data: CcThemeData.light(),
-            child: const Scaffold(body: ServerDisconnectedOverlay()),
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  if (beneath != null)
+                    Focus(
+                      focusNode: beneath,
+                      child: const SizedBox(width: 20, height: 20),
+                    ),
+                  const ServerDisconnectedOverlay(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -129,6 +142,43 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('takes focus from the app beneath, keeps Tab inside, and '
+      'hands focus back once the connection returns', (tester) async {
+    final beneath = FocusNode(debugLabel: 'app beneath');
+    addTearDown(beneath.dispose);
+    await pumpOverlay(tester, beneath: beneath);
+    beneath.requestFocus();
+    await tester.pump();
+
+    // An attempt is in flight, so the retry button is busy and nothing in
+    // the dialog asks for focus by itself.
+    statuses.add(
+      const ServerConnectionStatus(
+        phase: ServerConnectionPhase.reconnecting,
+        attempt: 1,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(ServerDisconnectedOverlay.graceDelay);
+    await tester.pump();
+    expect(find.text('Reconnecting…'), findsOneWidget);
+    expect(beneath.hasFocus, isFalse);
+
+    for (var i = 0; i < 4; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(beneath.hasFocus, isFalse, reason: 'Tab stays in the dialog');
+    }
+
+    statuses.add(_connected);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Lost connection to the server'), findsNothing);
+    expect(beneath.hasPrimaryFocus, isTrue);
+
+    await unmount(tester);
+  });
+
   testWidgets('goes away once the connection is back', (tester) async {
     await pumpOverlay(tester);
     statuses.add(
@@ -141,6 +191,31 @@ void main() {
     statuses.add(_connected);
     await tester.pump();
     expect(find.text('Lost connection to the server'), findsNothing);
+  });
+
+  testWidgets('a dialog with no button still takes focus off the app '
+      'it covers', (tester) async {
+    final beneath = FocusNode(debugLabel: 'app beneath');
+    addTearDown(beneath.dispose);
+    await pumpOverlay(tester, withSignIn: false, beneath: beneath);
+    beneath.requestFocus();
+    await tester.pump();
+
+    statuses.add(
+      const ServerConnectionStatus(
+        phase: ServerConnectionPhase.closed,
+        authenticationRejected: true,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text("Can't reconnect to the server"), findsOneWidget);
+    expect(find.byType(CcButton), findsNothing);
+    expect(beneath.hasFocus, isFalse);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(beneath.hasFocus, isFalse);
   });
 
   testWidgets('a rejected device can only go to sign-in', (tester) async {

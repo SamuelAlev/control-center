@@ -360,7 +360,7 @@ void main() {
       expect(comment.diffHunk, '@@ -5,6 +5,8 @@');
     });
 
-    test('falls back to originalLine when line is null', () {
+    test('marks comment outdated without falling back to originalLine when line is null', () {
       const ghComment = GitHubReviewComment(
         id: 102,
         body: 'Consider this change.',
@@ -373,8 +373,10 @@ void main() {
 
       final comment = prCodeReviewCommentFromGitHub(ghComment);
 
-      expect(comment.position, 15);
-      expect(comment.anchorLine, 15);
+      expect(comment.position, isNull);
+      expect(comment.anchorLine, isNull);
+      expect(comment.originalLine, 15);
+      expect(comment.isOutdated, isTrue);
     });
 
     test('both line and originalLine can be null', () {

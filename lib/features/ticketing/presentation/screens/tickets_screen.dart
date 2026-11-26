@@ -9,6 +9,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/ticketing/presentation/ticket_view_mode.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/new_ticket_dialog.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu.dart';
+import 'package:control_center/features/ticketing/presentation/widgets/ticket_context_menu_keys.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_detail_panel.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_property_pickers.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_visuals.dart';
@@ -469,7 +470,7 @@ class _TicketListRowState extends ConsumerState<_TicketListRow> {
       context,
     ).formatShortMonthDay(ticket.updatedAt);
 
-    return CcTappable(
+    final row = CcTappable(
       onPressed: () =>
           context.go(ticketDetailRoute(widget.workspaceId, ticket.id)),
       builder: (context, states) {
@@ -549,6 +550,11 @@ class _TicketListRowState extends ConsumerState<_TicketListRow> {
           ),
         );
       },
+    );
+    return TicketContextMenuKeys(
+      ticket: ticket,
+      workspaceId: widget.workspaceId,
+      child: row,
     );
   }
 }
@@ -1083,7 +1089,7 @@ class _TicketCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final isUser = ticket.isAssignedToUser;
-    return GestureDetector(
+    final card = GestureDetector(
       behavior: HitTestBehavior.opaque,
       onSecondaryTapDown: (details) => showTicketContextMenu(
         context: context,
@@ -1122,6 +1128,11 @@ class _TicketCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+    return TicketContextMenuKeys(
+      ticket: ticket,
+      workspaceId: workspaceId,
+      child: card,
     );
   }
 }

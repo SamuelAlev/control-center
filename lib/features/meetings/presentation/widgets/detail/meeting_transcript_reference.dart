@@ -30,14 +30,6 @@ class MeetingTranscriptReference extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: kMeetingNotesHeadingHeight,
-          child: Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: MeetingEyebrow(l10n.meetingTabTranscript),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
         SectionCard(
           padding: EdgeInsets.zero,
           child: ClipRRect(
@@ -45,6 +37,19 @@ class MeetingTranscriptReference extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // The panel's title strip, the same height as the notes
+                // panel's tab strip beside it so their rules line up.
+                Container(
+                  height: kMeetingPanelHeaderHeight,
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: ds.borderPrimary)),
+                  ),
+                  alignment: AlignmentDirectional.centerStart,
+                  child: MeetingEyebrow(l10n.meetingTabTranscript),
+                ),
                 if (preview.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(AppSpacing.lg),

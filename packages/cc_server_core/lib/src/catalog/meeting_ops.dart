@@ -370,6 +370,10 @@ List<RepoOp> buildMeetingOps({
     RepoOp(
       name: 'meeting.ingestAudio',
       kind: RepoOpKind.mutate,
+      // High-frequency PCM audio chunks (~8/s); startRecording/stopRecording
+      // carry the accountability record. Refusals are still audited by the
+      // dispatcher.
+      audited: false,
       requiredArgs: ['meeting_id', 'channel', 'seq', 'pcm'],
       handler: (ctx) async {
         await meetingRecording.ingest(
@@ -408,6 +412,9 @@ List<RepoOp> buildMeetingOps({
     RepoOp(
       name: 'dictation.ingestAudio',
       kind: RepoOpKind.mutate,
+      // High-frequency PCM audio chunks (~4/s); dictation.start/stop carry the
+      // accountability record. Refusals are still audited by the dispatcher.
+      audited: false,
       requiredArgs: ['dictation_id', 'seq', 'pcm'],
       handler: (ctx) async {
         dictationService.ingest(

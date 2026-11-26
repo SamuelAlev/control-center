@@ -425,19 +425,6 @@ class _ContextMenuOverlay extends StatefulWidget {
 class _ContextMenuOverlayState extends State<_ContextMenuOverlay> {
   _MenuSub? _openSub;
   Rect? _openAnchor;
-  final _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.requestFocus();
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
 
   void _openSubmenu(_MenuSub sub, Rect anchor) {
     if (_openSub == sub) {
@@ -471,8 +458,11 @@ class _ContextMenuOverlayState extends State<_ContextMenuOverlay> {
       top = (size.height - rootHeight - 8).clamp(8.0, size.height);
     }
 
+    // Not focusable itself: it hears Escape from anything inside the trap,
+    // which takes focus on open and hands it back to the row on close.
     return Focus(
-      focusNode: _focusNode,
+      canRequestFocus: false,
+      skipTraversal: true,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
@@ -481,29 +471,32 @@ class _ContextMenuOverlayState extends State<_ContextMenuOverlay> {
         }
         return KeyEventResult.ignored;
       },
-      child: Stack(
-        children: [
-          // Dismiss barrier.
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: widget.onDismiss,
-              onSecondaryTap: widget.onDismiss,
+      child: CcFocusTrap(
+        debugLabel: 'ticket context menu',
+        child: Stack(
+          children: [
+            // Dismiss barrier.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.onDismiss,
+                onSecondaryTap: widget.onDismiss,
+              ),
             ),
-          ),
-          Positioned(
-            left: left,
-            top: top,
-            child: _Panel(
-              entries: widget.entries,
-              openSub: _openSub,
-              onHoverSub: _openSubmenu,
-              onHoverLeaf: _closeSubmenu,
+            Positioned(
+              left: left,
+              top: top,
+              child: _Panel(
+                entries: widget.entries,
+                openSub: _openSub,
+                onHoverSub: _openSubmenu,
+                onHoverLeaf: _closeSubmenu,
+              ),
             ),
-          ),
-          if (_openSub != null && _openAnchor != null)
-            _buildSubmenu(size, _openSub!, _openAnchor!),
-        ],
+            if (_openSub != null && _openAnchor != null)
+              _buildSubmenu(size, _openSub!, _openAnchor!),
+          ],
+        ),
       ),
     );
   }
@@ -555,42 +548,44 @@ class _Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return Container(
-      width: _panelWidth,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: t.bgPrimary,
-        border: Border.all(color: t.borderSecondary),
-        boxShadow: AppShadows.golden,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final entry in entries)
-            switch (entry) {
-              _MenuDivider() => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Container(height: 1, color: t.borderSecondary),
-              ),
-              final _MenuAction a => _Row(
-                leading: a.leading,
-                label: a.label,
-                selected: a.selected,
-                destructive: a.destructive,
-                onTap: a.onTap,
-                onHover: onHoverLeaf,
-              ),
-              final _MenuSub s => _Row(
-                leading: s.leading,
-                label: s.label,
-                hasChildren: true,
-                highlighted: s == openSub,
-                onTap: () {},
-                onHoverWithBox: (rect) => onHoverSub(s, rect),
-              ),
-            },
-        ],
+    // Tab finishes this panel before it moves on to an open submenu.
+    return FocusTraversalGroup(
+      child: Container(
+        width: _panelWidth,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          color: t.bgPrimary,
+          border: Border.all(color: t.borderSecondary),
+          boxShadow: AppShadows.golden,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final entry in entries)
+              switch (entry) {
+                _MenuDivider() => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Container(height: 1, color: t.borderSecondary),
+                ),
+                final _MenuAction a => _Row(
+                  leading: a.leading,
+                  label: a.label,
+                  selected: a.selected,
+                  destructive: a.destructive,
+                  onTap: a.onTap,
+                  onHover: onHoverLeaf,
+                ),
+                final _MenuSub s => _Row(
+                  leading: s.leading,
+                  label: s.label,
+                  hasChildren: true,
+                  highlighted: s == openSub,
+                  onHoverWithBox: (rect) => onHoverSub(s, rect),
+                ),
+              },
+          ],
+        ),
       ),
     );
   }
@@ -600,7 +595,7 @@ class _Row extends StatefulWidget {
   const _Row({
     required this.leading,
     required this.label,
-    required this.onTap,
+    this.onTap,
     this.selected = false,
     this.destructive = false,
     this.hasChildren = false,
@@ -611,7 +606,9 @@ class _Row extends StatefulWidget {
 
   final Widget leading;
   final String label;
-  final VoidCallback onTap;
+
+  /// The action; null on a submenu row, where activating opens the flyout.
+  final VoidCallback? onTap;
   final bool selected;
   final bool destructive;
   final bool hasChildren;
@@ -646,40 +643,44 @@ class _RowState extends State<_Row> {
         _emitHover();
       },
       onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          decoration: BoxDecoration(
-            color: active
-                ? (widget.destructive
-                      ? t.fgErrorPrimary.withValues(alpha: 0.10)
-                      : t.bgPrimaryHover)
-                : const Color(0x00000000),
-          ),
-          child: Row(
-            children: [
-              SizedBox(width: 20, child: Center(child: widget.leading)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: widget.destructive ? fg : t.textPrimary,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: CcTappable(
+          // A submenu row opens its flyout, as hovering it does.
+          onPressed: widget.onTap ?? _emitHover,
+          semanticChecked: widget.selected ? true : null,
+          semanticExpanded: widget.hasChildren ? widget.highlighted : null,
+          builder: (context, _) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            decoration: BoxDecoration(
+              color: active
+                  ? (widget.destructive
+                        ? t.fgErrorPrimary.withValues(alpha: 0.10)
+                        : t.bgPrimaryHover)
+                  : const Color(0x00000000),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 20, child: Center(child: widget.leading)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    widget.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: widget.destructive ? fg : t.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              if (widget.selected)
-                Icon(AppIcons.check, size: 15, color: t.fgBrandPrimary),
-              if (widget.hasChildren)
-                Icon(AppIcons.chevronRight, size: 15, color: t.fgQuaternary),
-            ],
+                if (widget.selected)
+                  Icon(AppIcons.check, size: 15, color: t.fgBrandPrimary),
+                if (widget.hasChildren)
+                  Icon(AppIcons.chevronRight, size: 15, color: t.fgQuaternary),
+              ],
+            ),
           ),
         ),
       ),

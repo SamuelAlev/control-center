@@ -410,7 +410,7 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('1 comment'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
       expect(find.text('Dev'), findsOneWidget);
       expect(find.text('Consider using a logger.'), findsOneWidget);
     });
@@ -445,7 +445,7 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('2 comments'), findsOneWidget);
+      expect(find.text('1 reply'), findsOneWidget);
       expect(find.text('Alice'), findsOneWidget);
       expect(find.text('Bob'), findsOneWidget);
       expect(find.text('First comment'), findsOneWidget);

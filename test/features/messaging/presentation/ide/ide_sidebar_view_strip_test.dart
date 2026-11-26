@@ -7,6 +7,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -64,6 +65,8 @@ void main() {
     IdeSidebarView selected = IdeSidebarView.general,
     ValueChanged<IdeSidebarView>? onChanged,
     Map<String, Object> prefs = const {},
+    TextDirection direction = TextDirection.ltr,
+    FocusNode? after,
   }) async {
     final container = ProviderContainer(
       overrides: [
@@ -85,14 +88,27 @@ void main() {
               tokens: DesignSystemTokens.light(),
               brightness: CcBrightness.light,
             ),
-            child: Scaffold(
-              body: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: width,
-                  child: IdeSidebarViewStrip(
-                    selected: selected,
-                    onChanged: onChanged ?? (_) {},
+            child: Directionality(
+              textDirection: direction,
+              child: Scaffold(
+                body: Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: SizedBox(
+                    width: width,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IdeSidebarViewStrip(
+                          selected: selected,
+                          onChanged: onChanged ?? (_) {},
+                        ),
+                        if (after != null)
+                          Focus(
+                            focusNode: after,
+                            child: const SizedBox(width: 20, height: 20),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -251,6 +267,56 @@ void main() {
         reason: 'the menu closes on selection',
       );
     });
+  });
+
+  group('keyboard', () {
+    /// The focus node of [view]'s rail cell.
+    FocusNode cellNode(WidgetTester tester, IdeSidebarView view) =>
+        Focus.of(tester.element(cell(view)));
+
+    testWidgets('Tab leaves the strip after the selected cell and the caret', (
+      tester,
+    ) async {
+      final after = FocusNode(debugLabel: 'after the strip');
+      addTearDown(after.dispose);
+      await pump(tester, after: after);
+
+      cellNode(tester, IdeSidebarView.general).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      // The caret, then out: the strip no longer loops Tab back to itself.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(after.hasPrimaryFocus, isTrue);
+    });
+
+    for (final direction in TextDirection.values) {
+      testWidgets('the arrow pointing along the strip selects the next view '
+          '($direction)', (tester) async {
+        var selected = IdeSidebarView.general;
+        await pump(
+          tester,
+          direction: direction,
+          onChanged: (view) => selected = view,
+        );
+        cellNode(tester, IdeSidebarView.general).requestFocus();
+        await tester.pump();
+
+        final next = direction == TextDirection.ltr
+            ? LogicalKeyboardKey.arrowRight
+            : LogicalKeyboardKey.arrowLeft;
+        await tester.sendKeyEvent(next);
+        await tester.pump();
+        expect(selected, IdeSidebarView.explorer);
+        expect(
+          tester.getCenter(cell(IdeSidebarView.explorer)).dx >
+              tester.getCenter(cell(IdeSidebarView.general)).dx,
+          direction == TextDirection.ltr,
+          reason: 'next is the cell the arrow points at',
+        );
+      });
+    }
   });
 
   group('pinning', () {

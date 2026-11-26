@@ -967,26 +967,12 @@ final class GrantRoutes {
     GitHubTokenScope requested,
     GitHubTokenScope granted,
   ) async {
-    final installation = await api.repoInstallation(
+    final installation = await _requireRepoInstallation(
+      api,
       request.repoOwner,
       request.repoName,
+      expectedOwnerId: repo.ownerId,
     );
-    if (installation == null) {
-      final onOwner = await api.accountInstallation(request.repoOwner);
-      if (onOwner == null || onOwner.accountId != repo.ownerId) {
-        throw const ConnectException(ConnectErrorCode.notInstalled);
-      }
-      throw onOwner.suspended
-          ? const ConnectException(ConnectErrorCode.suspended)
-          : const ConnectException(ConnectErrorCode.repoNotSelected);
-    }
-    if (installation.accountId != repo.ownerId) {
-      // The repository moved between the two reads; never mint across.
-      throw _denied;
-    }
-    if (installation.suspended) {
-      throw const ConnectException(ConnectErrorCode.suspended);
-    }
     final mint = await api.installationToken(
       installationId: installation.id,
       repoId: repo.id,
@@ -1013,6 +999,154 @@ final class GrantRoutes {
       repositorySelection: mint.repositorySelection,
       repositoryIds: mint.repositoryIds,
       permissions: mint.permissions,
+    ).toJson();
+  }
+
+  Future<GitHubInstallation> _requireRepoInstallation(
+    GitHubApi api,
+    String owner,
+    String name, {
+    required int expectedOwnerId,
+  }) async {
+    final installation = await api.repoInstallation(owner, name);
+    if (installation == null) {
+      final onOwner = await api.accountInstallation(owner);
+      if (onOwner == null || onOwner.accountId != expectedOwnerId) {
+        throw const ConnectException(ConnectErrorCode.notInstalled);
+      }
+      throw onOwner.suspended
+          ? const ConnectException(ConnectErrorCode.suspended)
+          : const ConnectException(ConnectErrorCode.repoNotSelected);
+    }
+    if (installation.accountId != expectedOwnerId) {
+      // The repository moved between the two reads; never mint across.
+      throw _denied;
+    }
+    if (installation.suspended) {
+      throw const ConnectException(ConnectErrorCode.suspended);
+    }
+    return installation;
+  }
+
+  /// `POST /v1/github/review_comments`: posts a batch of inline pull-request
+  /// review comments through a short-lived single-repo `pull_requests: write`
+  /// installation token that never leaves Connect and is revoked immediately
+  /// after the batch completes.
+  Future<Object?> githubReviewComments(
+    ConnectCaller caller,
+    Map<String, Object?> body,
+  ) async {
+    final request = _parse(() => GitHubReviewCommentsRequest.fromJson(body));
+    try {
+      return await _githubReviewComments(caller, request);
+    } on ConnectException catch (error) {
+      ctx.log.event('github.review_comments', {
+        'outcome': 'refused',
+        'error': error.code.wire,
+        if (error.reason.isNotEmpty) 'reason': error.reason,
+      }, ConnectLogLevel.warn);
+      rethrow;
+    }
+  }
+
+  Future<Object?> _githubReviewComments(
+    ConnectCaller caller,
+    GitHubReviewCommentsRequest request,
+  ) async {
+    final lane = await ctx.githubLane();
+    final (_, _, api) = lane;
+    final grant = await resolveGitHub(
+      caller,
+      request.workspaceId,
+      request.seal,
+      lane: lane,
+      minRemaining: const Duration(minutes: 5),
+      admit: (opened) => ctx.quotas.admit(
+        ctx.githubAppMintQuotas(caller, opened.header.accountId),
+      ),
+    );
+    final repo = await api.repo(
+      grant.parent,
+      request.repoOwner,
+      request.repoName,
+    );
+    if (repo.id != request.repoId) {
+      throw _denied;
+    }
+    final allowedOwners = ctx.config.githubAllowedOwners;
+    if (allowedOwners.isNotEmpty && !allowedOwners.contains(repo.ownerId)) {
+      throw _denied;
+    }
+    final granted = clampGitHubScope(
+      requested: GitHubTokenScope.bot,
+      role: GitHubRepoRole.fromPermissions(repo.permissions),
+      repoIsPublic: !repo.isPrivate,
+    );
+    if (granted != GitHubTokenScope.bot) {
+      throw const ConnectException(
+        ConnectErrorCode.accessDenied,
+        reason: 'github_review_comment_role_denied',
+      );
+    }
+    final viewer = await api.user(grant.parent);
+    if (viewer.id != grant.accountId || viewer.login.isEmpty) {
+      throw _denied;
+    }
+    final installation = await _requireRepoInstallation(
+      api,
+      request.repoOwner,
+      request.repoName,
+      expectedOwnerId: repo.ownerId,
+    );
+    final mint = await api.installationToken(
+      installationId: installation.id,
+      repoId: repo.id,
+      permissions: const {'metadata': 'read', 'pull_requests': 'write'},
+    );
+    var postedCount = 0;
+    final outcomes = <GitHubReviewCommentOutcome>[];
+    try {
+      for (var i = 0; i < request.comments.length; i++) {
+        final item = request.comments[i];
+        final result = await api.postPullRequestReviewComment(
+          installationToken: mint.token,
+          owner: request.repoOwner,
+          name: request.repoName,
+          prNumber: request.prNumber,
+          commitSha: request.commitSha,
+          path: item.path,
+          line: item.line,
+          side: item.side,
+          body: attributeConnectBotComment(viewer.login, item.body),
+          startLine: item.startLine,
+          startSide: item.startSide,
+        );
+        if (result.status == GitHubReviewCommentStatus.posted) {
+          postedCount++;
+        }
+        outcomes.add(
+          GitHubReviewCommentOutcome(
+            index: i,
+            status: result.status,
+            commentId: result.commentId,
+          ),
+        );
+      }
+    } finally {
+      await api.revokeInstallationToken(mint.token);
+    }
+    ctx.log.event('github.review_comments', {
+      'outcome': 'ok',
+      'installation_id': installation.id,
+      'repo_id': repo.id,
+      'github_user_id': grant.accountId,
+      'count': postedCount,
+      'hashed_token': githubHashedToken(mint.token),
+      'github_request_id': mint.requestId,
+    });
+    return GitHubReviewCommentsResponse(
+      results: outcomes,
+      updatedSeal: grant.updatedSeal,
     ).toJson();
   }
 

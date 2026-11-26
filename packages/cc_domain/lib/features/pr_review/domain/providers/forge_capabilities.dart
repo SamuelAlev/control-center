@@ -117,7 +117,14 @@ enum ForgeCapability {
 
   /// The open list can be read page by page past the first ("load more";
   /// the client implements `ForgeOpenPrPagingClient`).
-  openListPaging;
+  openListPaging,
+
+  /// Reviewers who already submitted a review can be asked to review again.
+  ///
+  /// GitHub supports this via `POST .../requested_reviewers`, whereas GitLab's
+  /// REST `reviewer_ids` write and Bitbucket's `reviewers` write are no-ops
+  /// for existing reviewers.
+  reRequestReview;
 
   /// The capability named [name] on the wire, or null for one this build
   /// does not know.
@@ -216,6 +223,9 @@ class ForgeCapabilities {
   /// See [ForgeCapability.labels].
   bool get labels => has(ForgeCapability.labels);
 
+  /// See [ForgeCapability.reRequestReview].
+  bool get reRequestReview => has(ForgeCapability.reRequestReview);
+
   /// Looks up a capability by its wire name, so the ratchet test can assert
   /// every declared capability is reachable.
   bool byName(String name) {
@@ -269,6 +279,7 @@ const Map<ForgeHost, ForgeCapabilities> kForgeCapabilities = {
       ForgeCapability.mergeConflictResolution,
       ForgeCapability.viewerActivity,
       ForgeCapability.openListPaging,
+      ForgeCapability.reRequestReview,
     },
   ),
   // GitLab: draft notes give real batching, approvals + "changes requested"

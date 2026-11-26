@@ -48,12 +48,16 @@ void main() {
   Future<void> pumpList(WidgetTester tester, {TextDirection? dir}) =>
       pumpLongWork(
         tester,
-        // The screen puts the button in its header, above the list.
-        const Column(
-          children: [
-            NewScheduleButton(workspaceId: kTestWorkspaceId),
-            Expanded(child: SchedulesList(workspaceId: kTestWorkspaceId)),
-          ],
+        // The settings page puts the button in its header, above the card,
+        // and scrolls the card with its other sections.
+        const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              NewScheduleButton(workspaceId: kTestWorkspaceId),
+              SchedulesList(workspaceId: kTestWorkspaceId),
+            ],
+          ),
         ),
         overrides: [
           ...longWorkOverrides(rules: repo),

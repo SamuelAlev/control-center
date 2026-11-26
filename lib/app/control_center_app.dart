@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart'
 import 'package:control_center/core/keybindings/text_undo_shortcuts.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/theme/app_theme.dart';
+import 'package:control_center/core/theme/cc_strings_l10n.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/legacy_material_bridge.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
@@ -24,6 +25,7 @@ import 'package:control_center/features/workspaces/providers/rpc_client_workspac
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
 import 'package:control_center/l10n/app_locales.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
@@ -153,6 +155,7 @@ class ControlCenterApp extends ConsumerWidget {
               context,
             ).toLanguageTag();
             final isDark = Theme.of(context).brightness == Brightness.dark;
+            final ccStrings = ccStringsFor(AppLocalizations.of(context));
             // CcTheme is the purist token-delivery space (replacing the Material
             // ThemeExtension). It wraps the whole navigator so every route and
             // overlay can resolve `context.designSystem`. CcToastScope hosts the
@@ -176,8 +179,14 @@ class ControlCenterApp extends ConsumerWidget {
                 child: RouteTitle(
                   child: CcTheme(
                     data: isDark
-                        ? CcThemeData.dark(fontFamily: appFontFamily)
-                        : CcThemeData.light(fontFamily: appFontFamily),
+                        ? CcThemeData.dark(
+                            fontFamily: appFontFamily,
+                            strings: ccStrings,
+                          )
+                        : CcThemeData.light(
+                            fontFamily: appFontFamily,
+                            strings: ccStrings,
+                          ),
                     // Third-party widgets on the deprecated framework Material
                     // library resolve their own Theme/MaterialLocalizations here.
                     child: LegacyMaterialBridge(

@@ -1087,13 +1087,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Geen afspraken in dit bereik';
 
   @override
-  String get calendarStartRecording => 'Opname starten';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Opnemen en koppelen';
-
-  @override
   String get calendarJoinMeet => 'Deelnemen aan vergadering';
+
+  @override
+  String get calendarJoinAndRecord => 'Deelnemen en opnemen';
+
+  @override
+  String get calendarRecordFailed => 'Kan opname niet starten';
 
   @override
   String get calendarFromCalendar => 'Uit de agenda';
@@ -1934,9 +1934,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get activity => 'Activiteit';
-
-  @override
-  String get activityLabel => 'ACTIVITEIT';
 
   @override
   String get activitySearchHint => 'Activiteit zoeken';
@@ -2837,7 +2834,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get askAiReviewDescription => 'Vraag de AI om deze PR te reviewen';
 
   @override
-  String get assignees => 'TOEGEWEZENEN';
+  String get assignees => 'Toegewezenen';
 
   @override
   String get attachImage => 'Afbeelding bijvoegen';
@@ -2891,7 +2888,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get briefDescription => 'Korte beschrijving';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -3884,7 +3881,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Feiten en beleidsregels verschijnen hier terwijl agenten werken.';
 
   @override
-  String get memoryLabel => 'GEHEUGEN';
+  String get memoryLabel => 'Geheugen';
 
   @override
   String get merge => 'Merge';
@@ -4479,7 +4476,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'VRAAG';
+  String get questionLabel => 'Vraag';
 
   @override
   String get queued => 'In wachtrij';
@@ -4494,7 +4491,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get reasoningEffort => 'Reasoning-inspanning';
 
   @override
-  String get recommendLabel => 'AANBEVELEN';
+  String get recommendLabel => 'Aanbevelen';
 
   @override
   String recordingFromDevice(String device) {
@@ -4675,7 +4672,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get reviewedByMe => 'Door mij gereviewd';
 
   @override
-  String get reviewers => 'REVIEWERS';
+  String get reviewers => 'Reviewers';
 
   @override
   String get roleLabel => 'Rol';
@@ -5163,7 +5160,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get suggestion => 'Suggestie';
 
   @override
-  String get suggestLabel => 'SUGGESTIE';
+  String get suggestLabel => 'Suggestie';
 
   @override
   String get superseded => 'Vervangen';
@@ -5208,7 +5205,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get thisCannotBeUndone => 'Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get ticketLabel => 'TICKET';
+  String get ticketLabel => 'Ticket';
 
   @override
   String get titleLabel => 'Titel';
@@ -7518,6 +7515,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addReviewers => 'Reviewers toevoegen';
 
   @override
+  String get reRequestReview => 'Review opnieuw aanvragen';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Review opnieuw aanvragen bij $label';
+  }
+
+  @override
   String get addAssignees => 'Toegewezenen toevoegen';
 
   @override
@@ -7685,6 +7690,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get meetingStatusRecording => 'Opname';
 
   @override
+  String get meetingStatusPaused => 'Gepauzeerd';
+
+  @override
   String get meetingStatusProcessing => 'Verwerken';
 
   @override
@@ -7712,34 +7720,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count vergaderingen',
-      one: '1 vergadering',
-      zero: 'Geen vergaderingen',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Open actiepunten';
-
-  @override
-  String get meetingsLedgerDecisions => 'Beslissingen';
-
-  @override
   String get meetingsLiveOpen => 'Opname openen';
 
   @override
   String get meetingTemplateShort => 'Sjabloon';
-
-  @override
-  String get meetingsStatThisWeek => 'Deze week';
-
-  @override
-  String get meetingsStatRecorded => 'Opgenomen';
 
   @override
   String get meetingsFilterAll => 'Alle';
@@ -7783,9 +7767,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total actiepunten';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'verrijkt';
 
   @override
   String get meetingsTranscribing => 'transcriberen en samenvatten…';
@@ -8023,9 +8004,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Het lijkt erop dat er een vergadering bezig is. Opnemen?';
-
-  @override
-  String get meetingDetectedRecord => 'Opnemen';
 
   @override
   String get meetingDetectedDismiss => 'Negeren';
@@ -9559,6 +9537,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deviceNeverSeen => 'Nooit verbonden';
 
   @override
+  String get deviceAwaitingApproval => 'Wacht op goedkeuring';
+
+  @override
   String get profileSectionLabel => 'Profiel';
 
   @override
@@ -10389,12 +10370,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Mislukt';
-
-  @override
-  String get bannerMeetingJoin => 'Deelnemen';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Opnemen en koppelen';
 
   @override
   String get bannerCalendarReconnect => 'Opnieuw verbinden';
@@ -13723,6 +13698,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Kon de opmerking niet plaatsen: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Regel $line';
   }
@@ -15209,17 +15189,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '$tab sluiten';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count opmerkingen',
-      one: '1 opmerking',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21508,10 +21477,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dispatchSettingsTitle => 'Schema\'s';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limieten voor schema\'s en bewakingen, en wat er gebeurt met verzoeken waar niemand op antwoordt.';
-
-  @override
   String get dispatchLimitsLabel => 'Limieten voor schema\'s';
 
   @override
@@ -21590,9 +21555,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Doel';
-
-  @override
-  String get scheduleRecordCrumb => 'Schema';
 
   @override
   String get improvementRecordCrumb => 'Voorstel';
@@ -21995,5 +21957,38 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent van $cap, inclusief elk schema in de keten';
+  }
+
+  @override
+  String get ccLoading => 'Laden';
+
+  @override
+  String get ccProgress => 'Voortgang';
+
+  @override
+  String get ccBreadcrumb => 'Broodkruimelpad';
+
+  @override
+  String get ccDialog => 'Dialoogvenster';
+
+  @override
+  String get ccResize => 'Formaat wijzigen';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (niet geverifieerd)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title selecteren';
+  }
+
+  @override
+  String get prTableSelectAll => 'Alle pull requests selecteren';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Terugzetten naar versie $version';
   }
 }

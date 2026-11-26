@@ -339,7 +339,14 @@ class _RecordingSession {
 
   void start() {
     _clock.start();
-    _echo = MeetingEchoFilter(onAccepted: _persist);
+    // 12 s max transcription windows can delay "them" emission relative to an
+    // early short "me" echo, so widen the echo hold + match band to cover it.
+    _echo = MeetingEchoFilter(
+      onAccepted: _persist,
+      activeHoldMs: 14000,
+      matchWindowMs: 14000,
+      bufferMs: 20000,
+    );
     _meTx = _transcription
         .transcribe(_me.stream)
         .listen(

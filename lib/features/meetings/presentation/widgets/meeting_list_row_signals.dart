@@ -16,16 +16,19 @@ class _SourceChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: meetingMono(context, fontSize: 11, color: ds.fg),
+        style: meetingMeta(context, fontSize: 11, color: ds.fg),
       ),
     );
   }
 }
 
 class _SignalRow extends ConsumerWidget {
-  const _SignalRow({required this.meeting});
+  const _SignalRow({required this.meeting, required this.inline});
 
   final Meeting meeting;
+
+  /// True when the pills sit beside the title rather than under the meta line.
+  final bool inline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,21 +63,24 @@ class _SignalRow extends ConsumerWidget {
           label: l10n.meetingsActionItemsProgress(doneCount, total),
           tone: open > 0 ? MeetingPillTone.warn : MeetingPillTone.success,
         ),
-      if (meeting.isEnhanced)
-        MeetingSignalPill(
-          icon: AppIcons.sparkles,
-          label: l10n.meetingsEnhancedPill,
-          tone: MeetingPillTone.accent,
-        ),
     ];
-    // A meeting with nothing extracted from it reserves no space for pills —
-    // the fixed 9px gap under every row was most of what made a quiet list
-    // look padded.
+    // A meeting with nothing extracted from it reserves no space for pills.
     if (pills.isEmpty) {
       return const SizedBox.shrink();
     }
+    if (inline) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < pills.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpacing.sm),
+            pills[i],
+          ],
+        ],
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.only(top: 9),
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.xs,
@@ -124,7 +130,7 @@ class _ProcessingTag extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           l10n.meetingsTranscribing,
-          style: meetingMono(context, fontSize: 11, color: context.mAccent),
+          style: meetingMeta(context, fontSize: 11, color: context.mAccent),
         ),
       ],
     );

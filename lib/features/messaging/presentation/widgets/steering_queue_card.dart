@@ -58,6 +58,7 @@ class SteeringQueueCard extends StatefulWidget {
 
 class _SteeringQueueCardState extends State<SteeringQueueCard> {
   late final TextEditingController _editController;
+  final FocusNode _editFocus = FocusNode(debugLabel: 'steering card edit');
   bool _editing = false;
 
   @override
@@ -69,7 +70,20 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
   @override
   void dispose() {
     _editController.dispose();
+    _editFocus.dispose();
     super.dispose();
+  }
+
+  /// Opens the card for typing. The pencil that was pressed stays mounted
+  /// (its slot becomes the save button) and keeps focus, so the field's own
+  /// autofocus would be ignored; the field asks for focus once it is built.
+  void _startEdit() {
+    setState(() => _editing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _editing) {
+        _editFocus.requestFocus();
+      }
+    });
   }
 
   void _commitEdit() {
@@ -111,7 +125,7 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
             child: _editing
                 ? CcTextField(
                     controller: _editController,
-                    autofocus: true,
+                    focusNode: _editFocus,
                     onSubmitted: (_) => _commitEdit(),
                     hintText: l10n.editSteeringCard,
                   )
@@ -167,7 +181,7 @@ class _SteeringQueueCardState extends State<SteeringQueueCard> {
               icon: AppIcons.pencil,
               size: CcButtonSize.sm,
               tooltip: l10n.editSteeringCard,
-              onPressed: () => setState(() => _editing = true),
+              onPressed: _startEdit,
             ),
           CcIconButton(
             variant: CcButtonVariant.destructive,

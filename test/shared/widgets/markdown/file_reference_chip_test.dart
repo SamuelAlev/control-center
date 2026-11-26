@@ -116,17 +116,20 @@ void main() {
     });
 
     testWidgets('a resolved reference is a button', (tester) async {
+      final handle = tester.ensureSemantics();
       await tester.pumpWidget(
         app(Builder(builder: (c) => body(c, resolved: true))),
       );
       await tester.pump();
-      expect(
-        find.ancestor(
-          of: find.text('shot.png'),
-          matching: find.byType(GestureDetector),
-        ),
-        findsWidgets,
+      final chip = find.ancestor(
+        of: find.text('shot.png'),
+        matching: find.byType(CcTappable),
       );
+      expect(chip, findsOneWidget);
+      final node = tester.getSemantics(chip);
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.label, contains('shot.png'));
+      handle.dispose();
     });
 
     testWidgets('an unresolved reference promises no click', (tester) async {

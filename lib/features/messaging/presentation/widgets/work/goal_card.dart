@@ -4,17 +4,16 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_stat
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/utils/money_format.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/goal_tab.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/goal_card_actions.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/goal_card_detail.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/goal_status_line.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/work_hover_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/work_text.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 /// One durable goal in the conversation panel: objective, status, why it
 /// holds, what it has spent of its caps, and (expanded) what done means, its
@@ -211,7 +210,13 @@ class _GoalCardState extends ConsumerState<GoalCard> {
       button(
         AppIcons.externalLink,
         l10n.goalCardOpen,
-        () => context.go(goalRoute(goal.workspaceId, goal.id)),
+        () => openGoal(
+          context,
+          workspaceId: goal.workspaceId,
+          spaceId: goal.spaceId,
+          goalId: goal.id,
+          title: goal.userText,
+        ),
       ),
     ];
   }

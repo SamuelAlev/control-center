@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/features/agents/domain/services/content_synthesizer.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
@@ -130,6 +131,9 @@ class ConversationSideChannelService {
         requestedByUserId: requestedByUserId,
         adapterId: synthesizer.adapterId,
         modelId: synthesizer.modelId,
+        agentId: synthesizer.agentId,
+        agentSlug: kContentSynthesizerSlug,
+        taskFamily: 'side_channel',
         systemPrompt: synthesizer.systemPromptFor(
           'You are reviewing a conversation between a person and one or '
           'more coding agents. Answer only what is asked. Be specific and '

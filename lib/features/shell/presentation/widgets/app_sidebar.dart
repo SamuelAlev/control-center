@@ -198,28 +198,12 @@ class _AppSidebarState extends ConsumerState<AppSidebar> {
                 selected,
               ),
             ),
-            _ShellNavItem(
-              icon: AppIcons.target,
-              label: l10n.goalsTitle,
-              logicalPath: '/goals',
-              target: goalsRoute(workspaceId),
-            ),
-            _ShellNavItem(
-              icon: AppIcons.calendarClock,
-              label: l10n.schedulesTitle,
-              logicalPath: '/schedules',
-              target: schedulesRoute(workspaceId),
-            ),
-            _ShellNavItem(
-              icon: AppIcons.lightbulb,
-              label: l10n.improvementsTitle,
-              logicalPath: '/improvements',
-              target: improvementsRoute(workspaceId),
-            ),
-            // No "Plans" destination: a plan belongs to the conversation that
-            // produced it, so Plan Studio opens as an editor tab from the plan's
-            // own row in the chat (see `openPlanStudio`). The `/plans` hub stays
-            // a routable deep link, just not a global sidebar entry.
+            // No "Plans", "Goals", "Schedules" or "Improvements" destinations
+            // in the global sidebar: plans and goals live inside the
+            // space/conversation that owns them (open as editor tabs via
+            // `openPlanStudio` / `openGoal`), schedules live under Settings →
+            // Workspace → Schedules, and improvements under Settings →
+            // Workspace → Memory. The `/plans` hub stays a routable deep link.
           ],
         ),
         // The divider carries its own [AppSpacing.xs] vertical air; with the

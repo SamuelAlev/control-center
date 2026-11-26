@@ -172,5 +172,60 @@ void main() {
         expect(color.a, 1.0);
       },
     );
+
+    testWidgets('is announced as a checkbox with its checked state', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          CcCheckbox(value: true, semanticLabel: 'Notify', onChanged: (_) {}),
+        ),
+      );
+      expect(
+        tester.getSemantics(find.byType(CcCheckbox)),
+        matchesSemantics(
+          label: 'Notify',
+          hasCheckedState: true,
+          isChecked: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('an indeterminate checkbox is mixed and not checked', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          CcCheckbox(
+            value: false,
+            indeterminate: true,
+            semanticLabel: 'All',
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      expect(
+        tester.getSemantics(find.byType(CcCheckbox)),
+        matchesSemantics(
+          label: 'All',
+          hasCheckedState: true,
+          isCheckStateMixed: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
   });
 }

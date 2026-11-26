@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_detail_view.dart';
+import 'package:control_center/features/dispatch/presentation/widgets/goals/goal_page.dart';
 import 'package:control_center/features/environments/presentation/environment_logs_pane.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_pane.dart';
@@ -183,6 +184,8 @@ class MessagingIdeTabBody extends StatelessWidget {
           id: planId,
           showPageHeader: false,
         );
+      case MessagingTabKinds.goal:
+        return _goal(workspaceId);
       case MessagingTabKinds.artifact:
         final workProductId = tab.args['workProductId'] as String?;
         if (workProductId == null ||
@@ -282,6 +285,24 @@ class MessagingIdeTabBody extends StatelessWidget {
       runId: runId,
       agentId: tab.args['agentId'] as String? ?? '',
       fallbackLabel: tab.args['label'] as String?,
+    );
+  }
+
+  Widget _goal(String? workspaceId) {
+    final tabWorkspaceId = tab.args['workspaceId'] as String?;
+    final goalId = tab.args['goalId'] as String?;
+    if (tabWorkspaceId == null ||
+        goalId == null ||
+        goalId.isEmpty ||
+        workspaceId == null ||
+        workspaceId != tabWorkspaceId) {
+      return const SizedBox.shrink();
+    }
+    return GoalPage(
+      key: ValueKey('goal:$goalId'),
+      workspaceId: tabWorkspaceId,
+      goalId: goalId,
+      openContractEditor: tab.args['openContractEditor'] == true,
     );
   }
 }

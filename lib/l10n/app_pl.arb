@@ -474,9 +474,9 @@
   "calendarDisconnect": "Rozłącz",
   "calendarReconnect": "Połącz ponownie",
   "calendarEmptyNoEvents": "Brak wydarzeń w tym zakresie",
-  "calendarStartRecording": "Rozpocznij nagrywanie",
-  "calendarStartRecordingAndLink": "Rozpocznij nagrywanie i powiąż",
   "calendarJoinMeet": "Dołącz do spotkania",
+  "calendarJoinAndRecord": "Dołącz i nagraj",
+  "calendarRecordFailed": "Nie udało się rozpocząć nagrywania",
   "calendarFromCalendar": "Z kalendarza",
   "calendarLinkedMeeting": "Powiązane spotkanie",
   "calendarToday": "Dziś",
@@ -899,7 +899,6 @@
   "actions": "Akcje",
   "activate": "Aktywuj",
   "activity": "Aktywność",
-  "activityLabel": "AKTYWNOŚĆ",
   "activitySearchHint": "Szukaj w aktywności",
   "activityNoMatches": "Żadna aktywność nie spełnia kryteriów filtrów",
   "activityPageRange": "{start}–{end} z {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Blokujące",
   "bookmarkLabel": "Zakładka",
   "briefDescription": "Krótki opis",
-  "bugLabel": "BŁĄD",
+  "bugLabel": "Błąd",
   "bundledDefaultsNeverUpdated": "Wbudowane domyślne — bez aktualizacji",
   "cancel": "Anuluj",
   "cancelEdit": "Anuluj edycję",
@@ -2612,12 +2611,12 @@
   "published": "Opublikowano",
   "pullRequestApproved": "Pull request zatwierdzony",
   "pullRequests": "Pull requesty",
-  "questionLabel": "PYTANIE",
+  "questionLabel": "Pytanie",
   "queued": "W kolejce",
   "react": "Zareaguj",
   "readerPreferences": "Preferencje czytnika",
   "reasoningEffort": "Wysiłek rozumowania",
-  "recommendLabel": "POLECANE",
+  "recommendLabel": "Polecane",
   "recordingFromDevice": "Nagrywanie z {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Sukces",
   "successLabel": "Sukces",
   "suggestion": "Sugestia",
-  "suggestLabel": "SUGESTIA",
+  "suggestLabel": "Sugestia",
   "superseded": "Zastąpiono",
   "synced": "Zsynchronizowano",
   "systemDefault": "Domyślne systemowe",
@@ -3025,7 +3024,7 @@
   "themeLight": "Jasny",
   "themeSystem": "Systemowy",
   "thisCannotBeUndone": "Tej operacji nie można cofnąć.",
-  "ticketLabel": "ZGŁOSZENIE",
+  "ticketLabel": "Zgłoszenie",
   "titleLabel": "Tytuł",
   "todayLabel": "Dzisiaj",
   "toggleTheme": "Przełącz motyw",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Szablon",
   "prTemplateDefault": "Domyślny",
   "addReviewers": "Dodaj recenzentów",
-  "addAssignees": "Dodaj osoby przypisane",
+
+  "reRequestReview": "Poproś ponownie o recenzję",
+  "reRequestReviewFor": "Poproś {label} ponownie o recenzję",  "addAssignees": "Dodaj osoby przypisane",
   "addLabels": "Dodaj etykiety",
   "searchLabels": "Szukaj etykiet…",
   "noMatchingLabels": "Brak pasujących etykiet",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Zapisz szybkie notatki — agent rozwinie je po spotkaniu.",
   "meetingSpeakerMe": "Ty",
   "meetingStatusRecording": "Nagrywanie",
+  "meetingStatusPaused": "Wstrzymany",
   "meetingStatusProcessing": "Przetwarzanie",
   "meetingStatusDone": "Gotowe",
   "meetingStatusFailed": "Niepowodzenie",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Brak spotkań} one{1 spotkanie} few{{count} spotkania} many{{count} spotkań} other{{count} spotkań}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Otwarte zadania",
-  "meetingsLedgerDecisions": "Decyzje",
   "meetingsLiveOpen": "Otwórz nagranie",
   "meetingTemplateShort": "Szablon",
-  "meetingsStatThisWeek": "W tym tygodniu",
-  "meetingsStatRecorded": "Nagrane",
   "meetingsFilterAll": "Wszystkie",
   "meetingsFilterDone": "Gotowe",
   "meetingsFilterProcessing": "Przetwarzanie",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "ulepszone",
   "meetingsTranscribing": "transkrypcja i podsumowanie…",
   "meetingsOpenAction": "Otwórz",
   "meetingsStopProcessing": "Zatrzymaj",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Wygląda na to, że trwa spotkanie. Nagrać?",
-  "meetingDetectedRecord": "Nagraj",
   "meetingDetectedDismiss": "Odrzuć",
   "meetingAutoStopTitle": "To spotkanie wygląda na zakończone. Zatrzymać nagrywanie?",
   "meetingAutoStopStop": "Zatrzymaj",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Nigdy nie połączone",
+  "deviceAwaitingApproval": "Oczekuje na zatwierdzenie",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Jak wyglądasz dla zespołu i w autorstwie commitów git w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta.",
   "displayNameLabel": "Nazwa wyświetlana",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "W trakcie",
   "evalsStatusPassed": "Zdane",
   "evalsStatusFailed": "Niezdane",
-  "bannerMeetingJoin": "Dołącz",
-  "bannerMeetingRecordAndLink": "Nagraj i podlinkuj",
   "bannerCalendarReconnect": "Połącz ponownie",
   "bannerView": "Podgląd",
   "soundscapeTitle": "Pejzaże dźwiękowe",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Nie udało się dodać komentarza: {error}",
   "commentOnLine": "Wiersz {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Zawsze zezwalaj na kopiowanie ze środowisk",
   "rigClipboardAlwaysCopyDescription": "Umieszczaj zawartość schowka z dowolnego środowiska na tym urządzeniu bez pytania.",
   "imageDiffBefore": "Przed",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Po",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Obok siebie",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Przesuń",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Różnica",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "zmieniono {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Obrazy",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Źródło",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Usunięto",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} oznaczono jako nieprzejrzany",
   "prLineChangesSemantics": "Dodane wiersze: {additions}, usunięte wiersze: {deletions}",
   "closeTabNamed": "Zamknij {tab}",
-  "threadCommentCount": "{count, plural, one{{count} komentarz} few{{count} komentarze} many{{count} komentarzy} other{{count} komentarza}}",
   "notificationAgentAwaitingInput": "Agent wymaga uwagi",
   "notifyAgentAwaitingInput": "Gdy agent potrzebuje zgody, odpowiedzi lub prawidłowych danych logowania albo reguły blokują działanie",
   "notificationAgentNeedsApproval": "{agent} potrzebuje Twojej zgody",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Decyduje administrator",
   "improvementNotFound": "Ta propozycja nie istnieje albo jest w przestrzeni, której nie możesz otworzyć.",
   "dispatchSettingsTitle": "Harmonogramy",
-  "dispatchSettingsSubtitle": "Limity harmonogramów i obserwacji oraz to, co dzieje się z prośbami, na które nikt nie odpowiada.",
   "dispatchLimitsLabel": "Limity harmonogramów",
   "dispatchLimitsSubtitle": "Limity liczby harmonogramów i obserwacji, które mogą mieć agenci, oraz ich wartości domyślne.",
   "dispatchLimitRange": "Od 1 do {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "W strefie {zone}, wyżej wybranej.",
   "dispatchDigestHourRange": "Od 0 do 23",
   "goalRecordCrumb": "Cel",
-  "scheduleRecordCrumb": "Harmonogram",
   "improvementRecordCrumb": "Propozycja",
   "goalNodeNeedsAgent": "Wybierz agenta, który realizuje cel.",
   "goalNodeNeedsObjective": "Napisz zadanie.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "To nie jest kod, który pokazała przeglądarka. {count, plural, one{Została {count} próba.} few{Zostały {count} próby.} many{Zostało {count} prób.} other{Zostało {count} prób.}}",
   "mcpServerSignInEnded": "Trwało to zbyt długo, zostało odrzucone albo podano zbyt wiele błędnych kodów. Rozpocznij ponownie, aby otrzymać nową stronę logowania.",
   "mcpServerSignInStartAgain": "Rozpocznij ponownie",
-  "mcpServerSignedIn": "Zalogowano do {name}."
+  "mcpServerSignedIn": "Zalogowano do {name}.",
+  "ccLoading": "Ładowanie",
+  "ccProgress": "Postęp",
+  "ccBreadcrumb": "Ścieżka nawigacji",
+  "ccDialog": "Okno dialogowe",
+  "ccResize": "Zmień rozmiar",
+  "ccUnverifiedLabel": "{label} (niezweryfikowane)",
+  "prRowSelect": "Wybierz {title}",
+  "prTableSelectAll": "Wybierz wszystkie pull requesty",
+  "planVersionRewind": "Przywróć wersję {version}"
 }

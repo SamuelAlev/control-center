@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_common.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -16,6 +17,7 @@ void main() {
 
       expect(find.text('3 decisions'), findsOneWidget);
       expect(find.byIcon(AppIcons.check), findsOneWidget);
+      expect(find.byType(CcBadge), findsOneWidget);
     });
 
     testWidgets('neutral tone uses muted colors', (tester) async {
@@ -112,14 +114,10 @@ void main() {
   });
 
   group('MeetingEyebrow', () {
-    testWidgets('renders text in uppercase', (tester) async {
-      await tester.pumpWidget(testWrap(const MeetingEyebrow('summary')));
-      expect(find.text('SUMMARY'), findsOneWidget);
-    });
-
-    testWidgets('already-uppercase text stays uppercase', (tester) async {
-      await tester.pumpWidget(testWrap(const MeetingEyebrow('DECISIONS')));
-      expect(find.text('DECISIONS'), findsOneWidget);
+    testWidgets('renders text as written', (tester) async {
+      await tester.pumpWidget(testWrap(const MeetingEyebrow('Summary')));
+      expect(find.text('Summary'), findsOneWidget);
+      expect(find.text('SUMMARY'), findsNothing);
     });
   });
 }

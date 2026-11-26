@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../cc_test_app.dart';
 
 void main() {
-  testWidgets('renders uppercase label and children', (tester) async {
+  testWidgets('renders label and children', (tester) async {
     await tester.pumpWidget(
       ccTestApp(
         const CcSidebarGroup(
@@ -15,7 +15,7 @@ void main() {
       ),
     );
 
-    expect(find.text('NAVIGATE'), findsOneWidget);
+    expect(find.text('Navigate'), findsOneWidget);
     expect(find.text('Dashboard'), findsOneWidget);
   });
 
@@ -32,7 +32,7 @@ void main() {
 
     expect(find.text('Dashboard'), findsOneWidget);
 
-    await tester.tap(find.text('NAVIGATE'));
+    await tester.tap(find.text('Navigate'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dashboard'), findsNothing);
@@ -53,7 +53,7 @@ void main() {
     );
 
     expect(find.text('Dashboard'), findsNothing);
-    expect(find.text('NAVIGATE'), findsOneWidget);
+    expect(find.text('Navigate'), findsOneWidget);
   });
 
   testWidgets('children sit flush in both modes', (tester) async {
@@ -180,5 +180,52 @@ void main() {
     expect(fillFor('Tickets'), t.hover);
     expect(fillFor('Inbox'), isNot(t.hover));
     expect(fillFor('Pull requests'), isNot(t.hover));
+  });
+
+  testWidgets('a collapsible header announces whether it is expanded', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(
+        const CcSidebarGroup(
+          label: 'Projects',
+          collapsible: true,
+          children: [CcSidebarItem(icon: CcIcons.house, label: 'Inbox')],
+        ),
+      ),
+    );
+    final header = find.byType(CcTappable).first;
+    expect(
+      tester.getSemantics(header),
+      matchesSemantics(
+        label: 'Projects',
+        isButton: true,
+        hasExpandedState: true,
+        isExpanded: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    await tester.tap(header);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(header),
+      matchesSemantics(
+        label: 'Projects',
+        isButton: true,
+        hasExpandedState: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        isFocused: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
   });
 }

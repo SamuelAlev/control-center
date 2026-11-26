@@ -1,6 +1,8 @@
 /// @docImport 'package:cc_domain/core/domain/events/pr_events.dart';
 library;
 
+import 'dart:math' show max, min;
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
@@ -8,6 +10,8 @@ import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
     show githubPrConversationMentionLogin;
+import 'package:cc_infra/src/network/app_network.dart'
+    show expectStatuses, maxRetriesOption;
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/github/github_http.dart';
 import 'package:cc_infra/src/network/models/github_graphql_results.dart';
@@ -15,6 +19,12 @@ import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
 import 'package:cc_infra/src/network/models/github_team.dart';
 import 'package:cc_infra/src/network/models/github_viewer_activity.dart';
 import 'package:rhttp/rhttp.dart';
+
+/// One bounded `(repos, authors)` slice for profile PR count/search queries.
+typedef ProfileSearchChunk = ({
+  List<({String owner, String name})> repos,
+  List<String> authors,
+});
 
 /// Client for GitHub GraphQL API mutations and queries.
 class GitHubGraphQLClient {
@@ -140,6 +150,7 @@ class GitHubGraphQLClient {
                 id
                 isResolved
                 isOutdated
+                resolvedBy { login }
                 comments(first: 100) { nodes { databaseId } }
               }
             }
@@ -172,11 +183,18 @@ class GitHubGraphQLClient {
           continue;
         }
         final comments = node['comments'] as Map<String, dynamic>?;
+        final resolvedByRaw =
+            (node['resolvedBy'] as Map<String, dynamic>?)?['login'] as String?;
+        final resolvedByLogin =
+            resolvedByRaw != null && resolvedByRaw.isNotEmpty
+            ? resolvedByRaw
+            : null;
         out.add(
           GitHubReviewThread(
             id: id,
             isResolved: node['isResolved'] as bool? ?? false,
             isOutdated: node['isOutdated'] as bool? ?? false,
+            resolvedByLogin: resolvedByLogin,
             commentIds: [
               for (final c
                   in (comments?['nodes'] as List? ?? const [])
@@ -615,12 +633,55 @@ class GitHubGraphQLClient {
     return name.replaceAll(RegExp(r'[_-]+'), ' ').trim();
   }
 
-  /// First page of open PRs per repo, one repo per request, [_prListConcurrency]
-  /// at a time. A failed or inaccessible repo is absent from `byIndex` (the
-  /// caller keeps its last entry); only a sweep where every repo failed throws.
+  /// Runs [run] across [items] using a work-queue of at most [concurrency]
+  /// concurrent workers (no wave barriers).
+  static Future<void> _runBounded<T>(
+    List<T> items,
+    int concurrency,
+    Future<void> Function(int index, T item) run,
+  ) async {
+    if (items.isEmpty) {
+      return;
+    }
+    var next = 0;
+    final workers = min(concurrency, items.length);
+    await Future.wait([
+      for (var w = 0; w < workers; w++)
+        () async {
+          while (true) {
+            final i = next++;
+            if (i >= items.length) {
+              break;
+            }
+            await run(i, items[i]);
+          }
+        }(),
+    ]);
+  }
+
+  /// Whether [error] is a transient server/gateway timeout or 5xx that is worth
+  /// splitting into smaller GraphQL batches instead of failing or repeating.
+  static bool _isSplittableServerFailure(Object error) {
+    if (error is! NetworkException) {
+      return false;
+    }
+    return error.code == 'timeout' ||
+        const {500, 502, 503, 504}.contains(error.statusCode);
+  }
+
+  /// First page of open PRs per repo (up to [_prBatchPageSize] nodes, paged at
+  /// [_prListPageSize] and adaptively halved down to [_prListMinPageSize] on
+  /// 5xx/timeout), one repo per request, [_prListConcurrency] workers at a
+  /// time. A failed or inaccessible repo is absent from `byIndex` (the caller
+  /// keeps its last entry); only a sweep where every repo failed throws.
+  ///
+  /// When [onPage] is provided, each fetched page of nodes is handed to it as
+  /// soon as it lands so callers can pipeline checks enrichment while later
+  /// pages still paginate.
   Future<GitHubPrBatchResult> fetchOpenPullRequestsBatch(
     List<({String owner, String name})> repos, {
     CancelToken? cancelToken,
+    void Function(int repoIndex, List<Map<String, dynamic>> pageNodes)? onPage,
   }) async {
     if (repos.isEmpty) {
       return const GitHubPrBatchResult(viewerLogin: null, byIndex: {});
@@ -629,45 +690,65 @@ class GitHubGraphQLClient {
     final byIndex = <int, GitHubRepoPrNodes>{};
     Object? failure;
 
-    for (var start = 0; start < repos.length; start += _prListConcurrency) {
-      final end = (start + _prListConcurrency) > repos.length
-          ? repos.length
-          : start + _prListConcurrency;
-      await Future.wait([
-        for (var index = start; index < end; index++)
-          () async {
-            final Map<String, dynamic>? data;
-            try {
-              data = await _postTolerant(
-                _buildListQuery(repos[index]),
-                cancelToken,
-              );
-            } on Object catch (e) {
-              failure = e;
-              return;
-            }
-            // An inaccessible repo is null (plus an `errors` entry): absent.
-            final root = data?['data'] as Map<String, dynamic>?;
-            final repository = root?['r0'] as Map<String, dynamic>?;
-            if (repository == null) {
-              return;
-            }
-            final pulls = repository['pullRequests'] as Map<String, dynamic>?;
-            final nodes =
-                (pulls?['nodes'] as List?)
-                    ?.whereType<Map<String, dynamic>>()
-                    .toList(growable: false) ??
-                const <Map<String, dynamic>>[];
-            final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
-            final hasMore = pageInfo?['hasNextPage'] as bool? ?? false;
-            byIndex[index] = GitHubRepoPrNodes(
-              nodes: nodes,
-              hasMore: hasMore,
-              totalCount: (pulls?['totalCount'] as num?)?.toInt(),
-            );
-          }(),
-      ]);
-    }
+    await _runBounded(repos, _prListConcurrency, (index, repo) async {
+      var pageSize = _prListPageSize;
+      String? after;
+      final allNodes = <Map<String, dynamic>>[];
+      int? totalCount;
+      var hasMore = false;
+
+      while (allNodes.length < _prBatchPageSize) {
+        final ask = min(pageSize, _prBatchPageSize - allNodes.length);
+        final canSplit = ask > _prListMinPageSize;
+        final Map<String, dynamic>? data;
+        try {
+          data = await _postTolerant(
+            _buildListQuery(repo, pageSize: ask, after: after),
+            cancelToken,
+            maxRetries: canSplit ? 0 : 1,
+            expectedStatuses: canSplit ? const [502, 503, 504] : null,
+          );
+        } on Object catch (e) {
+          if (_isSplittableServerFailure(e) && canSplit) {
+            pageSize = max(_prListMinPageSize, ask ~/ 2);
+            continue;
+          }
+          failure = e;
+          return;
+        }
+        // Cancelled or inaccessible repo (`repository == null`): abort so a
+        // truncated page is never returned as the complete open-PR list.
+        final root = data?['data'] as Map<String, dynamic>?;
+        final repository = root?['r0'] as Map<String, dynamic>?;
+        if (repository == null) {
+          return;
+        }
+        final pulls = repository['pullRequests'] as Map<String, dynamic>?;
+        totalCount ??= (pulls?['totalCount'] as num?)?.toInt();
+        final nodes =
+            (pulls?['nodes'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .toList(growable: false) ??
+            const <Map<String, dynamic>>[];
+        allNodes.addAll(nodes);
+        if (nodes.isNotEmpty) {
+          onPage?.call(index, nodes);
+        }
+        final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
+        hasMore = pageInfo?['hasNextPage'] as bool? ?? false;
+        final next = pageInfo?['endCursor'] as String?;
+        if (!hasMore || next == null || next.isEmpty || nodes.isEmpty) {
+          break;
+        }
+        after = next;
+      }
+
+      byIndex[index] = GitHubRepoPrNodes(
+        nodes: allNodes,
+        hasMore: hasMore,
+        totalCount: totalCount,
+      );
+    });
 
     if (byIndex.isEmpty && failure != null) {
       throw failure!;
@@ -679,33 +760,59 @@ class GitHubGraphQLClient {
   /// past GitHub's GraphQL timeout (HTTP 504) and failed the whole chunk.
   static const int _prListConcurrency = 4;
 
+  /// Initial page size for [fetchOpenPullRequestsBatch] — answers in one fast
+  /// round trip for repos with ≤50 open PRs while keeping busy repos well below
+  /// GitHub's GraphQL timeout; halves down to [_prListMinPageSize] on 5xx.
+  static const int _prListPageSize = 50;
+
+  /// Floor for adaptive halving in [fetchOpenPullRequestsBatch].
+  static const int _prListMinPageSize = 5;
+
   /// Open PRs per checks/review enrichment request. One repo per request,
   /// paged: `statusCheckRollup` is resolved per PR on GitHub's side, and on a
   /// busy repo even two repos × 100 PRs in one query ran past the gateway
   /// budget on every single poll (HTTP 502/504, then three identical retries),
   /// so the checks pills never refreshed at all. A small page answers well
-  /// inside it, and a page that does fail costs only its own repo this pass.
+  /// inside it, and a page that does fail halves down to [_prChecksMinPageSize].
   static const int _prChecksPageSize = 25;
+
+  /// Floor for adaptive halving in [fetchOpenPullRequestsChecks].
+  static const int _prChecksMinPageSize = 1;
 
   /// Open PRs fetched per repo on the first page. Matches the REST list's
   /// `per_page`, so REST pagination (`loadMore`) continues cleanly.
   static const int _prBatchPageSize = 100;
 
-  String _buildListQuery(({String owner, String name}) repo) =>
-      '''
+  /// PR node IDs per `nodes(ids:)` checks/review-decision batch.
+  static const int _prStatusChunkSize = 20;
+
+  /// Concurrent `nodes(ids:)` chunks in [fetchPullRequestStatusByIds].
+  static const int _prStatusConcurrency = 4;
+
+  String _buildListQuery(
+    ({String owner, String name}) repo, {
+    int pageSize = _prListPageSize,
+    String? after,
+  }) {
+    final cursor = after == null
+        ? ''
+        : ', after: "${_escapeGraphqlString(after)}"';
+    return '''
 query {
   r0: repository(owner: "${_escapeGraphqlString(repo.owner)}", name: "${_escapeGraphqlString(repo.name)}") {
-    pullRequests(states: OPEN, first: $_prBatchPageSize, orderBy: {field: CREATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: $pageSize$cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
       totalCount
-      pageInfo { hasNextPage }
+      pageInfo { hasNextPage endCursor }
       nodes { ...PrListFields }
     }
   }
 }
 $_prListFieldsFragment''';
+  }
 
   String _buildChecksQuery(
     ({String owner, String name}) repo, {
+    int pageSize = _prChecksPageSize,
     String? after,
   }) {
     final owner = _escapeGraphqlString(repo.owner);
@@ -716,7 +823,7 @@ $_prListFieldsFragment''';
     return '''
 query {
   r0: repository(owner: "$owner", name: "$name") {
-    pullRequests(states: OPEN, first: $_prChecksPageSize$cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: $pageSize$cursor, orderBy: {field: CREATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes { ...PrChecksFields }
     }
@@ -725,9 +832,181 @@ query {
 $_prChecksFragment''';
   }
 
+  static ({int number, GitHubPrStatusOverlay overlay})? _parseChecksNode(
+    Map<String, dynamic> node,
+  ) {
+    final number = (node['number'] as num?)?.toInt() ?? 0;
+    if (number <= 0) {
+      return null;
+    }
+    final lastCommit = node['lastCommit'] as Map<String, dynamic>?;
+    final lastCommitNodes = lastCommit?['nodes'] as List?;
+    final firstCommit =
+        (lastCommitNodes != null && lastCommitNodes.isNotEmpty)
+        ? lastCommitNodes.first as Map<String, dynamic>?
+        : null;
+    final commit = firstCommit?['commit'] as Map<String, dynamic>?;
+    final rollup = commit?['statusCheckRollup'] as Map<String, dynamic>?;
+    return (
+      number: number,
+      overlay: (
+        checksRollup: rollup?['state'] as String?,
+        reviewDecision: node['reviewDecision'] as String?,
+      ),
+    );
+  }
+
+  /// Fetches `statusCheckRollup` + `reviewDecision` for known PR GraphQL
+  /// [nodeIds] via parallel `nodes(ids:)` chunks ([_prStatusChunkSize] per
+  /// request, [_prStatusConcurrency] workers).
+  ///
+  /// When a chunk hits a 5xx/timeout, it splits in half recursively instead of
+  /// blindly retrying or failing the whole repo, so one pathological PR never
+  /// starves the rest. Only throws if every chunk failed.
+  Future<Map<int, GitHubPrStatusOverlay>> fetchPullRequestStatusByIds(
+    List<String> nodeIds, {
+    CancelToken? cancelToken,
+  }) async {
+    final unique = <String>[
+      for (final id in nodeIds.toSet())
+        if (id.isNotEmpty) id,
+    ];
+    if (unique.isEmpty) {
+      return const {};
+    }
+
+    const query =
+        '''
+query(\$ids: [ID!]!) {
+  nodes(ids: \$ids) {
+    ... on PullRequest {
+      ...PrChecksFields
+    }
+  }
+}
+$_prChecksFragment''';
+
+    final overlays = <int, GitHubPrStatusOverlay>{};
+    var succeededChunks = 0;
+    Object? failure;
+
+    Future<void> fetchChunk(List<String> ids) async {
+      final canSplit = ids.length > 1;
+      final Map<String, dynamic>? data;
+      try {
+        data = await _postTolerant(
+          query,
+          cancelToken,
+          variables: {'ids': ids},
+          maxRetries: canSplit ? 0 : 1,
+          expectedStatuses: canSplit ? const [502, 503, 504] : null,
+        );
+      } on Object catch (e) {
+        if (_isSplittableServerFailure(e) && canSplit) {
+          final mid = ids.length ~/ 2;
+          await Future.wait([
+            fetchChunk(ids.sublist(0, mid)),
+            fetchChunk(ids.sublist(mid)),
+          ]);
+          return;
+        }
+        failure = e;
+        return;
+      }
+      if (data == null) {
+        return;
+      }
+      succeededChunks++;
+      final root = data['data'] as Map<String, dynamic>?;
+      final nodes = root?['nodes'] as List?;
+      if (nodes == null) {
+        return;
+      }
+      for (final node in nodes.whereType<Map<String, dynamic>>()) {
+        final parsed = _parseChecksNode(node);
+        if (parsed != null) {
+          overlays[parsed.number] = parsed.overlay;
+        }
+      }
+    }
+
+    final chunks = <List<String>>[
+      for (var start = 0; start < unique.length; start += _prStatusChunkSize)
+        unique.sublist(start, min(start + _prStatusChunkSize, unique.length)),
+    ];
+    await _runBounded(chunks, _prStatusConcurrency, (_, chunk) async {
+      await fetchChunk(chunk);
+    });
+
+    if (succeededChunks == 0 && failure != null) {
+      throw failure!;
+    }
+    return overlays;
+  }
+
+  /// Fetches specific pull requests by [numbers] in [owner]/[repo] with full
+  /// list fields plus `state`, `mergedAt`, `reviewDecision`, and
+  /// `statusCheckRollup`, aliased into one request per chunk of 10.
+  Future<Map<int, Map<String, dynamic>>> fetchPullRequestsByNumbers({
+    required String owner,
+    required String repo,
+    required List<int> numbers,
+    CancelToken? cancelToken,
+  }) async {
+    final unique = <int>[
+      for (final n in numbers.toSet())
+        if (n > 0) n,
+    ];
+    if (unique.isEmpty) {
+      return const {};
+    }
+
+    final out = <int, Map<String, dynamic>>{};
+    const chunkSize = 10;
+    for (var start = 0; start < unique.length; start += chunkSize) {
+      final end = min(start + chunkSize, unique.length);
+      final chunk = unique.sublist(start, end);
+      final selections = StringBuffer();
+      for (var i = 0; i < chunk.length; i++) {
+        selections.write(
+          '    p$i: pullRequest(number: ${chunk[i]}) { ...PrFullFields }\n',
+        );
+      }
+      final query =
+          'query(\$owner: String!, \$repo: String!) {\n'
+          '  repository(owner: \$owner, name: \$repo) {\n'
+          '$selections'
+          '  }\n'
+          '}\n'
+          'fragment PrFullFields on PullRequest {\n'
+          '  state\n'
+          '  mergedAt\n'
+          '$_prListFieldsBody'
+          '}';
+      final data = await _postTolerant(
+        query,
+        cancelToken,
+        variables: {'owner': owner, 'repo': repo},
+      );
+      final root = data?['data'] as Map<String, dynamic>?;
+      final repository = root?['repository'] as Map<String, dynamic>?;
+      if (repository == null) {
+        continue;
+      }
+      for (var i = 0; i < chunk.length; i++) {
+        final node = repository['p$i'];
+        if (node is Map<String, dynamic>) {
+          out[chunk[i]] = node;
+        }
+      }
+    }
+    return out;
+  }
+
   /// `statusCheckRollup` + `reviewDecision` for open PRs ([_prBatchPageSize] per
-  /// repo; one repo per request, [_prChecksPageSize] PRs per page). Phase 2
-  /// after [fetchOpenPullRequestsBatch]. Absent repo index = unread this pass (keep
+  /// repo; one repo per request, starting at [_prChecksPageSize] PRs per page
+  /// and adaptively halving on 5xx/timeout). Phase 2 after
+  /// [fetchOpenPullRequestsBatch]. Absent repo index = unread this pass (keep
   /// prior state); empty map = answered with no open PRs. Treating absent as
   /// "no checks" turns gateway timeouts into repeat notifications.
   Future<Map<int, Map<int, GitHubPrStatusOverlay>>> fetchOpenPullRequestsChecks(
@@ -748,29 +1027,36 @@ $_prChecksFragment''';
     // looking like a workspace with no checks.
     Object? failure;
 
-    repos:
-    for (var index = 0; index < repos.length; index++) {
+    await _runBounded(repos, _prListConcurrency, (index, repo) async {
       final checksForRepo = <int, GitHubPrStatusOverlay>{};
       String? after;
       var fetched = 0;
+      var pageSize = _prChecksPageSize;
       while (true) {
+        final canSplit = pageSize > _prChecksMinPageSize;
         final Map<String, dynamic>? data;
         try {
           data = await _postTolerant(
-            _buildChecksQuery(repos[index], after: after),
+            _buildChecksQuery(repo, pageSize: pageSize, after: after),
             cancelToken,
+            maxRetries: canSplit ? 0 : 1,
+            expectedStatuses: canSplit ? const [502, 503, 504] : null,
           );
         } on Object catch (e) {
+          if (_isSplittableServerFailure(e) && canSplit) {
+            pageSize = max(_prChecksMinPageSize, pageSize ~/ 2);
+            continue;
+          }
           failure = e;
-          continue repos;
+          return;
         }
         final root = data?['data'] as Map<String, dynamic>?;
         if (root == null) {
-          continue repos;
+          return;
         }
         final repository = root['r0'] as Map<String, dynamic>?;
         if (repository == null) {
-          continue repos;
+          return;
         }
         final pulls = repository['pullRequests'] as Map<String, dynamic>?;
         final nodes =
@@ -779,22 +1065,10 @@ $_prChecksFragment''';
                 .toList(growable: false) ??
             const <Map<String, dynamic>>[];
         for (final node in nodes) {
-          final number = (node['number'] as num?)?.toInt() ?? 0;
-          if (number <= 0) {
-            continue;
+          final parsed = _parseChecksNode(node);
+          if (parsed != null) {
+            checksForRepo[parsed.number] = parsed.overlay;
           }
-          final lastCommit = node['lastCommit'] as Map<String, dynamic>?;
-          final lastCommitNodes = lastCommit?['nodes'] as List?;
-          final firstCommit =
-              (lastCommitNodes != null && lastCommitNodes.isNotEmpty)
-              ? lastCommitNodes.first as Map<String, dynamic>?
-              : null;
-          final commit = firstCommit?['commit'] as Map<String, dynamic>?;
-          final rollup = commit?['statusCheckRollup'] as Map<String, dynamic>?;
-          checksForRepo[number] = (
-            checksRollup: rollup?['state'] as String?,
-            reviewDecision: node['reviewDecision'] as String?,
-          );
         }
         fetched += nodes.length;
         final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
@@ -810,10 +1084,10 @@ $_prChecksFragment''';
         after = next;
       }
       result[index] = checksForRepo;
-    }
+    });
 
     if (result.isEmpty && failure != null) {
-      throw failure;
+      throw failure!;
     }
     return result;
   }
@@ -822,9 +1096,9 @@ $_prChecksFragment''';
       s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
   /// Core PR list fields. Omits `statusCheckRollup` (phase 2 via
-  /// [fetchOpenPullRequestsChecks]); `body`/`url`/`mergedAt`/`mergeStateStatus`
-  /// (`mergeStateStatus` caused 504s — never re-add here or in
-  /// [_prChecksFragment]); `latestReviews` (lazy via
+  /// [fetchPullRequestStatusByIds] / [fetchOpenPullRequestsChecks]);
+  /// `body`/`url`/`mergedAt`/`mergeStateStatus` (`mergeStateStatus` caused 504s
+  /// — never re-add here or in [_prChecksFragment]); `latestReviews` (lazy via
   /// [searchReviewedByPullRequests]). Keeps `headRefOid` for [PrHeadChanged]
   /// and merge-readiness dedupe.
   static const String _prListFieldsCoreBody = r'''
@@ -841,7 +1115,7 @@ $_prChecksFragment''';
   additions
   deletions
   comments { totalCount }
-  reviewRequests(first: 50) {
+  reviewRequests(first: 20) {
     nodes {
       requestedReviewer {
         __typename
@@ -1158,13 +1432,16 @@ fragment viewerPr on PullRequest {
         '  }\n'
         '}';
 
+    final chunks = <List<({String owner, String name})>>[
+      for (var start = 0; start < repos.length; start += _reviewSearchChunkSize)
+        repos.sublist(start, min(start + _reviewSearchChunkSize, repos.length)),
+    ];
     final nodes = <Map<String, dynamic>>[];
-    for (var start = 0; start < repos.length; start += _reviewSearchChunkSize) {
-      final end = (start + _reviewSearchChunkSize) > repos.length
-          ? repos.length
-          : start + _reviewSearchChunkSize;
-      final chunk = repos.sublist(start, end);
-
+    var cancelled = false;
+    await _runBounded(chunks, 2, (_, chunk) async {
+      if (cancelled) {
+        return;
+      }
       final q = StringBuffer('is:pr is:open ')..write(qualifiers);
       for (final r in chunk) {
         q
@@ -1174,7 +1451,7 @@ fragment viewerPr on PullRequest {
           ..write(r.name);
       }
 
-      Map<String, dynamic>? response;
+      final Map<String, dynamic>? response;
       try {
         response = await _runQuery(query, <String, dynamic>{
           'q': q.toString(),
@@ -1182,7 +1459,8 @@ fragment viewerPr on PullRequest {
         }, cancelToken);
       } on RhttpException catch (e) {
         if (e is RhttpCancelException) {
-          return const [];
+          cancelled = true;
+          return;
         }
         rethrow;
       }
@@ -1191,7 +1469,7 @@ fragment viewerPr on PullRequest {
       final search = data?['search'] as Map<String, dynamic>?;
       final searchNodes = search?['nodes'] as List?;
       if (searchNodes == null) {
-        continue;
+        return;
       }
       // Non-PR hits (none expected given `is:pr`) deserialize as empty maps.
       nodes.addAll(
@@ -1199,8 +1477,8 @@ fragment viewerPr on PullRequest {
           (n) => n.isNotEmpty,
         ),
       );
-    }
-    return nodes;
+    });
+    return cancelled ? const [] : nodes;
   }
 
   /// Repos per review-requested search query. Keeps each query's `repo:`
@@ -1211,6 +1489,71 @@ fragment viewerPr on PullRequest {
   /// PRs fetched per review-requested search page. A single operator almost
   /// never has more than this many reviews outstanding across a chunk.
   static const int _reviewSearchPageSize = 100;
+
+  static const int _profileRepoChunkSize = 10;
+  static const int _profileAuthorChunkSize = 10;
+  static const int _profileRepoQualifierCharBudget = 400;
+  static const int _profileSearchConcurrency = 3;
+  static const int _profileMaxResults = 200;
+  static const int _profileMinPageSize = 25;
+
+  /// Packs [repos] and [logins] into bounded `(repos, authors)` search chunks.
+  ///
+  /// Repositories are grouped up to [_profileRepoChunkSize] within
+  /// [_profileRepoQualifierCharBudget] characters (always at least one repo per
+  /// chunk), and authors are grouped up to [_profileAuthorChunkSize].
+  static List<ProfileSearchChunk> buildProfileSearchChunks({
+    required List<String> logins,
+    required List<({String owner, String name})> repos,
+  }) {
+    final authors = logins
+        .map((login) => login.trim())
+        .where((login) => login.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (authors.isEmpty || repos.isEmpty) {
+      return const [];
+    }
+
+    final repoChunks = <List<({String owner, String name})>>[];
+    var currentRepos = <({String owner, String name})>[];
+    var currentChars = 0;
+    for (final repo in repos) {
+      final qualifierLength = ' repo:${repo.owner}/${repo.name}'.length;
+      if (currentRepos.isNotEmpty &&
+          (currentRepos.length >= _profileRepoChunkSize ||
+              currentChars + qualifierLength >
+                  _profileRepoQualifierCharBudget)) {
+        repoChunks.add(currentRepos);
+        currentRepos = <({String owner, String name})>[];
+        currentChars = 0;
+      }
+      currentRepos.add(repo);
+      currentChars += qualifierLength;
+    }
+    if (currentRepos.isNotEmpty) {
+      repoChunks.add(currentRepos);
+    }
+
+    final chunks = <ProfileSearchChunk>[];
+    for (final repoChunk in repoChunks) {
+      for (
+        var authorStart = 0;
+        authorStart < authors.length;
+        authorStart += _profileAuthorChunkSize
+      ) {
+        final authorEnd = min(
+          authorStart + _profileAuthorChunkSize,
+          authors.length,
+        );
+        chunks.add((
+          repos: repoChunk,
+          authors: authors.sublist(authorStart, authorEnd),
+        ));
+      }
+    }
+    return chunks;
+  }
 
   /// The `updated:>` window used by [searchViewerPullRequestActivity] when the
   /// caller has no previous sweep to anchor on (first run ever, or a dropped
@@ -1247,13 +1590,44 @@ fragment viewerPr on PullRequest {
     required List<({String owner, String name})> repos,
     CancelToken? cancelToken,
   }) async {
-    final authors = logins
-        .map((login) => login.trim())
-        .where((login) => login.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-    if (authors.isEmpty || repos.isEmpty) {
-      return (open: 0, draft: 0, merged: 0, closed: 0);
+    final result = await prCountsByAuthorChunks(
+      logins: logins,
+      repos: repos,
+      cancelToken: cancelToken,
+    );
+    return (
+      open: result.open,
+      draft: result.draft,
+      merged: result.merged,
+      closed: result.closed,
+    );
+  }
+
+  /// Exact PR outcome counts authored by any of [logins] across [repos], plus
+  /// the subset of [ProfileSearchChunk]s that matched at least one PR.
+  Future<
+    ({
+      int open,
+      int draft,
+      int merged,
+      int closed,
+      List<ProfileSearchChunk> nonEmptyChunks,
+    })
+  >
+  prCountsByAuthorChunks({
+    required List<String> logins,
+    required List<({String owner, String name})> repos,
+    CancelToken? cancelToken,
+  }) async {
+    final chunks = buildProfileSearchChunks(logins: logins, repos: repos);
+    if (chunks.isEmpty) {
+      return (
+        open: 0,
+        draft: 0,
+        merged: 0,
+        closed: 0,
+        nonEmptyChunks: const <ProfileSearchChunk>[],
+      );
     }
     const query =
         'query(\$open: String!, \$draft: String!, \$merged: String!, '
@@ -1264,68 +1638,82 @@ fragment viewerPr on PullRequest {
         '  closed: search(query: \$closed, type: ISSUE, first: 1) { issueCount }\n'
         '}';
 
-    const authorChunkSize = 10;
+    final results = List<({int open, int draft, int merged, int closed})?>.filled(
+      chunks.length,
+      null,
+    );
+    var cancelled = false;
+
+    await _runBounded(chunks, _profileSearchConcurrency, (index, chunk) async {
+      if (cancelled) {
+        return;
+      }
+      final scope = StringBuffer();
+      for (final login in chunk.authors) {
+        scope
+          ..write(' author:')
+          ..write(login);
+      }
+      for (final repo in chunk.repos) {
+        scope
+          ..write(' repo:')
+          ..write(repo.owner)
+          ..write('/')
+          ..write(repo.name);
+      }
+      final base = scope.toString();
+
+      Map<String, dynamic>? response;
+      try {
+        response = await _runQuery(query, <String, dynamic>{
+          'open': 'is:pr is:open draft:false$base',
+          'draft': 'is:pr is:open draft:true$base',
+          'merged': 'is:pr is:merged$base',
+          'closed': 'is:pr is:closed is:unmerged$base',
+        }, cancelToken);
+      } on RhttpException catch (e) {
+        if (e is RhttpCancelException) {
+          cancelled = true;
+          return;
+        }
+        rethrow;
+      }
+
+      final data = response?['data'] as Map<String, dynamic>?;
+      int countOf(String alias) =>
+          ((data?[alias] as Map<String, dynamic>?)?['issueCount'] as num?)
+              ?.toInt() ??
+          0;
+      results[index] = (
+        open: countOf('open'),
+        draft: countOf('draft'),
+        merged: countOf('merged'),
+        closed: countOf('closed'),
+      );
+    });
+
     var open = 0, draft = 0, merged = 0, closed = 0;
-    for (
-      var repoStart = 0;
-      repoStart < repos.length;
-      repoStart += _reviewSearchChunkSize
-    ) {
-      final repoEnd = (repoStart + _reviewSearchChunkSize) > repos.length
-          ? repos.length
-          : repoStart + _reviewSearchChunkSize;
-      final repoChunk = repos.sublist(repoStart, repoEnd);
-      for (
-        var authorStart = 0;
-        authorStart < authors.length;
-        authorStart += authorChunkSize
-      ) {
-        final authorEnd = (authorStart + authorChunkSize) > authors.length
-            ? authors.length
-            : authorStart + authorChunkSize;
-        final authorChunk = authors.sublist(authorStart, authorEnd);
-        final scope = StringBuffer();
-        for (final login in authorChunk) {
-          scope
-            ..write(' author:')
-            ..write(login);
-        }
-        for (final repo in repoChunk) {
-          scope
-            ..write(' repo:')
-            ..write(repo.owner)
-            ..write('/')
-            ..write(repo.name);
-        }
-        final base = scope.toString();
-
-        Map<String, dynamic>? response;
-        try {
-          response = await _runQuery(query, <String, dynamic>{
-            'open': 'is:pr is:open draft:false$base',
-            'draft': 'is:pr is:open draft:true$base',
-            'merged': 'is:pr is:merged$base',
-            'closed': 'is:pr is:closed is:unmerged$base',
-          }, cancelToken);
-        } on RhttpException catch (e) {
-          if (e is RhttpCancelException) {
-            return (open: open, draft: draft, merged: merged, closed: closed);
-          }
-          rethrow;
-        }
-
-        final data = response?['data'] as Map<String, dynamic>?;
-        int countOf(String alias) =>
-            ((data?[alias] as Map<String, dynamic>?)?['issueCount'] as num?)
-                ?.toInt() ??
-            0;
-        open += countOf('open');
-        draft += countOf('draft');
-        merged += countOf('merged');
-        closed += countOf('closed');
+    final nonEmptyChunks = <ProfileSearchChunk>[];
+    for (var i = 0; i < chunks.length; i++) {
+      final counts = results[i];
+      if (counts == null) {
+        continue;
+      }
+      open += counts.open;
+      draft += counts.draft;
+      merged += counts.merged;
+      closed += counts.closed;
+      if (counts.open + counts.draft + counts.merged + counts.closed > 0) {
+        nonEmptyChunks.add(chunks[i]);
       }
     }
-    return (open: open, draft: draft, merged: merged, closed: closed);
+    return (
+      open: open,
+      draft: draft,
+      merged: merged,
+      closed: closed,
+      nonEmptyChunks: nonEmptyChunks,
+    );
   }
 
   /// Posts a GraphQL [query] (with optional [variables]) and returns the decoded
@@ -1338,13 +1726,31 @@ fragment viewerPr on PullRequest {
     String query,
     CancelToken? cancelToken, {
     Map<String, dynamic>? variables,
+    int? maxRetries,
+    Iterable<int>? expectedStatuses,
   }) async {
     try {
-      final response = await _httpClient.post(
-        '/graphql',
-        body: HttpBody.json({'query': query, 'variables': ?variables}),
-        cancelToken: cancelToken,
-      );
+      final payload = HttpBody.json({'query': query, 'variables': ?variables});
+      final HttpResponse response;
+      if (maxRetries != null || expectedStatuses != null) {
+        final req = BaseHttpRequest(
+          method: HttpMethod.post,
+          url: '/graphql',
+          body: payload,
+          expectBody: HttpExpectBody.text,
+          cancelToken: cancelToken,
+        )..additionalData.addAll({
+            if (maxRetries != null) ...maxRetriesOption(maxRetries),
+            if (expectedStatuses != null) ...expectStatuses(expectedStatuses),
+          });
+        response = await _httpClient.send(req);
+      } else {
+        response = await _httpClient.post(
+          '/graphql',
+          body: payload,
+          cancelToken: cancelToken,
+        );
+      }
       final body = httpJsonBody(response);
       return body is Map<String, dynamic> ? body : null;
     } on RhttpException catch (e) {
@@ -1572,23 +1978,24 @@ fragment viewerPr on PullRequest {
     }
   }
 
-  /// Fetches a detailed, all-state PR sample authored by any of [logins]
-  /// across [repos], newest activity first.
+  /// Fetches a detailed, bounded all-state PR sample authored by any of
+  /// [logins] across [repos], newest activity first.
   ///
-  /// GitHub search exposes at most 1,000 results. The returned `truncated` flag
-  /// makes that limit explicit so percentile metrics are never exhaustive.
+  /// Fetches at most 2 concurrent waves across chunks up to [maxResults] so
+  /// large profiles settle in a predictable number of round trips. The returned
+  /// `truncated` flag is true whenever GitHub reports additional matches beyond
+  /// the sampled window.
   Future<({List<Map<String, dynamic>> nodes, bool truncated})>
   searchProfilePullRequestNodes({
     required List<String> logins,
     required List<({String owner, String name})> repos,
     CancelToken? cancelToken,
+    List<ProfileSearchChunk>? chunks,
+    int maxResults = _profileMaxResults,
   }) async {
-    final authors = logins
-        .map((login) => login.trim())
-        .where((login) => login.isNotEmpty)
-        .toSet()
-        .toList(growable: false);
-    if (authors.isEmpty || repos.isEmpty) {
+    final activeChunks =
+        chunks ?? buildProfileSearchChunks(logins: logins, repos: repos);
+    if (activeChunks.isEmpty || maxResults <= 0) {
       return (nodes: const <Map<String, dynamic>>[], truncated: false);
     }
 
@@ -1604,7 +2011,6 @@ fragment viewerPr on PullRequest {
               isDraft
               createdAt
               updatedAt
-              closedAt
               mergedAt
               url
               id
@@ -1615,8 +2021,7 @@ fragment viewerPr on PullRequest {
               additions
               deletions
               comments { totalCount }
-              reviews(first: 25) {
-                totalCount
+              reviews(first: 5) {
                 nodes {
                   author { login }
                   submittedAt
@@ -1630,96 +2035,184 @@ fragment viewerPr on PullRequest {
       }
     ''';
 
-    const authorChunkSize = 10;
-    const maxResults = 1000;
-    final byKey = <String, Map<String, dynamic>>{};
-    var truncated = false;
-    for (
-      var repoStart = 0;
-      repoStart < repos.length && byKey.length < maxResults;
-      repoStart += _reviewSearchChunkSize
-    ) {
-      final repoEnd = (repoStart + _reviewSearchChunkSize) > repos.length
-          ? repos.length
-          : repoStart + _reviewSearchChunkSize;
-      final repoChunk = repos.sublist(repoStart, repoEnd);
-      for (
-        var authorStart = 0;
-        authorStart < authors.length && byKey.length < maxResults;
-        authorStart += authorChunkSize
-      ) {
-        final authorEnd = (authorStart + authorChunkSize) > authors.length
-            ? authors.length
-            : authorStart + authorChunkSize;
-        final authorChunk = authors.sublist(authorStart, authorEnd);
-        final qualifiers = StringBuffer('is:pr sort:updated-desc');
-        for (final login in authorChunk) {
-          qualifiers
-            ..write(' author:')
-            ..write(login);
-        }
-        for (final repo in repoChunk) {
-          qualifiers
-            ..write(' repo:')
-            ..write(repo.owner)
-            ..write('/')
-            ..write(repo.name);
-        }
+    final initialPageSize = activeChunks.length <= 2
+        ? min(_reviewSearchPageSize, maxResults)
+        : (maxResults / activeChunks.length)
+            .ceil()
+            .clamp(_profileMinPageSize, _reviewSearchPageSize);
 
-        String? cursor;
-        var fetchedForQuery = 0;
-        while (byKey.length < maxResults) {
-          Map<String, dynamic>? response;
-          try {
-            response = await _runQuery(query, <String, dynamic>{
-              'q': qualifiers.toString(),
-              'first': _reviewSearchPageSize,
-              'after': cursor,
-            }, cancelToken);
-          } on RhttpException catch (e) {
-            if (e is RhttpCancelException) {
-              return (nodes: byKey.values.toList(), truncated: truncated);
-            }
-            rethrow;
-          }
-          final data = response?['data'] as Map<String, dynamic>?;
-          final search = data?['search'] as Map<String, dynamic>?;
-          final nodes = (search?['nodes'] as List? ?? const [])
-              .whereType<Map<String, dynamic>>();
-          for (final node in nodes) {
-            final repo =
-                (node['repository'] as Map<String, dynamic>?)?['nameWithOwner']
-                    as String?;
-            final number = (node['number'] as num?)?.toInt() ?? 0;
-            if (repo != null && repo.isNotEmpty && number > 0) {
-              byKey['${repo.toLowerCase()}#$number'] = node;
-            }
-          }
-          fetchedForQuery += nodes.length;
-          final issueCount = (search?['issueCount'] as num?)?.toInt() ?? 0;
-          final pageInfo = search?['pageInfo'] as Map<String, dynamic>?;
-          final hasNext = pageInfo?['hasNextPage'] == true;
-          if (!hasNext) {
-            truncated = truncated || issueCount > fetchedForQuery;
-            break;
-          }
-          if (fetchedForQuery >= maxResults || byKey.length >= maxResults) {
-            truncated = true;
-            break;
-          }
-          final next = pageInfo?['endCursor'] as String?;
-          if (next == null || next.isEmpty || next == cursor) {
-            truncated = truncated || issueCount > fetchedForQuery;
-            break;
-          }
-          cursor = next;
+    final states = <_ProfileSearchChunkState>[
+      for (final chunk in activeChunks)
+        _ProfileSearchChunkState(
+          qualifiers: _profileChunkQualifiers(chunk),
+          pageSize: initialPageSize,
+        ),
+    ];
+
+    final byKey = <String, Map<String, dynamic>>{};
+    var cancelled = false;
+    var hitCap = false;
+
+    void absorbPage(
+      _ProfileSearchChunkState state,
+      Map<String, dynamic> response,
+    ) {
+      final data = response['data'] as Map<String, dynamic>?;
+      final search = data?['search'] as Map<String, dynamic>?;
+      final nodes = (search?['nodes'] as List? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList(growable: false);
+      for (final node in nodes) {
+        final repo =
+            (node['repository'] as Map<String, dynamic>?)?['nameWithOwner']
+                as String?;
+        final number = (node['number'] as num?)?.toInt() ?? 0;
+        if (repo == null || repo.isEmpty || number <= 0) {
+          continue;
         }
+        final key = '${repo.toLowerCase()}#$number';
+        if (byKey.length >= maxResults && !byKey.containsKey(key)) {
+          hitCap = true;
+          continue;
+        }
+        byKey[key] = node;
+      }
+      state.fetched += nodes.length;
+      state.issueCount = (search?['issueCount'] as num?)?.toInt() ?? 0;
+      final pageInfo = search?['pageInfo'] as Map<String, dynamic>?;
+      final hasNext = pageInfo?['hasNextPage'] == true;
+      final next = pageInfo?['endCursor'] as String?;
+      if (!hasNext || next == null || next.isEmpty || next == state.cursor) {
+        state.hasNext = hasNext;
+        state.cursor = null;
+      } else {
+        state.hasNext = true;
+        state.cursor = next;
       }
     }
-    if (byKey.length >= maxResults) {
-      truncated = true;
+
+    // Wave 1: fetch the first page of every active chunk concurrently so no
+    // repo/author chunk is starved.
+    await _runBounded(states, _profileSearchConcurrency, (_, state) async {
+      if (cancelled) {
+        return;
+      }
+      final response = await _runSearchPageWithSplit(
+        query: query,
+        state: state,
+        maxAsk: state.pageSize,
+        cancelToken: cancelToken,
+      );
+      if (response == null) {
+        cancelled = true;
+        return;
+      }
+      absorbPage(state, response);
+    });
+
+    // Wave 2: fetch at most one additional page for chunks that still have
+    // cursor pages while under the sample cap.
+    if (!cancelled && byKey.length < maxResults) {
+      final nextStates = [
+        for (final state in states)
+          if (state.hasNext &&
+              state.cursor != null &&
+              state.cursor!.isNotEmpty)
+            state,
+      ];
+      if (nextStates.isNotEmpty) {
+        await _runBounded(nextStates, _profileSearchConcurrency, (
+          _,
+          state,
+        ) async {
+          if (cancelled || byKey.length >= maxResults) {
+            return;
+          }
+          final remaining = maxResults - byKey.length;
+          final maxAsk = nextStates.length == 1
+              ? min(state.pageSize, remaining)
+              : state.pageSize;
+          if (maxAsk <= 0) {
+            return;
+          }
+          final response = await _runSearchPageWithSplit(
+            query: query,
+            state: state,
+            maxAsk: maxAsk,
+            cancelToken: cancelToken,
+          );
+          if (response == null) {
+            cancelled = true;
+            return;
+          }
+          absorbPage(state, response);
+        });
+      }
     }
+
+    final truncated =
+        hitCap ||
+        states.any((s) => s.hasNext || s.issueCount > s.fetched);
     return (nodes: byKey.values.toList(growable: false), truncated: truncated);
+  }
+
+  static String _profileChunkQualifiers(ProfileSearchChunk chunk) {
+    final qualifiers = StringBuffer('is:pr sort:updated-desc');
+    for (final login in chunk.authors) {
+      qualifiers
+        ..write(' author:')
+        ..write(login);
+    }
+    for (final repo in chunk.repos) {
+      qualifiers
+        ..write(' repo:')
+        ..write(repo.owner)
+        ..write('/')
+        ..write(repo.name);
+    }
+    return qualifiers.toString();
+  }
+
+  Future<Map<String, dynamic>?> _runSearchPageWithSplit({
+    required String query,
+    required _ProfileSearchChunkState state,
+    required int maxAsk,
+    CancelToken? cancelToken,
+  }) async {
+    while (true) {
+      final ask = min(state.pageSize, maxAsk);
+      final canSplit = ask > _profileMinPageSize;
+      final Map<String, dynamic>? response;
+      try {
+        response = await _postTolerant(
+          query,
+          cancelToken,
+          variables: <String, dynamic>{
+            'q': state.qualifiers,
+            'first': ask,
+            'after': state.cursor,
+          },
+          maxRetries: canSplit ? 0 : 1,
+          expectedStatuses: canSplit ? const [502, 503, 504] : null,
+        );
+      } on Object catch (e) {
+        if (_isSplittableServerFailure(e) && canSplit) {
+          state.pageSize = max(_profileMinPageSize, ask ~/ 2);
+          continue;
+        }
+        rethrow;
+      }
+      if (response == null) {
+        return null;
+      }
+      final errors = response['errors'] as List?;
+      if (errors != null && errors.isNotEmpty) {
+        final first = errors.first as Map?;
+        final message = first?['message'] as String? ?? 'Unknown GraphQL error';
+        throw NetworkException(message, code: 'graphql_error');
+      }
+      return response;
+    }
   }
 
   /// Fetches GitHub's suggested reviewers for a PR — the users GitHub
@@ -2212,4 +2705,18 @@ String _reactionShortcode(String enumName) {
     }
   }
   return enumName;
+}
+
+class _ProfileSearchChunkState {
+  _ProfileSearchChunkState({
+    required this.qualifiers,
+    required this.pageSize,
+  });
+
+  final String qualifiers;
+  int pageSize;
+  String? cursor;
+  int fetched = 0;
+  int issueCount = 0;
+  bool hasNext = false;
 }

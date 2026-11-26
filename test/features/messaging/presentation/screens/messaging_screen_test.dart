@@ -26,6 +26,7 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_workspace.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -288,7 +289,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     // Inner sidebar removed: no selection → empty state (no section labels).
-    expect(find.text('DIRECT MESSAGES'), findsNothing);
+    expect(find.text('Direct messages'), findsNothing);
     expect(find.text('Select a conversation'), findsOneWidget);
     await tester.pumpWidget(Container());
     await tester.pumpAndSettle();
@@ -1401,4 +1402,189 @@ void main() {
     expect(spawnCount, 1);
     expect(find.text('claude'), findsWidgets);
   });
+
+  testWidgets(
+    'back button leaves a space opened with a bare URL instead of looping',
+    (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final cacheStore = <String, String?>{};
+      _seedTerminalLayout(cacheStore, 'ch-1');
+      final host = FakeRpcHost();
+      host.onCall = (op, args) {
+        switch (op) {
+          case 'terminal.spawn':
+            return {'session_id': 'srv-1'};
+          case 'cache.read':
+            return {'payload': cacheStore['${args['kind']}/${args['key']}']};
+          case 'cache.write':
+            cacheStore['${args['kind']}/${args['key']}'] =
+                args['payload'] as String?;
+            return const <String, dynamic>{};
+        }
+        return const <String, dynamic>{};
+      };
+
+      const spacesPageKey = ValueKey('spaces_screen');
+      final router = GoRouter(
+        initialLocation: '/workspaces/ws-1/newsfeed',
+        routes: [
+          ShellRoute(
+            builder: (context, state, child) => Consumer(
+              builder: (context, ref, _) => MouseNavigationHandler(
+                historyController: ref.read(navigationHistoryProvider.notifier),
+                child: child,
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: '/workspaces/:wid/newsfeed',
+                builder: (context, state) =>
+                    const SizedBox(key: Key('newsfeed-stub')),
+              ),
+              GoRoute(
+                path: '/workspaces/:wid/spaces/:cid',
+                pageBuilder: (context, state) => NoTransitionPage<void>(
+                  key: spacesPageKey,
+                  child: _wrap(
+                    MessagingScreen(
+                      selectedSpaceId: state.pathParameters['cid'],
+                      focusedTabKey: state.uri.queryParameters['tab'],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      final container = ProviderContainer(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
+          ),
+          rpcClientProvider.overrideWithValue(host.client()),
+          spacesProvider.overrideWith(
+            (ref) => Stream.value([_testSpaceA, _testSpaceB]),
+          ),
+          workspaceSpacesProvider(
+            _kWorkspaceId,
+          ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
+          agentsProvider.overrideWith((ref) => Stream.value(const [])),
+          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+          conversationReadRepositoryProvider.overrideWith(
+            (ref) => FakeConversationReadRepository(),
+          ),
+          for (final id in ['ch-1', 'ch-2']) ...[
+            spaceParticipantsProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            spaceConversationsProvider(id).overrideWith(
+              (ref) => Stream.value([
+                Conversation(
+                  id: id,
+                  workspaceId: _kWorkspaceId,
+                  spaceId: id,
+                  title: 'Standing chat',
+                  createdAt: DateTime(2024),
+                  updatedAt: DateTime(2024),
+                ),
+              ]),
+            ),
+            spaceFeedWindowedProvider((
+              spaceId: id,
+              conversationId: id,
+            )).overrideWith(
+              (ref) => Stream.value((messages: const [], hasMore: false)),
+            ),
+            spaceMessagesProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            standingConversationIdProvider(id).overrideWith((ref) async => id),
+          ],
+        ],
+      );
+      addTearDown(container.dispose);
+
+      Future<void> settle() async {
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      }
+
+      NavigationHistoryState navState() =>
+          container.read(navigationHistoryProvider);
+      NavigationHistoryController nav() =>
+          container.read(navigationHistoryProvider.notifier);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: appLocalizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('newsfeed-stub')), findsOneWidget);
+      expect(navState().canGoBack, isFalse);
+
+      // Navigate into a space with a bare URL (same as clicking in sidebar).
+      router.go('/workspaces/ws-1/spaces/ch-1');
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+      expect(router.state.uri.queryParameters['tab'], isNotNull);
+      expect(navState().canGoBack, isTrue);
+
+      // Pressing Back once must leave the space back to newsfeed.
+      nav().goBack();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('newsfeed-stub')), findsOneWidget);
+      expect(router.state.uri.toString(), '/workspaces/ws-1/newsfeed');
+      expect(navState().canGoBack, isFalse);
+      expect(navState().canGoForward, isTrue);
+
+      // Forward returns to the space; switching to ch-2 then pressing Back
+      // twice returns to ch-1 and then to newsfeed.
+      nav().goForward();
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+      expect(router.state.uri.queryParameters['tab'], isNotNull);
+
+      router.go('/workspaces/ws-1/spaces/ch-2');
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-2');
+
+      nav().goBack();
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+
+      nav().goBack();
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/workspaces/ws-1/newsfeed');
+
+      // Re-clicking the already-open space via a bare URL must not duplicate
+      // the space on the back stack.
+      nav().goForward();
+      await settle();
+      expect(router.state.uri.path, '/workspaces/ws-1/spaces/ch-1');
+      router.go('/workspaces/ws-1/spaces/ch-1');
+      await settle();
+      nav().goBack();
+      await tester.pumpAndSettle();
+      expect(router.state.uri.toString(), '/workspaces/ws-1/newsfeed');
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    },
+  );
 }

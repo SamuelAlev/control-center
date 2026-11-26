@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart';
+import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/toolbar_chips.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -96,6 +102,12 @@ const _prRef = (
 );
 
 void main() {
+  setUpAll(() => DiffWorkerPool.debugForceInline = true);
+  tearDownAll(() {
+    DiffWorkerPool.debugForceInline = false;
+    return DiffWorkerPool.instance.shutdown();
+  });
+
   group('PrDiffTab merged toolbar', () {
     testWidgets('renders stats and settings trigger', (tester) async {
       await tester.pumpWidget(
@@ -226,5 +238,134 @@ void main() {
 
       await _teardown(tester);
     });
+
+    testWidgets('shows DiffRefreshingIndicator instead of DiffUpdateChip when refreshing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          PrDiffTab(
+            pr: _pr(),
+            prRef: _prRef,
+            hasDiffUpdate: true,
+            isRefreshingDiff: true,
+            onRefreshDiff: () {},
+          ),
+          prefs: AppPreferences.inMemory(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(DiffRefreshingIndicator), findsOneWidget);
+      expect(find.byType(DiffUpdateChip), findsNothing);
+
+      await _teardown(tester);
+    });
+
+    testWidgets(
+      'becoming visible with hasDiffUpdate triggers onAutoRefreshDiff',
+      (tester) async {
+        var autoRefreshed = 0;
+        await tester.pumpWidget(
+          _wrap(
+            PrDiffTab(
+              pr: _pr(),
+              prRef: _prRef,
+              isVisible: false,
+              hasDiffUpdate: true,
+              onAutoRefreshDiff: () => autoRefreshed++,
+            ),
+            prefs: AppPreferences.inMemory(),
+          ),
+        );
+        await tester.pump();
+        expect(autoRefreshed, 0);
+
+        await tester.pumpWidget(
+          _wrap(
+            PrDiffTab(
+              pr: _pr(),
+              prRef: _prRef,
+              isVisible: true,
+              hasDiffUpdate: true,
+              onAutoRefreshDiff: () => autoRefreshed++,
+            ),
+            prefs: AppPreferences.inMemory(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(Duration.zero);
+
+        expect(autoRefreshed, 1);
+
+        await _teardown(tester);
+      },
+    );
+
+    testWidgets(
+      'calls onDiffLoaded when a fresh complete PrFilesLoad arrives while stale',
+      (tester) async {
+        final loadController = StreamController<PrFilesLoad>();
+        addTearDown(loadController.close);
+        var loadedCallbacks = 0;
+
+        await tester.pumpWidget(
+          _wrap(
+            PrDiffTab(
+              pr: _pr(),
+              prRef: _prRef,
+              isVisible: true,
+              hasDiffUpdate: true,
+              onDiffLoaded: () => loadedCallbacks++,
+            ),
+            prefs: AppPreferences.inMemory(),
+            overrides: [
+              prFilesLoadProvider(
+                _prRef,
+              ).overrideWith((ref) => loadController.stream),
+            ],
+          ),
+        );
+        // Frame 1 arms _listenForPatches; frame 2 attaches the listener.
+        await tester.pump();
+        await tester.pump();
+
+        loadController.add(
+          PrFilesLoad(
+            files: [
+              PrFile(
+                filename: 'a.dart',
+                status: PrFileStatus.modified,
+                additions: 1,
+                deletions: 0,
+                patch: '@@ -1 +1 @@',
+              ),
+            ],
+            isComplete: true,
+          ),
+        );
+        await tester.pump();
+
+        loadController.add(
+          PrFilesLoad(
+            files: [
+              PrFile(
+                filename: 'b.dart',
+                status: PrFileStatus.modified,
+                additions: 2,
+                deletions: 0,
+                patch: '@@ -1 +1 @@',
+              ),
+            ],
+            isComplete: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(loadedCallbacks, 1);
+
+        await _teardown(tester);
+      },
+    );
   });
 }

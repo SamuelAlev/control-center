@@ -474,9 +474,9 @@
   "calendarDisconnect": "Ngắt kết nối",
   "calendarReconnect": "Kết nối lại",
   "calendarEmptyNoEvents": "Không có sự kiện trong khoảng này",
-  "calendarStartRecording": "Bắt đầu ghi",
-  "calendarStartRecordingAndLink": "Bắt đầu ghi & liên kết",
   "calendarJoinMeet": "Tham gia cuộc họp",
+  "calendarJoinAndRecord": "Tham gia và ghi",
+  "calendarRecordFailed": "Không thể bắt đầu ghi âm",
   "calendarFromCalendar": "Từ lịch",
   "calendarLinkedMeeting": "Cuộc họp đã liên kết",
   "calendarToday": "Hôm nay",
@@ -899,7 +899,6 @@
   "actions": "Hành động",
   "activate": "Kích hoạt",
   "activity": "Hoạt động",
-  "activityLabel": "HOẠT ĐỘNG",
   "activitySearchHint": "Tìm hoạt động",
   "activityNoMatches": "Không có hoạt động nào khớp bộ lọc",
   "activityPageRange": "{start}–{end} trên {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Đang chặn",
   "bookmarkLabel": "Đánh dấu",
   "briefDescription": "Mô tả ngắn",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "Mặc định đi kèm — không bao giờ cập nhật",
   "cancel": "Hủy",
   "cancelEdit": "Hủy chỉnh sửa",
@@ -3010,7 +3009,7 @@
   "success": "Thành công",
   "successLabel": "Thành công",
   "suggestion": "Đề xuất",
-  "suggestLabel": "ĐỀ XUẤT",
+  "suggestLabel": "Đề xuất",
   "superseded": "Đã thay thế",
   "synced": "Đã đồng bộ",
   "systemDefault": "Mặc định hệ thống",
@@ -3025,7 +3024,7 @@
   "themeLight": "Sáng",
   "themeSystem": "Hệ thống",
   "thisCannotBeUndone": "Không thể hoàn tác.",
-  "ticketLabel": "PHIẾU",
+  "ticketLabel": "Phiếu",
   "titleLabel": "Tiêu đề",
   "todayLabel": "Hôm nay",
   "toggleTheme": "Chuyển chủ đề",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Mẫu",
   "prTemplateDefault": "Mặc định",
   "addReviewers": "Thêm người review",
-  "addAssignees": "Thêm người được gán",
+
+  "reRequestReview": "Yêu cầu review lại",
+  "reRequestReviewFor": "Yêu cầu {label} review lại",  "addAssignees": "Thêm người được gán",
   "addLabels": "Thêm nhãn",
   "searchLabels": "Tìm nhãn…",
   "noMatchingLabels": "Không có nhãn phù hợp",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Ghi chú nhanh — agent sẽ mở rộng sau cuộc họp.",
   "meetingSpeakerMe": "Bạn",
   "meetingStatusRecording": "Đang ghi",
+  "meetingStatusPaused": "Tạm dừng",
   "meetingStatusProcessing": "Đang xử lý",
   "meetingStatusDone": "Xong",
   "meetingStatusFailed": "Thất bại",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Không có cuộc họp} =1{1 cuộc họp} other{{count} cuộc họp}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Hành động còn mở",
-  "meetingsLedgerDecisions": "Quyết định",
   "meetingsLiveOpen": "Mở bản ghi",
   "meetingTemplateShort": "Mẫu",
-  "meetingsStatThisWeek": "Tuần này",
-  "meetingsStatRecorded": "Đã ghi",
   "meetingsFilterAll": "Tất cả",
   "meetingsFilterDone": "Xong",
   "meetingsFilterProcessing": "Đang xử lý",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "nâng cao",
   "meetingsTranscribing": "đang phiên âm và tóm tắt…",
   "meetingsOpenAction": "Mở",
   "meetingsStopProcessing": "Dừng",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Có vẻ đang có cuộc họp. Ghi lại?",
-  "meetingDetectedRecord": "Ghi",
   "meetingDetectedDismiss": "Bỏ qua",
   "meetingAutoStopTitle": "Cuộc họp có vẻ đã kết thúc. Dừng ghi?",
   "meetingAutoStopStop": "Dừng",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Chưa từng kết nối",
+  "deviceAwaitingApproval": "Đang chờ phê duyệt",
   "profileSectionLabel": "Hồ sơ",
   "profileSectionDescription": "Bạn hiện ra với nhóm và trong tác giả commit git thế nào trong không gian này. Trường trống kế thừa tên và email tài khoản.",
   "displayNameLabel": "Tên hiển thị",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Đang chạy",
   "evalsStatusPassed": "Đạt",
   "evalsStatusFailed": "Thất bại",
-  "bannerMeetingJoin": "Tham gia",
-  "bannerMeetingRecordAndLink": "Ghi và liên kết",
   "bannerCalendarReconnect": "Kết nối lại",
   "bannerView": "Xem",
   "soundscapeTitle": "Soundscapes",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Không đăng được bình luận: {error}",
   "commentOnLine": "Dòng {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Luôn cho phép sao chép từ môi trường",
   "rigClipboardAlwaysCopyDescription": "Đặt nội dung bảng nhớ tạm từ bất kỳ môi trường nào trên thiết bị này mà không cần hỏi.",
   "imageDiffBefore": "Trước",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Sau",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Song song",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Vuốt",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Khác biệt",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "Đã đổi {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Hình ảnh",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Mã nguồn",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Đã xóa",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "Đã đánh dấu {path} là chưa xem",
   "prLineChangesSemantics": "Dòng đã thêm: {additions}, dòng đã xóa: {deletions}",
   "closeTabNamed": "Đóng {tab}",
-  "threadCommentCount": "{count, plural, other{{count} bình luận}}",
   "notificationAgentAwaitingInput": "Agent cần được chú ý",
   "notifyAgentAwaitingInput": "Khi agent cần phê duyệt, câu trả lời hoặc thông tin xác thực hợp lệ, hoặc chính sách chặn một hành động",
   "notificationAgentNeedsApproval": "{agent} cần bạn phê duyệt",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Quản trị viên quyết định",
   "improvementNotFound": "Đề xuất này không tồn tại, hoặc nằm trong một space mà bạn không mở được.",
   "dispatchSettingsTitle": "Lịch",
-  "dispatchSettingsSubtitle": "Giới hạn cho lịch và theo dõi, và việc gì xảy ra với các yêu cầu không ai trả lời.",
   "dispatchLimitsLabel": "Giới hạn lịch",
   "dispatchLimitsSubtitle": "Giới hạn số lịch và theo dõi mà agent được giữ, cùng mặc định của chúng.",
   "dispatchLimitRange": "1 đến {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "Theo {zone}, múi giờ ở trên.",
   "dispatchDigestHourRange": "0 đến 23",
   "goalRecordCrumb": "Mục tiêu",
-  "scheduleRecordCrumb": "Lịch",
   "improvementRecordCrumb": "Đề xuất",
   "goalNodeNeedsAgent": "Chọn agent sẽ theo đuổi mục tiêu.",
   "goalNodeNeedsObjective": "Hãy viết mục tiêu cần đạt.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Mã đó không phải mã trình duyệt đã hiển thị. {count, plural, other{Còn {count} lần thử.}}",
   "mcpServerSignInEnded": "Quá thời gian, bị từ chối, hoặc nhập sai mã quá nhiều lần. Bắt đầu lại để nhận trang đăng nhập mới.",
   "mcpServerSignInStartAgain": "Bắt đầu lại",
-  "mcpServerSignedIn": "Đã đăng nhập vào {name}."
+  "mcpServerSignedIn": "Đã đăng nhập vào {name}.",
+  "ccLoading": "Đang tải",
+  "ccProgress": "Tiến độ",
+  "ccBreadcrumb": "Đường dẫn",
+  "ccDialog": "Hộp thoại",
+  "ccResize": "Thay đổi kích thước",
+  "ccUnverifiedLabel": "{label} (chưa xác minh)",
+  "prRowSelect": "Chọn {title}",
+  "prTableSelectAll": "Chọn tất cả pull request",
+  "planVersionRewind": "Khôi phục về phiên bản {version}"
 }

@@ -62,6 +62,7 @@ class GitHubReviewThread {
     required this.isResolved,
     required this.isOutdated,
     required this.commentIds,
+    this.resolvedByLogin,
   });
 
   /// GraphQL node id of the thread — the handle the resolve mutations take.
@@ -75,6 +76,10 @@ class GitHubReviewThread {
 
   /// Numeric ids of the thread's comments.
   final List<int> commentIds;
+
+  /// Login of the user who resolved the thread (`resolvedBy.login`), or `null`
+  /// when unresolved, deleted, or withheld.
+  final String? resolvedByLogin;
 }
 
 /// One reaction on a review summary, from

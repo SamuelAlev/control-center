@@ -33,6 +33,7 @@ every stories file targets [Showcase] and names its navigation entry with a
     $Compact..$generatedName = 'Compact',
     $Fallback..$generatedName = 'Fallback',
     $GitHubColors..$generatedName = 'GitHubColors',
+    $Removable..$generatedName = 'Removable',
   ],
 );
 typedef ShowcaseScenario = Scenario<Showcase, ShowcaseArgs>;

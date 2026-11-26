@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_defin
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_type_visuals.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_editor_geometry.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_editor_shortcuts.dart';
@@ -161,82 +162,86 @@ class _PipelineEditorCanvasState extends ConsumerState<PipelineEditorCanvas> {
       _shift = scene.shift;
     }
 
-    return Focus(
-      focusNode: _focus,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: GestureDetector(
-        onTap: _focus.requestFocus,
-        child: DragTarget<TriggerPaletteEntry>(
-          onWillAcceptWithDetails: (_) => true,
-          onAcceptWithDetails: (details) {
-            final def = _toDefinition(details.offset);
-            Offset? at;
-            if (def != null) {
-              at = snapPipelineEditorOffset(
-                def -
-                    const Offset(
-                      kPipelineEditorNodeWidth / 2,
-                      kPipelineEditorNodeHeight / 2,
-                    ),
-              );
-            }
-            widget.onAddTrigger(details.data.eventType, at);
-          },
-          builder: (context, triggerCandidates, _) {
-            return DragTarget<NodeType>(
-              onWillAcceptWithDetails: (_) => true,
-              onAcceptWithDetails: _onDrop,
-              builder: (context, candidates, _) {
-                final dropping =
-                    candidates.isNotEmpty || triggerCandidates.isNotEmpty;
-                return MouseRegion(
-                  cursor: dropping
-                      ? SystemMouseCursors.grabbing
-                      : MouseCursor.defer,
-                  child: PipelineEditorViewport(
-                    viewerKey: _viewerKey,
-                    transform: _transform,
-                    wheelPan: _wheelPan,
-                    scene: scene,
-                    onViewport: _onViewport,
-                    dropping: dropping,
-                    empty: renderable.isEmpty,
-                    definition: widget.definition,
-                    library: widget.library,
-                    triggers: widget.triggers,
-                    selectedStepId: widget.selectedStepId,
-                    selectedTriggerId: widget.selectedTriggerId,
-                    dragPositions: _dragPositions,
-                    connectFrom: _connectFrom,
-                    connectFromTriggerId: _connectFromTriggerId,
-                    connectPointerScene: _connectPointerScene,
-                    connectHoverId: _connectHoverId,
-                    lockViewer: connecting || _handleHover,
-                    onConnectHandleHover: _onConnectHandleHover,
-                    onSelect: _onTapNode,
-                    onSelectTrigger: _onTapTrigger,
-                    onAddTrigger: widget.onAddTrigger,
-                    onMoveUpdate: _onMoveUpdate,
-                    onMoveEnd: _onMoveEnd,
-                    onConnectDragStart: _onConnectDragStart,
-                    onTriggerConnectDragStart: _onTriggerConnectDragStart,
-                    onConnectDragUpdate: _onConnectDragUpdate,
-                    onConnectDragEnd: _onConnectDragEnd,
-                    onConnectDragCancel: _clearConnect,
-                    insertTopLeft: insertSlot,
-                    showInsertPicker: _insertAt != null,
-                    onInsertPick: _onInsertPick,
-                    onCancelInsert: _clearConnect,
-                    onDisconnect: widget.onDisconnect,
-                    onFit: _fitToContent,
-                    onTidy: widget.onTidy,
-                    viewport: () => _viewport,
-                  ),
+    // The canvas owns the keyboard (arrows, Delete, E): a click on its zoom
+    // or tidy buttons leaves focus here, so the next key still edits.
+    return CcFocusKeeper(
+      child: Focus(
+        focusNode: _focus,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: GestureDetector(
+          onTap: _focus.requestFocus,
+          child: DragTarget<TriggerPaletteEntry>(
+            onWillAcceptWithDetails: (_) => true,
+            onAcceptWithDetails: (details) {
+              final def = _toDefinition(details.offset);
+              Offset? at;
+              if (def != null) {
+                at = snapPipelineEditorOffset(
+                  def -
+                      const Offset(
+                        kPipelineEditorNodeWidth / 2,
+                        kPipelineEditorNodeHeight / 2,
+                      ),
                 );
-              },
-            );
-          },
+              }
+              widget.onAddTrigger(details.data.eventType, at);
+            },
+            builder: (context, triggerCandidates, _) {
+              return DragTarget<NodeType>(
+                onWillAcceptWithDetails: (_) => true,
+                onAcceptWithDetails: _onDrop,
+                builder: (context, candidates, _) {
+                  final dropping =
+                      candidates.isNotEmpty || triggerCandidates.isNotEmpty;
+                  return MouseRegion(
+                    cursor: dropping
+                        ? SystemMouseCursors.grabbing
+                        : MouseCursor.defer,
+                    child: PipelineEditorViewport(
+                      viewerKey: _viewerKey,
+                      transform: _transform,
+                      wheelPan: _wheelPan,
+                      scene: scene,
+                      onViewport: _onViewport,
+                      dropping: dropping,
+                      empty: renderable.isEmpty,
+                      definition: widget.definition,
+                      library: widget.library,
+                      triggers: widget.triggers,
+                      selectedStepId: widget.selectedStepId,
+                      selectedTriggerId: widget.selectedTriggerId,
+                      dragPositions: _dragPositions,
+                      connectFrom: _connectFrom,
+                      connectFromTriggerId: _connectFromTriggerId,
+                      connectPointerScene: _connectPointerScene,
+                      connectHoverId: _connectHoverId,
+                      lockViewer: connecting || _handleHover,
+                      onConnectHandleHover: _onConnectHandleHover,
+                      onSelect: _onTapNode,
+                      onSelectTrigger: _onTapTrigger,
+                      onAddTrigger: widget.onAddTrigger,
+                      onMoveUpdate: _onMoveUpdate,
+                      onMoveEnd: _onMoveEnd,
+                      onConnectDragStart: _onConnectDragStart,
+                      onTriggerConnectDragStart: _onTriggerConnectDragStart,
+                      onConnectDragUpdate: _onConnectDragUpdate,
+                      onConnectDragEnd: _onConnectDragEnd,
+                      onConnectDragCancel: _clearConnect,
+                      insertTopLeft: insertSlot,
+                      showInsertPicker: _insertAt != null,
+                      onInsertPick: _onInsertPick,
+                      onCancelInsert: _clearConnect,
+                      onDisconnect: widget.onDisconnect,
+                      onFit: _fitToContent,
+                      onTidy: widget.onTidy,
+                      viewport: () => _viewport,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );

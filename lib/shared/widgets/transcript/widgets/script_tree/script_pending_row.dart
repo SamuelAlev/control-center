@@ -124,10 +124,10 @@ class ScriptPendingRow extends StatelessWidget {
         state == ScriptStepState.skipped || state == ScriptStepState.unknown;
     final word = scriptPendingWord(l10n, state);
     final subject = [verb, ?p.caption].join(' ');
-    final base = AppFonts.codeDynamic(
-      codeFont,
-      textStyle: CcTypography.caption.copyWith(color: t.textTertiary),
-    );
+    // Like the made row: the verb in the UI font, a code caption (a path, a
+    // command) in the code font.
+    final plain = CcTypography.caption.copyWith(color: t.textTertiary);
+    final code = AppFonts.codeDynamic(codeFont, textStyle: plain);
     return Semantics(
       label: word == null ? subject : l10n.scriptStepSemantics(subject, word),
       excludeSemantics: true,
@@ -152,11 +152,11 @@ class ScriptPendingRow extends StatelessWidget {
                 // The made row's summary, quieter: verb, two spaces, caption.
                 child: Text.rich(
                   TextSpan(
-                    style: base,
+                    style: plain,
                     children: [
                       TextSpan(
                         text: verb,
-                        style: base.copyWith(
+                        style: plain.copyWith(
                           color: skipped ? t.textQuaternary : t.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -165,9 +165,11 @@ class ScriptPendingRow extends StatelessWidget {
                         const TextSpan(text: '  '),
                         TextSpan(
                           text: caption,
-                          style: p.captionIsCode || skipped
-                              ? base.copyWith(color: t.textQuaternary)
-                              : null,
+                          style: (p.captionIsCode ? code : plain).copyWith(
+                            color: p.captionIsCode || skipped
+                                ? t.textQuaternary
+                                : null,
+                          ),
                         ),
                       ],
                     ],

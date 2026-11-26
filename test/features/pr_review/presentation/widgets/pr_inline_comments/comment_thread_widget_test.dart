@@ -294,6 +294,34 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
+    testWidgets('Edit puts the cursor in the field, and Cancel hands focus '
+        'back to the menu button', (tester) async {
+      late _FakePrInlineCommentsController controller;
+      await tester.pumpWidget(_liveThread((c) => controller = c));
+      await tester.pump();
+      controller.seed(_queued());
+      await tester.pump();
+
+      await _startEdit(tester);
+      await tester.pump();
+      final field = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>();
+      expect(field?.controller.text, 'Generic url');
+      tester.testTextInput.enterText('Typed here');
+      await tester.pump();
+      expect(find.widgetWithText(CcTextField, 'Typed here'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcIconButton>();
+      expect(focused?.icon, AppIcons.moreHorizontal);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
     testWidgets('a blank comment cannot be saved', (tester) async {
       late _FakePrInlineCommentsController controller;
       await tester.pumpWidget(_liveThread((c) => controller = c));
@@ -470,7 +498,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('1 comment'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
       expect(find.text('Test Author'), findsOneWidget);
     });
 
@@ -498,7 +526,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('2 comments'), findsOneWidget);
+      expect(find.text('1 reply'), findsOneWidget);
       expect(find.text('Author1'), findsOneWidget);
       expect(find.text('Author2'), findsOneWidget);
     });
@@ -611,7 +639,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('1 comment'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
     });
 
     testWidgets('renders suggestion thread type', (tester) async {
@@ -703,7 +731,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('3 comments'), findsOneWidget);
+      expect(find.text('2 replies'), findsOneWidget);
     });
 
     testWidgets('suggestion thread has edit icon for first entry', (
@@ -874,6 +902,48 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('the pencil puts the cursor in the suggested code, and Cancel '
+        'hands focus back to the pencil', (tester) async {
+      final controller = _createController(_prRef);
+      final thread = _thread(
+        isSuggestion: true,
+        entries: [
+          PrInlineEntry(
+            id: 'e1',
+            author: 'Author',
+            body: '```suggestion\noriginal suggested code\n```',
+            createdAt: DateTime(2024, 6, 15),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        _wrap(PrInlineThreadBlock(thread: thread, controller: controller)),
+      );
+      await tester.pump();
+
+      // The pencil turns into the close button in place and keeps focus.
+      await tester.ensureVisible(find.byIcon(AppIcons.pencil));
+      await tester.tap(find.byIcon(AppIcons.pencil));
+      await tester.pump();
+      await tester.pump();
+      final field = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>();
+      expect(field?.controller.text, 'original suggested code');
+      tester.testTextInput.enterText('typed code');
+      await tester.pump();
+      expect(find.text('typed code'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcIconButton>();
+      expect(focused?.icon, AppIcons.pencil);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
     testWidgets('comment thread does not show edit icon', (tester) async {
       final controller = _createController(_prRef);
       final thread = _thread(
@@ -1010,7 +1080,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('1 comment'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
     });
   });
 
@@ -1476,7 +1546,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('1 comment'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
     });
   });
 
@@ -1644,6 +1714,79 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Resolved'), findsOneWidget);
+    });
+  });
+
+  group('PrInlineThreadBlock - opening a collapsed conversation', () {
+    Widget host(PrInlineThread thread, {required bool collapsed}) => _wrap(
+      PrInlineThreadBlock(
+        thread: thread,
+        controller: _createController(_prRef),
+        collapsed: collapsed,
+        onToggleCollapsed: () {},
+      ),
+    );
+
+    testWidgets('the caret and the author stay where they were', (
+      tester,
+    ) async {
+      final thread = _thread(
+        entries: [
+          PrInlineEntry(id: 'e1', author: 'alice', body: 'Why this cast?'),
+        ],
+      );
+      await tester.pumpWidget(host(thread, collapsed: true));
+      await tester.pump();
+      final caret = tester.getRect(find.byIcon(AppIcons.chevronRight));
+      final author = tester.getRect(find.text('alice'));
+      final top = tester.getRect(find.byType(PrInlineThreadBlock)).top;
+
+      await tester.pumpWidget(host(thread, collapsed: false));
+      // Mid-flight the row has not moved either.
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(tester.getRect(find.text('alice')), author);
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(find.byIcon(AppIcons.chevronRight)), caret);
+      expect(tester.getRect(find.text('alice')), author);
+      expect(tester.getRect(find.byType(PrInlineThreadBlock)).top, top);
+      // The author is named once: the header row is the first comment's own.
+      expect(find.text('alice'), findsOneWidget);
+      expect(find.text('Reply…'), findsOneWidget);
+    });
+
+    testWidgets('a preview that is not the whole comment says so', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          _thread(
+            entries: [
+              PrInlineEntry(
+                id: 'e1',
+                author: 'alice',
+                body: 'Keep it simple.\n\nAlso inline the labels.',
+              ),
+            ],
+          ),
+          collapsed: true,
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Keep it simple. …'), findsOneWidget);
+
+      await tester.pumpWidget(
+        host(
+          _thread(
+            entries: [
+              PrInlineEntry(id: 'e1', author: 'alice', body: 'Keep it simple.'),
+            ],
+          ),
+          collapsed: true,
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Keep it simple.'), findsOneWidget);
     });
   });
 

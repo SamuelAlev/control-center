@@ -29,7 +29,7 @@ void main() {
       'bodySm': CcTypography.bodySm,
       'caption': CcTypography.caption,
       'label': CcTypography.label,
-      'monoNum': CcTypography.monoNum,
+      'monoNum': CcTypography.numeric,
     };
     styles.forEach((name, style) {
       test('$name names no font features', () {
@@ -46,7 +46,7 @@ void main() {
 
   group('CcFonts', () {
     test('code() applies tabular figures with the monospace family', () {
-      final style = CcFonts.code(textStyle: CcTypography.monoNum);
+      final style = CcFonts.code(textStyle: CcTypography.numeric);
       expect(style.fontFamily, CcFonts.codeFamily);
       expect(style.fontFeatures, contains(tabular));
     });
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('code() carries tabular figures onto a user-selected mono family', () {
-      final style = CcFonts.code(textStyle: CcTypography.monoNum, family: 'X');
+      final style = CcFonts.code(textStyle: CcTypography.numeric, family: 'X');
       expect(style.fontFeatures, contains(tabular));
       expect(style.fontFamilyFallback, contains(CcFonts.codeFamily));
     });

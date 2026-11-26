@@ -474,9 +474,9 @@
   "calendarDisconnect": "Αποσύνδεση",
   "calendarReconnect": "Επανασύνδεση",
   "calendarEmptyNoEvents": "Δεν υπάρχουν γεγονότα σε αυτό το εύρος",
-  "calendarStartRecording": "Έναρξη εγγραφής",
-  "calendarStartRecordingAndLink": "Έναρξη εγγραφής και σύνδεση",
   "calendarJoinMeet": "Συμμετοχή στη σύσκεψη",
+  "calendarJoinAndRecord": "Συμμετοχή και εγγραφή",
+  "calendarRecordFailed": "Δεν ήταν δυνατή η έναρξη της εγγραφής",
   "calendarFromCalendar": "Από το ημερολόγιο",
   "calendarLinkedMeeting": "Συνδεδεμένη σύσκεψη",
   "calendarToday": "Σήμερα",
@@ -899,7 +899,6 @@
   "actions": "Ενέργειες",
   "activate": "Ενεργοποίηση",
   "activity": "Δραστηριότητα",
-  "activityLabel": "ΔΡΑΣΤΗΡΙΟΤΗΤΑ",
   "activitySearchHint": "Αναζήτηση δραστηριότητας",
   "activityNoMatches": "Καμία δραστηριότητα δεν ταιριάζει με τα φίλτρα",
   "activityPageRange": "{start}–{end} από {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Αποκλεισμός",
   "bookmarkLabel": "Σελιδοδείκτης",
   "briefDescription": "Σύντομη περιγραφή",
-  "bugLabel": "ΣΦΑΛΜΑ",
+  "bugLabel": "Σφάλμα",
   "bundledDefaultsNeverUpdated": "Ενσωματωμένες προεπιλογές — χωρίς ενημέρωση",
   "cancel": "Ακύρωση",
   "cancelEdit": "Ακύρωση επεξεργασίας",
@@ -2612,12 +2611,12 @@
   "published": "Δημοσιεύτηκε",
   "pullRequestApproved": "Το pull request εγκρίθηκε",
   "pullRequests": "Pull requests",
-  "questionLabel": "ΕΡΩΤΗΣΗ",
+  "questionLabel": "Ερώτηση",
   "queued": "Σε ουρά",
   "react": "Αντίδραση",
   "readerPreferences": "Προτιμήσεις ανάγνωσης",
   "reasoningEffort": "Προσπάθεια συλλογισμού",
-  "recommendLabel": "ΠΡΟΤΑΣΗ",
+  "recommendLabel": "Πρόταση",
   "recordingFromDevice": "Εγγραφή από {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Επιτυχία",
   "successLabel": "Επιτυχία",
   "suggestion": "Πρόταση",
-  "suggestLabel": "ΠΡΟΤΑΣΗ",
+  "suggestLabel": "Πρόταση",
   "superseded": "Αντικαταστάθηκε",
   "synced": "Συγχρονίστηκε",
   "systemDefault": "Προεπιλογή συστήματος",
@@ -3025,7 +3024,7 @@
   "themeLight": "Φωτεινό",
   "themeSystem": "Σύστημα",
   "thisCannotBeUndone": "Αυτή η ενέργεια δεν αναιρείται.",
-  "ticketLabel": "ΕΙΣΙΤΗΡΙΟ",
+  "ticketLabel": "Εισιτήριο",
   "titleLabel": "Τίτλος",
   "todayLabel": "Σήμερα",
   "toggleTheme": "Εναλλαγή θέματος",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Πρότυπο",
   "prTemplateDefault": "Προεπιλογή",
   "addReviewers": "Προσθήκη κριτών",
-  "addAssignees": "Προσθήκη ανατεθειμένων",
+
+  "reRequestReview": "Εκ νέου αίτημα ελέγχου",
+  "reRequestReviewFor": "Εκ νέου αίτημα ελέγχου από {label}",  "addAssignees": "Προσθήκη ανατεθειμένων",
   "addLabels": "Προσθήκη ετικετών",
   "searchLabels": "Αναζήτηση ετικετών…",
   "noMatchingLabels": "Δεν υπάρχουν αντίστοιχες ετικέτες",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Γράψτε γρήγορες σημειώσεις — ο πράκτορας τις επεκτείνει μετά τη σύσκεψη.",
   "meetingSpeakerMe": "Εσείς",
   "meetingStatusRecording": "Εγγραφή",
+  "meetingStatusPaused": "Σε παύση",
   "meetingStatusProcessing": "Επεξεργασία",
   "meetingStatusDone": "Ολοκληρώθηκε",
   "meetingStatusFailed": "Απέτυχε",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Καμία σύσκεψη} one{1 σύσκεψη} other{{count} συσκέψεις}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Ανοιχτές ενέργειες",
-  "meetingsLedgerDecisions": "Αποφάσεις",
   "meetingsLiveOpen": "Άνοιγμα εγγραφής",
   "meetingTemplateShort": "Πρότυπο",
-  "meetingsStatThisWeek": "Αυτή την εβδομάδα",
-  "meetingsStatRecorded": "Εγγεγραμμένες",
   "meetingsFilterAll": "Όλες",
   "meetingsFilterDone": "Ολοκληρωμένες",
   "meetingsFilterProcessing": "Σε επεξεργασία",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "βελτιωμένο",
   "meetingsTranscribing": "μεταγραφή και σύνοψη…",
   "meetingsOpenAction": "Άνοιγμα",
   "meetingsStopProcessing": "Διακοπή",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Φαίνεται ότι συμβαίνει σύσκεψη. Να εγγραφεί;",
-  "meetingDetectedRecord": "Εγγραφή",
   "meetingDetectedDismiss": "Απόρριψη",
   "meetingAutoStopTitle": "Αυτή η σύσκεψη φαίνεται να τελείωσε. Διακοπή εγγραφής;",
   "meetingAutoStopStop": "Διακοπή",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Δεν συνδέθηκε ποτέ",
+  "deviceAwaitingApproval": "Αναμονή έγκρισης",
   "profileSectionLabel": "Προφίλ",
   "profileSectionDescription": "Πώς εμφανίζεστε στην ομάδα και στη συγγραφή git commit σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού.",
   "displayNameLabel": "Εμφανιζόμενο όνομα",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Σε εκτέλεση",
   "evalsStatusPassed": "Πέρασε",
   "evalsStatusFailed": "Απέτυχε",
-  "bannerMeetingJoin": "Συμμετοχή",
-  "bannerMeetingRecordAndLink": "Εγγραφή και σύνδεση",
   "bannerCalendarReconnect": "Επανασύνδεση",
   "bannerView": "Προβολή",
   "soundscapeTitle": "Ηχητικά περιβάλλοντα",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Δεν ήταν δυνατή η δημοσίευση του σχολίου: ⁨{error}⁩",
   "commentOnLine": "Γραμμή {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Να επιτρέπεται πάντα η αντιγραφή από περιβάλλοντα",
   "rigClipboardAlwaysCopyDescription": "Τοποθέτηση περιεχομένου προχείρου από οποιοδήποτε περιβάλλον σε αυτήν τη συσκευή χωρίς ερώτηση.",
   "imageDiffBefore": "Πριν",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Μετά",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Δίπλα",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Σύρετε",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Διαφορά",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "Άλλαξε {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Εικόνες",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Πηγή",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Διαγράφηκε",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "Το {path} σημάνθηκε ως μη προβεβλημένο",
   "prLineChangesSemantics": "Γραμμές που προστέθηκαν: {additions}, γραμμές που αφαιρέθηκαν: {deletions}",
   "closeTabNamed": "Κλείσιμο {tab}",
-  "threadCommentCount": "{count, plural, =1{1 σχόλιο} other{{count} σχόλια}}",
   "notificationAgentAwaitingInput": "Ένας πράκτορας χρειάζεται την προσοχή σας",
   "notifyAgentAwaitingInput": "Όταν ένας πράκτορας χρειάζεται έγκριση, απάντηση ή έγκυρα διαπιστευτήρια ή όταν μια πολιτική αποκλείει μια ενέργεια",
   "notificationAgentNeedsApproval": "{agent}: χρειάζεται την έγκρισή σας",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Αποφασίζει ένας διαχειριστής",
   "improvementNotFound": "Αυτή η πρόταση δεν υπάρχει, ή βρίσκεται σε χώρο στον οποίο δεν έχετε πρόσβαση.",
   "dispatchSettingsTitle": "Χρονοδιαγράμματα",
-  "dispatchSettingsSubtitle": "Όρια για χρονοδιαγράμματα και παρακολουθήσεις, και τι γίνεται με τα αιτήματα που δεν απαντά κανείς.",
   "dispatchLimitsLabel": "Όρια χρονοδιαγραμμάτων",
   "dispatchLimitsSubtitle": "Όρια στο πλήθος χρονοδιαγραμμάτων και παρακολουθήσεων που μπορούν να έχουν οι πράκτορες, και οι προεπιλογές τους.",
   "dispatchLimitRange": "1 έως {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "Σε {zone}, η ζώνη ώρας παραπάνω.",
   "dispatchDigestHourRange": "0 έως 23",
   "goalRecordCrumb": "Στόχος",
-  "scheduleRecordCrumb": "Χρονοδιάγραμμα",
   "improvementRecordCrumb": "Πρόταση",
   "goalNodeNeedsAgent": "Επιλέξτε τον πράκτορα που επιδιώκει τον στόχο.",
   "goalNodeNeedsObjective": "Γράψτε τον αντικειμενικό σκοπό.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Αυτός δεν είναι ο κωδικός που εμφάνισε το πρόγραμμα περιήγησης. {count, plural, one{Απομένει 1 προσπάθεια.} other{Απομένουν {count} προσπάθειες.}}",
   "mcpServerSignInEnded": "Έληξε ο χρόνος, η σύνδεση απορρίφθηκε ή εισαγάγατε πολλούς λανθασμένους κωδικούς. Ξεκινήστε ξανά για να λάβετε νέα σελίδα σύνδεσης.",
   "mcpServerSignInStartAgain": "Ξεκινήστε ξανά",
-  "mcpServerSignedIn": "Συνδεθήκατε στο {name}."
+  "mcpServerSignedIn": "Συνδεθήκατε στο {name}.",
+  "ccLoading": "Φόρτωση",
+  "ccProgress": "Πρόοδος",
+  "ccBreadcrumb": "Διαδρομή πλοήγησης",
+  "ccDialog": "Παράθυρο διαλόγου",
+  "ccResize": "Αλλαγή μεγέθους",
+  "ccUnverifiedLabel": "{label} (μη επαληθευμένο)",
+  "prRowSelect": "Επιλογή {title}",
+  "prTableSelectAll": "Επιλογή όλων των pull requests",
+  "planVersionRewind": "Επαναφορά στην έκδοση {version}"
 }

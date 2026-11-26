@@ -115,6 +115,12 @@ class _CcImageViewerState extends State<CcImageViewer> {
   final TransformationController _transform = TransformationController();
   final GlobalKey _viewportKey = GlobalKey();
 
+  /// Holds keyboard focus so + − 0 and the arrows reach the viewer.
+  final FocusNode _focus = FocusNode(debugLabel: 'CcImageViewer');
+
+  /// How far one arrow press pans a zoomed image.
+  static const double _arrowPanStep = 48;
+
   /// The zoom the toolbar reports. Mirrored into state (rather than read from
   /// the matrix during build) so a pinch/scroll gesture updates the readout —
   /// `InteractiveViewer` writes the controller, it does not rebuild us.
@@ -144,13 +150,47 @@ class _CcImageViewerState extends State<CcImageViewer> {
   void initState() {
     super.initState();
     _transform.addListener(_onTransformChanged);
+    // `autofocus` alone is dropped whenever the surrounding scope already has
+    // a focused child (the button that opened the viewer, say), which left the
+    // zoom keys dead until the image was tabbed to.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_focus.hasFocus) {
+        _focus.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _transform.removeListener(_onTransformChanged);
     _transform.dispose();
+    _focus.dispose();
     super.dispose();
+  }
+
+  /// Arrow keys pan a zoomed image. They are left alone at fit (nothing to
+  /// pan) and while a toolbar button has focus, so focus can still move.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!node.hasPrimaryFocus || _scale <= 1.001) {
+      return KeyEventResult.ignored;
+    }
+    // RTL carve-out: panning moves the picture in viewport coordinates; →
+    // shows more of the image's right side in either reading direction.
+    final delta = switch (event.logicalKey) {
+      LogicalKeyboardKey.arrowLeft => const Offset(-_arrowPanStep, 0),
+      LogicalKeyboardKey.arrowRight => const Offset(_arrowPanStep, 0),
+      LogicalKeyboardKey.arrowUp => const Offset(0, -_arrowPanStep),
+      LogicalKeyboardKey.arrowDown => const Offset(0, _arrowPanStep),
+      _ => null,
+    };
+    if (delta == null) {
+      return KeyEventResult.ignored;
+    }
+    _panBy(delta);
+    return KeyEventResult.handled;
   }
 
   /// Every mutation — button, key, gesture, wheel — lands on the controller, so
@@ -325,7 +365,9 @@ class _CcImageViewerState extends State<CcImageViewer> {
         const SingleActivator(LogicalKeyboardKey.digit0): _reset,
       },
       child: Focus(
+        focusNode: _focus,
         autofocus: true,
+        onKeyEvent: _onKey,
         // A Container, NOT a DecoratedBox: only Container insets its child by
         // the border's own width. Under a DecoratedBox the image paints over
         // the hairline it is supposed to sit inside, and the frame looks
@@ -345,6 +387,8 @@ class _CcImageViewerState extends State<CcImageViewer> {
                 // own wheel handling and rewrites it. See [_onPointerSignal].
                 child: Listener(
                   onPointerSignal: _onPointerSignal,
+                  // A click on the picture puts the keys back on it.
+                  onPointerDown: (_) => _focus.requestFocus(),
                   child: ClipRect(
                     child: InteractiveViewer(
                       key: _viewportKey,

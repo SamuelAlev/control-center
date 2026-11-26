@@ -90,6 +90,25 @@ void main() {
         scopeOf('query { mutation: viewer { login } }'),
         GitHubTokenScope.read,
       );
+      // Batch status `nodes(ids:)` and surgical `pullRequest(number:)` reads.
+      expect(
+        scopeOf(
+          r'query($ids: [ID!]!) { nodes(ids: $ids) { ... on PullRequest { ...PrChecksFields } } } '
+          r'fragment PrChecksFields on PullRequest { number reviewDecision }',
+          const {'ids': ['PR_1']},
+        ),
+        GitHubTokenScope.read,
+      );
+      expect(
+        scopeOf(
+          r'query($owner: String!, $repo: String!) { '
+          r'repository(owner: $owner, name: $repo) { '
+          r'p0: pullRequest(number: 1) { number state } '
+          r'} }',
+          const {'owner': 'o', 'repo': 'r'},
+        ),
+        GitHubTokenScope.read,
+      );
     });
 
     test('several root fields need the highest of their scopes', () {

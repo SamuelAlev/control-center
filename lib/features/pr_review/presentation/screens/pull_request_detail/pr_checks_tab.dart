@@ -828,22 +828,15 @@ class _JobTileState extends ConsumerState<_JobTile> {
                       // The keyboard / screen-reader toggle: the whole row
                       // stays clickable, but a bare gesture is not reachable
                       // with Tab and has no expanded state to announce.
-                      MergeSemantics(
-                        child: Semantics(
-                          expanded: _expanded,
-                          child: CcTappable(
-                            onPressed: () =>
-                                setState(() => _expanded = !_expanded),
-                            semanticLabel: jobNameFor(widget.job),
-                            borderRadius: AppRadii.brSm,
-                            builder: (context, states) => Icon(
-                              _expanded
-                                  ? AppIcons.chevronUp
-                                  : AppIcons.chevronDown,
-                              size: 14,
-                              color: tokens.textTertiary,
-                            ),
-                          ),
+                      CcTappable(
+                        onPressed: () => setState(() => _expanded = !_expanded),
+                        semanticLabel: jobNameFor(widget.job),
+                        semanticExpanded: _expanded,
+                        borderRadius: AppRadii.brSm,
+                        builder: (context, states) => Icon(
+                          _expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
+                          size: 14,
+                          color: tokens.textTertiary,
                         ),
                       ),
                     ],

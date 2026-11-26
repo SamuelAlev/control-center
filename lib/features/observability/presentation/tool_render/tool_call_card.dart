@@ -115,9 +115,10 @@ class _ToolCallCardState extends State<ToolCallCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasBody)
-            GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Padding(
+            CcTappable(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              semanticExpanded: _expanded,
+              builder: (context, _) => Padding(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 child: header,
               ),

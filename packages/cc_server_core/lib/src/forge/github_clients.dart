@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
@@ -12,6 +13,7 @@ import 'package:cc_infra/cc_infra.dart'
         GitHubApiClient,
         createHttpClient;
 import 'package:cc_server_core/src/connect/connect_client.dart';
+import 'package:cc_server_core/src/connect/connect_error_messages.dart';
 import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/forge/forge_automation_request_policy.dart'
     show forgeRequestPathTemplate;
@@ -265,6 +267,140 @@ class GitHubClients {
   /// The lane [workspaceId]'s automation runs on right now.
   Future<GitHubLane> laneFor(String workspaceId) async =>
       (await lanes.resolve(workspaceId)).lane;
+
+  /// Posts inline pull-request review comments through Connect's
+  /// `/v1/github/review_comments` proxy when [workspaceId] uses
+  /// [GitHubLane.connect], or returns `null` on own-App lanes.
+  ///
+  /// Throws [GitHubScopeRefused] when the repo is unlinked, the caller lacks
+  /// `push` access, the durable repo pin fails, or Connect refuses the call.
+  Future<List<GitHubReviewCommentOutcome>?> postReviewCommentsViaConnect({
+    required String workspaceId,
+    required String owner,
+    required String repo,
+    required int prNumber,
+    required String commitSha,
+    required String actingUserId,
+    required List<GitHubReviewCommentInput> comments,
+  }) async {
+    if (comments.isEmpty) {
+      return const [];
+    }
+    if (await laneFor(workspaceId) != GitHubLane.connect) {
+      return null;
+    }
+    if (!isGitHubSegment(owner) || !isGitHubSegment(repo)) {
+      throw const GitHubScopeRefused(
+        GitHubRefusal.invalidRequest,
+        'That is not a GitHub repository name.',
+      );
+    }
+    if (!await _isLinked(workspaceId, owner, repo)) {
+      await forgetRepo(workspaceId, owner, repo);
+      throw GitHubScopeRefused(
+        GitHubRefusal.accessDenied,
+        '$owner/$repo is not linked to this workspace.',
+      );
+    }
+    final human = await accountableHuman(
+      workspaceId,
+      actingUserId: actingUserId,
+      owner: owner,
+      repo: repo,
+    );
+    if (human == null) {
+      throw GitHubScopeRefused(
+        GitHubRefusal.accessDenied,
+        'The person this is for has no access to $owner/$repo in this '
+        'workspace.',
+      );
+    }
+    final target = await connect.targetFor(workspaceId);
+    final seals = GitHubSeals(credentials);
+    var seal = await seals.sealFor(human, workspaceId, target);
+    final facts = await _minter.repoFacts(workspaceId, human, owner, repo);
+    if (clampGitHubScope(
+          requested: GitHubTokenScope.bot,
+          role: facts.role,
+          repoIsPublic: facts.isPublic,
+        ) !=
+        GitHubTokenScope.bot) {
+      throw GitHubScopeRefused(
+        GitHubRefusal.accessDenied,
+        'Commenting on pull requests on $owner/$repo through the GitHub App '
+        'needs push access or more.',
+      );
+    }
+
+    const maxChunkPayloadBytes = 192 * 1024;
+    final chunks = <({int offset, List<GitHubReviewCommentInput> items})>[];
+    var current = <GitHubReviewCommentInput>[];
+    var currentBytes = 0;
+    var offset = 0;
+    for (var i = 0; i < comments.length; i++) {
+      final item = comments[i];
+      final itemBytes = utf8.encode(jsonEncode(item.toJson())).length + 2;
+      if (current.isNotEmpty &&
+          (current.length >= connectMaxReviewCommentsPerRequest ||
+              currentBytes + itemBytes > maxChunkPayloadBytes)) {
+        chunks.add((offset: offset, items: current));
+        current = <GitHubReviewCommentInput>[];
+        currentBytes = 0;
+        offset = i;
+      }
+      current.add(item);
+      currentBytes += itemBytes;
+    }
+    if (current.isNotEmpty) {
+      chunks.add((offset: offset, items: current));
+    }
+
+    final outcomes = <GitHubReviewCommentOutcome>[];
+    for (final chunk in chunks) {
+      final GitHubReviewCommentsResponse response;
+      try {
+        response = await connect.githubReviewComments(
+          target,
+          GitHubReviewCommentsRequest(
+            seal: seal.seal,
+            workspaceId: seal.scope,
+            repoId: facts.id,
+            repoOwner: facts.owner,
+            repoName: facts.name,
+            prNumber: prNumber,
+            commitSha: commitSha,
+            comments: chunk.items,
+          ),
+        );
+      } on ConnectException catch (e) {
+        if (e.code.clearsGrant) {
+          await credentials.clearToken(
+            ForgeHost.github,
+            userId: human,
+            workspaceId: seal.scope == globalWorkspaceScope ? null : seal.scope,
+          );
+        }
+        throw GitHubScopeRefused(
+          GitHubRefusal.fromConnect(e.code),
+          connectErrorMessage(e.code, ConnectErrorContext.githubMint(owner)),
+        );
+      }
+      if (response.updatedSeal.isNotEmpty) {
+        await seals.adopt(human, seal.scope, response.updatedSeal);
+        seal = (seal: response.updatedSeal, scope: seal.scope);
+      }
+      for (final outcome in response.results) {
+        outcomes.add(
+          GitHubReviewCommentOutcome(
+            index: chunk.offset + outcome.index,
+            status: outcome.status,
+            commentId: outcome.commentId,
+          ),
+        );
+      }
+    }
+    return outcomes;
+  }
 
   // --- Installations -------------------------------------------------------
 

@@ -1663,4 +1663,303 @@ void main() {
       expect(line['hashed_token'], githubHashedToken(grant.accessToken));
     });
   });
+
+  group('review comments proxy (/v1/github/review_comments)', () {
+    test('posts inline comments as the shared App bot for an unlisted install, '
+        'neutralizes mentions, attributes to GET /user, and revokes the ghs_ token',
+        () async {
+      _scriptInstallations(harness.upstream);
+      _scriptAppMint(harness.upstream);
+      final grant = await signInGitHub(harness, a);
+      harness.upstream
+        ..json('GET', 'https://api.github.com/user', 200, {
+          'id': 1001,
+          'login': 'octo',
+          'type': 'User',
+        })
+        ..on('POST', 'https://api.github.com/repos/acme/api/pulls/42/comments', (
+          call,
+        ) {
+          final path = call.json['path'];
+          if (path == 'lib/out.dart') {
+            return UpstreamResponse.json(422, {
+              'message': 'Validation Failed',
+              'errors': [
+                {'field': 'pull_request_review_thread.path'},
+              ],
+            });
+          }
+          return UpstreamResponse.json(201, {'id': 7001});
+        });
+
+      final response = await harness.call(
+        a,
+        'POST',
+        '/v1/github/review_comments',
+        body: const GitHubReviewCommentsRequest(
+          seal: 'placeholder',
+          workspaceId: 'ws1',
+          repoId: 9001,
+          repoOwner: 'acme',
+          repoName: 'api',
+          prNumber: 42,
+          commitSha: 'deadbeef',
+          comments: [
+            GitHubReviewCommentInput(
+              path: 'lib/a.dart',
+              line: 15,
+              startLine: 12,
+              startSide: 'RIGHT',
+              body: 'Check @alice and @acme/security here.',
+            ),
+            GitHubReviewCommentInput(
+              path: 'lib/out.dart',
+              line: 3,
+              body: 'Out of diff body.',
+            ),
+          ],
+        ).toJson()..['seal'] = grant.seal,
+      );
+
+      expect(response.status, 200, reason: response.body);
+      expect(response.body, isNot(contains('ghs_')));
+
+      final parsed = GitHubReviewCommentsResponse.fromJson(response.json);
+      expect(parsed.results, hasLength(2));
+      expect(parsed.results[0].status, GitHubReviewCommentStatus.posted);
+      expect(parsed.results[0].commentId, 7001);
+      expect(parsed.results[1].status, GitHubReviewCommentStatus.outOfDiff);
+      expect(parsed.results[1].commentId, isNull);
+
+      final mintCalls = harness.upstream.callsTo(
+        'POST',
+        'https://api.github.com/app/installations/77/access_tokens',
+      );
+      expect(mintCalls, hasLength(1));
+      expect(mintCalls.single.json['permissions'], {
+        'metadata': 'read',
+        'pull_requests': 'write',
+      });
+      expect(mintCalls.single.json['repository_ids'], [9001]);
+
+      final postCalls = harness.upstream.callsTo(
+        'POST',
+        'https://api.github.com/repos/acme/api/pulls/42/comments',
+      );
+      expect(postCalls, hasLength(2));
+      expect(
+        postCalls[0].request.headers['authorization'],
+        'Bearer ghs_bot_[9001]',
+      );
+      expect(
+        postCalls[0].json['body'],
+        '**Control Center** (for @octo): Check @$connectMentionBreak'
+        'alice and @$connectMentionBreak'
+        'acme/security here.',
+      );
+      expect(postCalls[0].json['start_line'], 12);
+      expect(postCalls[0].json['start_side'], 'RIGHT');
+
+      final revokes = harness.upstream.callsTo(
+        'DELETE',
+        'https://api.github.com/installation/token',
+      );
+      expect(revokes, hasLength(1));
+      expect(
+        revokes.single.request.headers['authorization'],
+        'Bearer ghs_bot_[9001]',
+      );
+
+      final allLogs = harness.logs.join('\n');
+      expect(allLogs, isNot(contains('Out of diff body.')));
+      expect(allLogs, isNot(contains('Check @')));
+      expect(allLogs, isNot(contains('lib/a.dart')));
+      expect(allLogs, isNot(contains('lib/out.dart')));
+      expect(allLogs, contains('"event":"github.review_comments"'));
+    });
+
+    test('refuses pull-only user before minting an installation token', () async {
+      _scriptInstallations(harness.upstream);
+      _scriptAppMint(harness.upstream);
+      final grant = await signInGitHub(harness, a);
+
+      final response = await harness.call(
+        a,
+        'POST',
+        '/v1/github/review_comments',
+        body: GitHubReviewCommentsRequest(
+          seal: grant.seal,
+          workspaceId: 'ws1',
+          repoId: 9002,
+          repoOwner: 'acme',
+          repoName: 'docs',
+          prNumber: 1,
+          commitSha: 'deadbeef',
+          comments: const [
+            GitHubReviewCommentInput(path: 'README.md', line: 5, body: 'Typo.'),
+          ],
+        ).toJson(),
+      );
+
+      expect(response.status, 403);
+      expect(response.json, {'error': 'access_denied'});
+      expect(
+        harness.upstream.callsTo(
+          'POST',
+          'https://api.github.com/app/installations/77/access_tokens',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('refuses mismatched repo_id and mismatched viewer id', () async {
+      _scriptInstallations(harness.upstream);
+      _scriptAppMint(harness.upstream);
+      final grant = await signInGitHub(harness, a);
+
+      final wrongRepo = await harness.call(
+        a,
+        'POST',
+        '/v1/github/review_comments',
+        body: GitHubReviewCommentsRequest(
+          seal: grant.seal,
+          workspaceId: 'ws1',
+          repoId: 999999,
+          repoOwner: 'acme',
+          repoName: 'api',
+          prNumber: 1,
+          commitSha: 'deadbeef',
+          comments: const [
+            GitHubReviewCommentInput(path: 'lib/a.dart', line: 1, body: 'Hi'),
+          ],
+        ).toJson(),
+      );
+      expect(wrongRepo.status, 403);
+      expect(wrongRepo.json, {'error': 'access_denied'});
+
+      harness.upstream.json('GET', 'https://api.github.com/user', 200, {
+        'id': 2002,
+        'login': 'impostor',
+        'type': 'User',
+      });
+      final wrongViewer = await harness.call(
+        a,
+        'POST',
+        '/v1/github/review_comments',
+        body: GitHubReviewCommentsRequest(
+          seal: grant.seal,
+          workspaceId: 'ws1',
+          repoId: 9001,
+          repoOwner: 'acme',
+          repoName: 'api',
+          prNumber: 1,
+          commitSha: 'deadbeef',
+          comments: const [
+            GitHubReviewCommentInput(path: 'lib/a.dart', line: 1, body: 'Hi'),
+          ],
+        ).toJson(),
+      );
+      expect(wrongViewer.status, 403);
+      expect(wrongViewer.json, {'error': 'access_denied'});
+    });
+
+    test('rejects invalid payloads with 400 invalid_request', () async {
+      for (final badBody in [
+        {
+          'seal': 's',
+          'workspace_id': 'ws1',
+          'repo_id': 9001,
+          'repo_owner': 'acme',
+          'repo_name': 'api',
+          'pr_number': 1,
+          'commit_sha': 'deadbeef',
+          'comments': const [],
+        },
+        {
+          'seal': 's',
+          'workspace_id': 'ws1',
+          'repo_id': 9001,
+          'repo_owner': 'acme',
+          'repo_name': 'api',
+          'pr_number': 1,
+          'commit_sha': 'bad-sha!',
+          'comments': const [
+            {'path': 'a.dart', 'line': 1, 'side': 'RIGHT', 'body': 'x'},
+          ],
+        },
+        {
+          'seal': 's',
+          'workspace_id': 'ws1',
+          'repo_id': 9001,
+          'repo_owner': 'acme',
+          'repo_name': 'api',
+          'pr_number': 1,
+          'commit_sha': 'deadbeef',
+          'comments': const [
+            {'path': '../secret', 'line': 1, 'side': 'RIGHT', 'body': 'x'},
+          ],
+        },
+      ]) {
+        final response = await harness.call(
+          a,
+          'POST',
+          '/v1/github/review_comments',
+          body: badBody,
+        );
+        expect(response.status, 400);
+        expect(response.json, {'error': 'invalid_request'});
+      }
+    });
+
+    test('revokes installation token even when GitHub returns 429 mid-batch',
+        () async {
+      _scriptInstallations(harness.upstream);
+      _scriptAppMint(harness.upstream);
+      final grant = await signInGitHub(harness, a);
+      harness.upstream
+        ..json('GET', 'https://api.github.com/user', 200, {
+          'id': 1001,
+          'login': 'octo',
+          'type': 'User',
+        })
+        ..json(
+          'POST',
+          'https://api.github.com/repos/acme/api/pulls/42/comments',
+          429,
+          {'message': 'rate limit'},
+        );
+
+      final response = await harness.call(
+        a,
+        'POST',
+        '/v1/github/review_comments',
+        body: GitHubReviewCommentsRequest(
+          seal: grant.seal,
+          workspaceId: 'ws1',
+          repoId: 9001,
+          repoOwner: 'acme',
+          repoName: 'api',
+          prNumber: 42,
+          commitSha: 'deadbeef',
+          comments: const [
+            GitHubReviewCommentInput(
+              path: 'lib/a.dart',
+              line: 5,
+              body: 'Rate limited.',
+            ),
+          ],
+        ).toJson(),
+      );
+
+      expect(response.status, 429);
+      expect(response.json, {'error': 'rate_limited'});
+      expect(
+        harness.upstream.callsTo(
+          'DELETE',
+          'https://api.github.com/installation/token',
+        ),
+        hasLength(1),
+      );
+    });
+  });
 }

@@ -9,28 +9,24 @@ import 'package:flutter/widgets.dart';
 /// letter-spacing follow the productive type scale (tighter than a marketing
 /// scale, tuned for a dense operator deck). These styles set no `fontFamily`,
 /// so `Text` merges them with the ambient `DefaultTextStyle` and inherits the
-/// app font (Manrope for UI, Fira Code where a monospace style is applied
-/// explicitly via `CcFonts.code`).
+/// app font (Manrope). Fira Code is for code only — code, diffs, terminals,
+/// logs, paths, branches, SHAs, commands — and is applied explicitly via
+/// `CcFonts.code`.
 ///
-/// They set no `fontFeatures` either, for the same reason: tabular figures
-/// belong to the MONO lane and ride the family, not the role — see
-/// [numeralFeatures].
+/// They set no `fontFeatures` either: tabular figures are opted into per call
+/// site through `CcFonts.numeric` — see [numeralFeatures].
 abstract final class CcTypography {
   const CcTypography._();
 
-  /// Tabular figures — the numeral features of the **monospace** lane.
+  /// Tabular figures (`FontFeature.tabularFigures()`, OpenType `tnum`).
   ///
-  /// Fixed-advance digits (`FontFeature.tabularFigures()`, OpenType `tnum`)
-  /// are what make counts, durations, diffs, costs and timestamps align in a
-  /// column and stop jittering as they tick. They are also what makes running
-  /// prose look mechanical, which is why they are NOT on this scale: the
-  /// feature follows the FAMILY. `CcFonts.code` applies it, so any surface
-  /// that goes monospace gets it and every proportional surface does not.
-  ///
-  /// A style in this scale therefore renders proportional digits under the UI
-  /// font and tabular ones the moment a call site wraps it in `CcFonts.code`
-  /// (as `CcSidebarGroup` and `CcMenu` do with [label]). Fonts resolved
-  /// through `CcFontRegistry` that lack the feature ignore it silently.
+  /// Fixed-advance digits are what make counts, durations, costs and
+  /// timestamps align in a column and stop jittering as they tick. They also
+  /// make running prose look mechanical, so they are NOT on this scale: a
+  /// numeric surface asks for them with `CcFonts.numeric`, which keeps the UI
+  /// font, and every code surface gets them from `CcFonts.code`. Fonts
+  /// resolved through `CcFontRegistry` that lack the feature ignore it
+  /// silently.
   static const List<FontFeature> numeralFeatures = [
     FontFeature.tabularFigures(),
   ];
@@ -104,19 +100,19 @@ abstract final class CcTypography {
     letterSpacing: 0.32,
   );
 
-  /// Signature eyebrow label — uppercase, tracked, semibold. Apply a monospace
-  /// family (`CcFonts.code`) at the call site for the full effect.
+  /// Signature eyebrow label — sentence case, semibold, lightly tracked, in the UI
+  /// font. Eyebrows are not monospace.
   static const TextStyle label = TextStyle(
     fontSize: 12,
     height: 16 / 12,
     fontWeight: semiboldWeight,
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   );
 
-  /// Numerics meant to line up in a column — counts, durations, costs, IDs,
-  /// timestamps. Apply a monospace family (`CcFonts.code`) at the call site:
-  /// that is what turns the digits tabular (see [numeralFeatures]).
-  static const TextStyle monoNum = TextStyle(
+  /// Numerics meant to line up in a column — counts, durations, costs,
+  /// timestamps. Wrap it in `CcFonts.numeric` at the call site: that turns the
+  /// digits tabular in the UI font (see [numeralFeatures]). Not monospace.
+  static const TextStyle numeric = TextStyle(
     fontSize: 13,
     height: 18 / 13,
     fontWeight: regularWeight,

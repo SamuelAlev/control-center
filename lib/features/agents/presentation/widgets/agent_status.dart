@@ -192,11 +192,16 @@ class AgentStatusBadge extends StatelessWidget {
     final tokens = context.designSystem!;
     final l10n = AppLocalizations.of(context);
     final visual = AgentStatusVisual.resolve(state, tokens, l10n);
+    final borderColor =
+        state == AgentLiveState.idle || state == AgentLiveState.queued
+        ? tokens.borderSecondary
+        : visual.dotColor.withValues(alpha: 0.28);
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 10, 4),
       decoration: BoxDecoration(
         color: visual.fillColor,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

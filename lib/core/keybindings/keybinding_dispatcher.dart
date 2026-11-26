@@ -462,12 +462,19 @@ class KeybindingDispatcher with WidgetsBindingObserver {
 
   /// The [HardwareKeyboard] handler feeding the dispatcher on every platform.
   ///
-  /// Returns `true` (consuming the event, which stops focus-tree shortcut
-  /// dispatch and — on web — `preventDefault`s the browser key event) when the
-  /// stroke matches a currently active first stroke or a live chord
-  /// continuation. When a text field is focused the dispatcher has already
-  /// deactivated `!textInputFocus` bindings, so their strokes are not in the
-  /// active set and reach the field.
+  /// Returns `true` (reporting the event handled, which on web
+  /// `preventDefault`s the browser key event and on macOS keeps AppKit from
+  /// ringing the alert) when the stroke matches a currently active first
+  /// stroke or a live chord continuation. It does not keep the event from the
+  /// focus tree: [HardwareKeyboard] runs every handler and ORs their results,
+  /// and the focus manager's handler, registered first, has already
+  /// dispatched it to the focused widget's shortcuts. When a text field is
+  /// focused the dispatcher has already deactivated `!textInputFocus`
+  /// bindings, so their strokes are not in the active set and reach the
+  /// field.
+  ///
+  /// A bare Enter or Space while a button-like control has focus belongs to
+  /// that control alone (see [_activatesFocusedControl]).
   ///
   /// Unmatched keys fall through untouched — so text input, the focus tree,
   /// and browser shortcuts behave normally — with one exception: on macOS
@@ -482,6 +489,9 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     final stroke = _strokeFromEvent(event);
     if (stroke == null) {
       return false;
+    }
+    if (_activatesFocusedControl(stroke)) {
+      return _silenceUnmatchedKey(stroke);
     }
     final canon = stroke.canonical(_platform);
     final matches =
@@ -541,6 +551,41 @@ class KeybindingDispatcher with WidgetsBindingObserver {
       }
     }
     return true;
+  }
+
+  /// Whether [stroke] is a bare Enter or Space that the focused control
+  /// answers itself.
+  ///
+  /// A click focuses the control it lands on, so "click a row, press Enter"
+  /// is common. The focus tree has already activated that control by the time
+  /// this handler runs; firing a screen binding on the same key as well (the
+  /// list's "open the selected item") would act twice. The signal is an
+  /// [ActivateIntent] action above the focused node: buttons, rows, tabs and
+  /// checkboxes register one, while the app's default actions do not. With a
+  /// modifier held the control does not activate, so ⌘Enter and Shift+Enter
+  /// still reach their bindings.
+  bool _activatesFocusedControl(KeyStroke stroke) {
+    if (stroke.cmd || stroke.ctrl || stroke.alt || stroke.shift) {
+      return false;
+    }
+    final key = stroke.trigger;
+    if (key != LogicalKeyboardKey.enter &&
+        key != LogicalKeyboardKey.numpadEnter &&
+        key != LogicalKeyboardKey.space) {
+      return false;
+    }
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null || !ctx.mounted) {
+      return false;
+    }
+    const intent = ActivateIntent();
+    try {
+      final action = Actions.maybeFind<Intent>(ctx, intent: intent);
+      return action != null && action.isEnabled(intent);
+    } on Object {
+      // A focused element mid-teardown: let the binding have the key.
+      return false;
+    }
   }
 
   /// Reconstructs the [KeyStroke] for [event] from its trigger key and the

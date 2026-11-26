@@ -1843,5 +1843,13 @@ void main() {
       expect(failure.blockedBy(info).isCapacity, isTrue);
       expect(failure.blockedBy(info).resetsAt, DateTime.utc(2030));
     });
+
+    test('plain-text weekly limit output counts as capacity', () {
+      const failure = ClaudeTerminalError(
+        message: "You've hit your weekly limit · resets 5am (Europe/Zurich)",
+      );
+      expect(failure.isCapacity, isTrue);
+      expect(failure.isAuth, isFalse);
+    });
   });
 }

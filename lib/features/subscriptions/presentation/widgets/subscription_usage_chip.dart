@@ -32,7 +32,7 @@ class ProviderUsageReading {
 
 /// The title-bar chip: each provider's logo beside its reading, in one
 /// bordered control that opens the usage flyout.
-class SubscriptionUsageChip extends StatefulWidget {
+class SubscriptionUsageChip extends StatelessWidget {
   /// Creates a [SubscriptionUsageChip].
   const SubscriptionUsageChip({
     required this.readings,
@@ -47,24 +47,9 @@ class SubscriptionUsageChip extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<SubscriptionUsageChip> createState() => _SubscriptionUsageChipState();
-}
-
-class _SubscriptionUsageChipState extends State<SubscriptionUsageChip> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final bg = _hover ? t.bgSecondaryHover : t.bgSecondary;
-    // Pre-blend lineStrong against the hover fill so the border tween runs
-    // between two OPAQUE endpoints (same treatment as CcButtonTokens.secondary):
-    // lerping the raw fg@16% token against opaque borderPrimary peaks darker
-    // than either end mid-tween — a dark-border flicker on hover↔rest.
-    final border = _hover
-        ? Color.alphaBlend(t.lineStrong, t.bgSecondaryHover)
-        : t.borderPrimary;
     String? percent(ProviderUsageReading r) {
       final f = r.fraction;
       return f == null ? null : '${(f * 100).round()}%';
@@ -76,50 +61,56 @@ class _SubscriptionUsageChipState extends State<SubscriptionUsageChip> {
     // The logos are pictures, so a screen reader gets the provider names and
     // readings spelled out instead.
     final summary = [
-      for (final r in widget.readings) [r.displayName, ?spoken(r)].join(' '),
+      for (final r in readings) [r.displayName, ?spoken(r)].join(' '),
     ].join(', ');
 
     return CcTooltip(
       followerAnchor: Alignment.topCenter,
       targetAnchor: Alignment.bottomCenter,
       message: l10n.subscriptionUsage,
-      child: Semantics(
-        button: true,
-        label: '${l10n.subscriptionUsage}: $summary',
-        onTap: widget.onTap,
-        excludeSemantics: true,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (_) => setState(() => _hover = true),
-          onExit: (_) => setState(() => _hover = false),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              curve: Curves.easeOut,
-              height: 24,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: AppRadii.brSm,
-                border: Border.all(color: border),
-              ),
+      child: CcTappable(
+        onPressed: onTap,
+        semanticLabel: '${l10n.subscriptionUsage}: $summary',
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) {
+          final hover = states.contains(WidgetState.hovered);
+          final bg = hover ? t.bgSecondaryHover : t.bgSecondary;
+          // Pre-blend lineStrong against the hover fill so the border tween
+          // runs between two OPAQUE endpoints (same treatment as
+          // CcButtonTokens.secondary): lerping the raw fg@16% token against
+          // opaque borderPrimary peaks darker than either end mid-tween — a
+          // dark-border flicker on hover↔rest.
+          final border = hover
+              ? Color.alphaBlend(t.lineStrong, t.bgSecondaryHover)
+              : t.borderPrimary;
+          return AnimatedContainer(
+            // A color wash, so reduced motion keeps a short fade.
+            duration: CcMotion.resolveFade(context, CcMotion.moderateExit),
+            curve: Curves.easeOut,
+            height: 24,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: AppRadii.brSm,
+              border: Border.all(color: border),
+            ),
+            // The label above already speaks every reading.
+            child: ExcludeSemantics(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (var i = 0; i < widget.readings.length; i++) ...[
+                  for (var i = 0; i < readings.length; i++) ...[
                     if (i > 0) const SizedBox(width: AppSpacing.sm),
                     _ReadingChip(
-                      reading: widget.readings[i],
-                      label: percent(widget.readings[i]),
+                      reading: readings[i],
+                      label: percent(readings[i]),
                     ),
                   ],
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -157,7 +148,7 @@ class _ReadingChip extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           Text(
             text,
-            style: AppFonts.codeStyle(
+            style: AppFonts.numericStyle(
               // The number is the status (colour only reinforces it), and the
               // text tokens are the ones that clear contrast at 11px.
               color: f! >= 0.9

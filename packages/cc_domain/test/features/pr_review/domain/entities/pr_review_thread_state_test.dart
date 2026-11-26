@@ -65,6 +65,28 @@ void main() {
 
       expect(out.single.threadId, 'T7');
       expect(out.single.isResolved, isFalse);
+      expect(out.single.isOutdated, isFalse);
+    });
+
+    test('propagates isOutdated and clears anchorLine / anchorStartLine', () {
+      final out = withReviewThreadState(
+        [_comment(1, startLine: 13, line: 19), _comment(2, line: 19)],
+        const [
+          PrReviewThreadState(
+            id: 'T9',
+            commentIds: [1, 2],
+            isResolved: true,
+            isOutdated: true,
+          ),
+        ],
+      );
+
+      for (final c in out) {
+        expect(c.isOutdated, isTrue);
+        expect(c.isResolved, isTrue);
+        expect(c.anchorLine, isNull);
+        expect(c.anchorStartLine, isNull);
+      }
     });
   });
 

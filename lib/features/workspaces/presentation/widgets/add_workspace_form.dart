@@ -223,68 +223,66 @@ class _LogoPicker extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tokens = context.designSystem;
-    return Material(
-      type: MaterialType.transparency,
-      child: Row(
-        children: [
-          InkWell(
-            onTap: onPick,
-            borderRadius: AppRadii.brSm,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: AppRadii.brSm,
-                border: Border.all(
-                  color: tokens?.borderSecondary ?? colorScheme.outlineVariant,
-                ),
-                image: bytes != null
-                    ? DecorationImage(
-                        image: MemoryImage(bytes!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+    return Row(
+      children: [
+        CcTappable(
+          onPressed: onPick,
+          semanticLabel: l10n.uploadImage,
+          borderRadius: AppRadii.brSm,
+          builder: (context, _) => Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: AppRadii.brSm,
+              border: Border.all(
+                color: tokens?.borderSecondary ?? colorScheme.outlineVariant,
               ),
-              child: bytes == null
-                  ? Icon(AppIcons.image, color: colorScheme.onSurfaceVariant)
+              image: bytes != null
+                  ? DecorationImage(
+                      image: MemoryImage(bytes!),
+                      fit: BoxFit.cover,
+                    )
                   : null,
             ),
+            child: bytes == null
+                ? Icon(AppIcons.image, color: colorScheme.onSurfaceVariant)
+                : null,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Workspace logo',
-                  style: CcTypography.body.copyWith(
-                    color: tokens?.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Workspace logo',
+                style: CcTypography.body.copyWith(
+                  color: tokens?.textPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  path == null ? 'Optional. Pick a local image file.' : path!,
-                  style: CcTypography.caption.copyWith(
-                    color: tokens?.textTertiary,
-                    height: 1.45,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                path == null ? 'Optional. Pick a local image file.' : path!,
+                style: CcTypography.caption.copyWith(
+                  color: tokens?.textTertiary,
+                  height: 1.45,
                 ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          if (onClear != null)
-            CcIconButton(
-              icon: AppIcons.x,
-              onPressed: onClear,
-              tooltip: l10n.removeLogo,
-            ),
-        ],
-      ),
+        ),
+        if (onClear != null)
+          CcIconButton(
+            icon: AppIcons.x,
+            onPressed: onClear,
+            tooltip: l10n.removeLogo,
+          ),
+      ],
     );
   }
 }

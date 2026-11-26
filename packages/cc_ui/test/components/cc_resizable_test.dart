@@ -1,6 +1,8 @@
 import 'package:cc_ui/src/components/cc_resizable.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -534,6 +536,189 @@ void main() {
     // The builder renders the fixed child.
     final builderWidget = region.builder(nullBuilderContext());
     expect(builderWidget, isA<Text>());
+  });
+  group('keyboard', () {
+    Widget focusableRegion(String name) => Column(
+      children: [
+        Text(name),
+        Focus(
+          debugLabel: '$name a',
+          child: const SizedBox(width: 10, height: 10),
+        ),
+        Focus(
+          debugLabel: '$name b',
+          child: const SizedBox(width: 10, height: 10),
+        ),
+      ],
+    );
+
+    Future<CcResizableController> pumpSplit(
+      WidgetTester tester, {
+      TextDirection textDirection = TextDirection.ltr,
+      List<List<double>>? resized,
+    }) async {
+      final controller = CcResizableController(regions());
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: SizedBox(
+              width: 400,
+              height: 200,
+              child: CcResizable(
+                axis: Axis.horizontal,
+                controller: controller,
+                onResize: resized?.add,
+                regions: regions(),
+              ),
+            ),
+          ),
+          textDirection: textDirection,
+        ),
+      );
+      return controller;
+    }
+
+    FocusNode dividerNode(WidgetTester tester) => Focus.of(
+      tester.element(
+        find.descendant(
+          of: find.byType(CcResizableDivider),
+          matching: find.byType(MouseRegion),
+        ),
+      ),
+    );
+
+    testWidgets('arrows resize by a step, Shift by a larger one', (
+      tester,
+    ) async {
+      final resized = <List<double>>[];
+      final controller = await pumpSplit(tester, resized: resized);
+      dividerNode(tester).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(controller.extents, [216, 184]);
+      expect(resized.last, [216, 184]);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.pump();
+      expect(controller.extents, [152, 248]);
+
+      // Across the split axis the keys are not the divider's.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      expect(controller.extents, [152, 248]);
+    });
+
+    testWidgets('Home and End go to the limits', (tester) async {
+      final controller = await pumpSplit(tester);
+      dividerNode(tester).requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.home);
+      await tester.pump();
+      // The first region's minimum (and the second's maximum) is the limit.
+      expect(controller.extents, [120, 280]);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pump();
+      expect(controller.extents, [280, 120]);
+    });
+
+    testWidgets('under RTL the divider moves the way the arrow points', (
+      tester,
+    ) async {
+      final controller = await pumpSplit(
+        tester,
+        textDirection: TextDirection.rtl,
+      );
+      dividerNode(tester).requestFocus();
+      await tester.pump();
+
+      // The first region sits on the right; moving the divider left grows it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(controller.extents, [216, 184]);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pump();
+      expect(controller.extents, [280, 120]);
+    });
+
+    testWidgets('is an adjustable control named Resize', (tester) async {
+      final handle = tester.ensureSemantics();
+      final controller = await pumpSplit(tester);
+      expect(
+        tester.getSemantics(find.byType(CcResizableDivider)),
+        matchesSemantics(
+          label: 'Resize',
+          value: '50%',
+          increasedValue: '54%',
+          decreasedValue: '46%',
+          isSlider: true,
+          isFocusable: true,
+          hasIncreaseAction: true,
+          hasDecreaseAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      tester.semantics.performAction(
+        find.semantics.byLabel('Resize'),
+        SemanticsAction.increase,
+      );
+      await tester.pump();
+      expect(controller.extents, [216, 184]);
+      handle.dispose();
+    });
+
+    testWidgets('Tab finishes a pane, then the divider, then the next pane', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        harness(
+          CcResizable(
+            axis: Axis.horizontal,
+            regions: [
+              CcResizableRegion.child(
+                child: focusableRegion('left'),
+                initialExtent: 200,
+              ),
+              CcResizableRegion.child(
+                child: focusableRegion('right'),
+                initialExtent: 200,
+              ),
+            ],
+          ),
+        ),
+      );
+      Focus.of(
+        tester.element(
+          find.descendant(
+            of: find.byWidgetPredicate(
+              (w) => w is Focus && w.debugLabel == 'left a',
+            ),
+            matching: find.byType(SizedBox),
+          ),
+        ),
+      ).requestFocus();
+      await tester.pump();
+      final order = <String?>[];
+      for (var i = 0; i < 5; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        order.add(FocusManager.instance.primaryFocus?.debugLabel);
+      }
+      expect(order, [
+        'left b',
+        'CcResizableDivider',
+        'right a',
+        'right b',
+        'left a',
+      ]);
+    });
   });
 }
 

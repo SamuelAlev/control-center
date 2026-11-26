@@ -342,7 +342,7 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
         _saveDraftFor(repo, prRef, '');
       }
       if (mounted) {
-        _refreshAfterSubmit(prRef, postedComments: queued > 0);
+        refreshPrAfterReviewSubmit(ref, prRef, postedComments: queued > 0);
       }
       toaster.show(successMessage(l10n), variant: CcToastVariant.success);
     } on Object catch (e) {
@@ -359,28 +359,6 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
         (l) => l.failedToSubmitReview('$e'),
         prRef: prRef,
       );
-    }
-  }
-
-  /// Re-subscribes the surfaces a submitted review changes.
-  ///
-  /// The server already busts its own cache and signals every open watch
-  /// stream, so this is not what fetches the new data — it is what guarantees
-  /// the new data is *emitted*. A live stream dedupes on the payload
-  /// fingerprint it last sent, so a re-validation that races the forge's
-  /// read-after-write lag and comes back with the pre-review payload emits
-  /// nothing at all, leaving the reviewer rail on its old state until the
-  /// operator presses refresh. Invalidating re-subscribes with a clean
-  /// fingerprint, which is the same thing that makes the refresh button work.
-  /// Mirrors `PrEditNotifier._refreshReviewers`.
-  void _refreshAfterSubmit(PrRef pr, {required bool postedComments}) {
-    ref
-      ..invalidate(prReviewersProvider(pr))
-      ..invalidate(prDetailProvider(pr))
-      ..invalidate(prReviewsProvider(pr))
-      ..invalidate(prTimelineEventsProvider(pr));
-    if (postedComments) {
-      ref.invalidate(prReviewCommentsProvider(pr));
     }
   }
 

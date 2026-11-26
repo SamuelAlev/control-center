@@ -35,6 +35,9 @@ enum MemoryRecordKind {
 
   /// A memory policy.
   policy,
+
+  /// An improvement proposal.
+  improvement,
 }
 
 /// The record a Memory URL has open.

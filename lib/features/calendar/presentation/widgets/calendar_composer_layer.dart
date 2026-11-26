@@ -127,7 +127,15 @@ class _ComposerCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: AppRadii.brLg,
-        child: SingleChildScrollView(child: CalendarEventComposer(slot: slot)),
+        // A floating card like a popover: the new-event button that opened it
+        // keeps focus otherwise, and the title's autofocus would yield to it.
+        // The trap moves focus in, keeps Tab inside, and gives focus back to
+        // the opener when the card closes.
+        child: CcFocusTrap(
+          child: SingleChildScrollView(
+            child: CalendarEventComposer(slot: slot),
+          ),
+        ),
       ),
     );
   }

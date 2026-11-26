@@ -5,7 +5,6 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart'
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_hold.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/messaging/presentation/widgets/work/work_kind_text.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/work_text.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -58,18 +57,4 @@ String? goalNextSentence(BuildContext context, AgentGoalRun goal) {
     null when goal.status == AgentGoalStatus.paused => l10n.goalNextByPerson,
     null => l10n.goalNextWorking,
   };
-}
-
-/// One line for [goal] in a list: its hold detail in words (`limit_parks`,
-/// `stalled_waiting`, …) when it has a known one, else what happens next;
-/// null once it ended.
-String? goalListLine(BuildContext context, AgentGoalRun goal) {
-  if (!goalIsOpen(goal)) {
-    return null;
-  }
-  final detail = goal.holdDetail;
-  final known = detail == null || detail.isEmpty
-      ? null
-      : goalHoldDetailSentence(AppLocalizations.of(context), detail).sentence;
-  return known ?? goalNextSentence(context, goal);
 }

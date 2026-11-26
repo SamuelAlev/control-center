@@ -5,6 +5,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/space_search_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -113,6 +114,58 @@ void main() {
     await tester.tap(
       find.textContaining('jump here please', findRichText: true),
     );
+    await tester.pump();
+
+    final pending = container.read(pendingFocusMessageProvider);
+    expect(pending?.messageId, 'm1');
+    expect(pending?.spaceId, 'c1');
+  });
+
+  testWidgets('Enter on a focused result sets the pending-focus message', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(700, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final container = ProviderContainer(
+      overrides: [
+        spaceSearchProvider.overrideWith(
+          (ref, arg) async => [_msg('m1', 'jump here please')],
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CcTheme(
+              data: CcThemeData.light(),
+              child: const SpaceSearchDialog(spaceId: 'c1'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(EditableText), 'jump');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    Focus.of(
+      tester.element(
+        find.textContaining('jump here please', findRichText: true),
+      ),
+    ).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
 
     final pending = container.read(pendingFocusMessageProvider);

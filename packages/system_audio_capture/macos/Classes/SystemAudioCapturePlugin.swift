@@ -100,6 +100,14 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
   private var inputFormat: AVAudioFormat?
   /// Cached output format (16 kHz mono Int16).
   private var outputFormat: AVAudioFormat?
+  /// Tap ASBD captured at start, retained so dynamic aggregate rate changes can
+  /// rebuild the converter without re-querying the tap.
+  private var tapBaseASBD: AudioStreamBasicDescription?
+  /// Number of leading input buffers owned by a combo output sub-device (e.g.
+  /// USB audio interface with input channels) that precede the tap's buffers.
+  private var tapBufferOffset: Int = 0
+  /// Nominal-sample-rate listener installed on the private aggregate device.
+  private var rateListenerBlock: AudioObjectPropertyListenerBlock?
 
   // MARK: Flutter event sink
 
@@ -371,46 +379,12 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     }
     processTapID = tapID
 
-    // 3. Read the tap's REAL stream format. Never assume 48 kHz/stereo/Float32.
-    // `var` (not `let`) because AVAudioFormat(streamDescription:) needs a
-    // mutable lvalue to form the `&` pointer.
-    var tapASBD = try readValidatedTapFormat(tapID: tapID)
-
-    guard let nativeFormat = AVAudioFormat(streamDescription: &tapASBD) else {
-      throw CaptureError(
-        code: "format_unsupported",
-        message: "Could not build AVAudioFormat from tap ASBD (\(tapASBD.mChannelsPerFrame) ch)."
-      )
-    }
-    inputFormat = nativeFormat
-    NSLog(
-      "[SystemAudioCapture] tap format: \(Int(tapASBD.mSampleRate)) Hz, "
-        + "\(tapASBD.mChannelsPerFrame) ch (sourceId=\(sourceId ?? "system"))")
-
-    guard
-      let target = AVAudioFormat(
-        commonFormat: .pcmFormatInt16,
-        sampleRate: Self.outputSampleRate,
-        channels: Self.outputChannelCount,
-        interleaved: true
-      )
-    else {
-      throw CaptureError(
-        code: "output_format_failed",
-        message: "Could not build the 16 kHz mono Int16 output format."
-      )
-    }
-    outputFormat = target
-
-    guard let avConverter = AVAudioConverter(from: nativeFormat, to: target) else {
-      throw CaptureError(
-        code: "converter_failed",
-        message:
-          "AVAudioConverter could not bridge \(Int(nativeFormat.sampleRate)) Hz / "
-          + "\(nativeFormat.channelCount) ch to 16 kHz mono Int16."
-      )
-    }
-    converter = avConverter
+    // 3. Read the tap's base stream format (channels, bit depth, flags). The
+    // actual sample rate is resolved AFTER the aggregate device is created,
+    // because the aggregate is clocked by the default output device (e.g.
+    // 44.1 kHz) whereas `kAudioTapPropertyFormat` often reports 48 kHz.
+    let tapASBD = try readValidatedTapFormat(tapID: tapID)
+    tapBaseASBD = tapASBD
 
     // 4. Create a private aggregate device CLOCKED BY A REAL OUTPUT DEVICE.
     //
@@ -424,7 +398,8 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     // device's sample-rate renegotiation can't stall the aggregate's clock. The
     // tap still captures the whole-system mix regardless of output routing; the
     // output device is used only as a clock, not as a playback path.
-    let outputUID = try Self.defaultOutputDeviceUID()
+    let (outputID, outputUID) = try Self.defaultOutputDevice()
+    tapBufferOffset = outputID.readInputBufferCount()
     let aggregateUID = "ControlCenter-Tap-\(description.uuid.uuidString)"
     let aggregateDescription: [String: Any] = [
       kAudioAggregateDeviceNameKey: "ControlCenterSystemAudioAggregate",
@@ -461,6 +436,52 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
       )
     }
     aggregateDeviceID = aggregateID
+
+    // 4b. Configure AVAudioConverter against the aggregate's real rate (so
+    // 44.1 kHz output devices convert 44.1->16 kHz rather than 48->16 kHz).
+    try configureConverter(
+      forAggregate: aggregateID,
+      tapASBD: tapASBD,
+      sourceId: sourceId
+    )
+
+    // 4c. Watch for dynamic sample-rate changes on the aggregate (dispatched
+    // on `ioQueue` so it serializes cleanly with `handleInputBuffer`).
+    var rateAddr = AudioObjectPropertyAddress(
+      mSelector: kAudioDevicePropertyNominalSampleRate,
+      mScope: kAudioObjectPropertyScopeGlobal,
+      mElement: kAudioObjectPropertyElementMain
+    )
+    let listener: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+      guard let self = self,
+        self.isRunning,
+        self.aggregateDeviceID.isValid,
+        let baseASBD = self.tapBaseASBD
+      else { return }
+      let newRate = (try? self.aggregateDeviceID.readNominalSampleRate()) ?? 0
+      if newRate > 0, newRate != self.inputFormat?.sampleRate {
+        NSLog(
+          "[SystemAudioCapture] aggregate sample rate changed to \(Int(newRate)) Hz; "
+            + "reconfiguring converter")
+        try? self.configureConverter(
+          forAggregate: self.aggregateDeviceID,
+          tapASBD: baseASBD,
+          sourceId: sourceId
+        )
+      }
+    }
+    let listenErr = AudioObjectAddPropertyListenerBlock(
+      aggregateID,
+      &rateAddr,
+      ioQueue,
+      listener
+    )
+    if listenErr == noErr {
+      rateListenerBlock = listener
+    } else {
+      NSLog(
+        "[SystemAudioCapture] warning: could not attach sample-rate listener (\(listenErr))")
+    }
 
     // 5. Install the IO proc block. It is dispatched on `ioQueue` (NOT nil —
     // see the property's doc comment: the nil/HAL-thread path never scheduled
@@ -536,12 +557,77 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     }
   }
 
-  /// The UID of the system's current default output device. The aggregate uses
-  /// it as both its main sub-device and its explicit clock device so the IO
-  /// proc is driven by real hardware (a tap-only aggregate was observed NOT to
-  /// clock here — kAudioDevicePropertyDeviceIsRunning stayed 0 — on macOS 26
-  /// with a USB output device, even with the audio-capture grant in place).
-  private static func defaultOutputDeviceUID() throws -> String {
+  /// Builds `AVAudioConverter` from the tap's base ASBD adjusted to the
+  /// aggregate device's real sample rate (so a 44.1 kHz output device converts
+  /// 44.1->16 kHz instead of mis-resampling at the tap's nominal 48 kHz).
+  private func configureConverter(
+    forAggregate aggregateID: AudioObjectID,
+    tapASBD: AudioStreamBasicDescription,
+    sourceId: String?
+  ) throws {
+    let aggregateRate = (try? aggregateID.readNominalSampleRate()) ?? 0
+    let aggInputASBD = tapBufferOffset == 0
+      ? (try? aggregateID.readInputStreamFormat())
+      : nil
+    let resolvedRate: Float64
+    if aggregateRate > 0 {
+      resolvedRate = aggregateRate
+    } else if let aggRate = aggInputASBD?.mSampleRate, aggRate > 0 {
+      resolvedRate = aggRate
+    } else {
+      resolvedRate = tapASBD.mSampleRate
+    }
+
+    var effectiveASBD = tapASBD
+    effectiveASBD.mSampleRate = resolvedRate
+
+    guard let nativeFormat = AVAudioFormat(streamDescription: &effectiveASBD) else {
+      throw CaptureError(
+        code: "format_unsupported",
+        message:
+          "Could not build AVAudioFormat from tap ASBD (\(effectiveASBD.mChannelsPerFrame) ch, "
+          + "\(Int(resolvedRate)) Hz)."
+      )
+    }
+    NSLog(
+      "[SystemAudioCapture] tap format: tapRate=\(Int(tapASBD.mSampleRate)) Hz, "
+        + "aggregateRate=\(Int(resolvedRate)) Hz, ch=\(effectiveASBD.mChannelsPerFrame), "
+        + "tapBufferOffset=\(tapBufferOffset) (sourceId=\(sourceId ?? "system"))")
+
+    guard
+      let target = AVAudioFormat(
+        commonFormat: .pcmFormatInt16,
+        sampleRate: Self.outputSampleRate,
+        channels: Self.outputChannelCount,
+        interleaved: true
+      )
+    else {
+      throw CaptureError(
+        code: "output_format_failed",
+        message: "Could not build the 16 kHz mono Int16 output format."
+      )
+    }
+
+    guard let avConverter = AVAudioConverter(from: nativeFormat, to: target) else {
+      throw CaptureError(
+        code: "converter_failed",
+        message:
+          "AVAudioConverter could not bridge \(Int(nativeFormat.sampleRate)) Hz / "
+          + "\(nativeFormat.channelCount) ch to 16 kHz mono Int16."
+      )
+    }
+    inputFormat = nativeFormat
+    outputFormat = target
+    converter = avConverter
+  }
+
+  /// The ID and UID of the system's current default output device. The
+  /// aggregate uses it as both its main sub-device and its explicit clock
+  /// device so the IO proc is driven by real hardware (a tap-only aggregate was
+  /// observed NOT to clock here — kAudioDevicePropertyDeviceIsRunning stayed 0
+  /// — on macOS 26 with a USB output device, even with the audio-capture grant
+  /// in place).
+  private static func defaultOutputDevice() throws -> (id: AudioObjectID, uid: String) {
     var deviceAddress = AudioObjectPropertyAddress(
       mSelector: kAudioHardwarePropertyDefaultOutputDevice,
       mScope: kAudioObjectPropertyScopeGlobal,
@@ -570,7 +656,11 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     else {
       throw CaptureError(code: "no_output_uid", message: "Could not read output device UID.")
     }
-    return uid as String
+    return (deviceID, uid as String)
+  }
+
+  private static func defaultOutputDeviceUID() throws -> String {
+    try defaultOutputDevice().uid
   }
 
   /// Diagnostics: reads `kAudioDevicePropertyDeviceIsRunning` on the aggregate.
@@ -642,8 +732,30 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     let ablPointer = UnsafeMutableAudioBufferListPointer(
       UnsafeMutablePointer(mutating: inputData)
     )
-    guard let firstBuffer = ablPointer.first, firstBuffer.mData != nil else {
-      lastDropReason = "empty buffer list (\(ablPointer.count) buffers)"
+    let sliceOffset = (tapBufferOffset > 0 && ablPointer.count > tapBufferOffset)
+      ? tapBufferOffset
+      : 0
+    var slicedABL: UnsafeMutableAudioBufferListPointer?
+    if sliceOffset > 0 {
+      let sliceCount = ablPointer.count - sliceOffset
+      let allocated = AudioBufferList.allocate(maximumBuffers: sliceCount)
+      for i in 0..<sliceCount {
+        allocated[i] = ablPointer[sliceOffset + i]
+      }
+      slicedABL = allocated
+    }
+    defer {
+      if let sliced = slicedABL {
+        free(sliced.unsafeMutablePointer)
+      }
+    }
+
+    let activeABL = slicedABL ?? ablPointer
+    let activeInputPtr: UnsafePointer<AudioBufferList> =
+      slicedABL.map { UnsafePointer($0.unsafePointer) } ?? inputData
+
+    guard let firstBuffer = activeABL.first, firstBuffer.mData != nil else {
+      lastDropReason = "empty buffer list (\(activeABL.count) buffers)"
       if isFirstCallback { NSLog("[SystemAudioCapture] drop: \(lastDropReason)") }
       return
     }
@@ -654,7 +766,8 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     let bytesPerFrame = inputFormat.streamDescription.pointee.mBytesPerFrame
     if isFirstCallback {
       NSLog(
-        "[SystemAudioCapture] first buffer: \(ablPointer.count) buffer(s), "
+        "[SystemAudioCapture] first buffer: \(activeABL.count) buffer(s) "
+          + "(total \(ablPointer.count), offset \(sliceOffset)), "
           + "\(firstBuffer.mDataByteSize) bytes, bytesPerFrame=\(bytesPerFrame)")
     }
     guard bytesPerFrame > 0 else {
@@ -673,7 +786,7 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     guard
       let inputBuffer = AVAudioPCMBuffer(
         pcmFormat: inputFormat,
-        bufferListNoCopy: inputData
+        bufferListNoCopy: activeInputPtr
       )
     else {
       lastDropReason = "AVAudioPCMBuffer(bufferListNoCopy:) returned nil"
@@ -761,6 +874,21 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
       }
       ioProcID = nil
 
+      if aggregateDeviceID.isValid, let listener = rateListenerBlock {
+        var rateAddr = AudioObjectPropertyAddress(
+          mSelector: kAudioDevicePropertyNominalSampleRate,
+          mScope: kAudioObjectPropertyScopeGlobal,
+          mElement: kAudioObjectPropertyElementMain
+        )
+        AudioObjectRemovePropertyListenerBlock(
+          aggregateDeviceID,
+          &rateAddr,
+          ioQueue,
+          listener
+        )
+      }
+      rateListenerBlock = nil
+
       if aggregateDeviceID.isValid {
         AudioHardwareDestroyAggregateDevice(aggregateDeviceID)
         aggregateDeviceID = .unknown
@@ -771,6 +899,7 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
         processTapID = .unknown
       }
     } else {
+      rateListenerBlock = nil
       ioProcID = nil
       aggregateDeviceID = .unknown
       processTapID = .unknown
@@ -779,6 +908,8 @@ public class SystemAudioCapturePlugin: NSObject, FlutterPlugin {
     converter = nil
     inputFormat = nil
     outputFormat = nil
+    tapBaseASBD = nil
+    tapBufferOffset = 0
   }
 }
 
@@ -884,6 +1015,64 @@ extension AudioObjectID {
       throw CaptureError(code: "tap_format_read", message: "read error \(err)")
     }
     return asbd
+  }
+
+  /// Reads `kAudioDevicePropertyNominalSampleRate` on an audio device.
+  fileprivate func readNominalSampleRate() throws -> Float64 {
+    var address = AudioObjectPropertyAddress(
+      mSelector: kAudioDevicePropertyNominalSampleRate,
+      mScope: kAudioObjectPropertyScopeGlobal,
+      mElement: kAudioObjectPropertyElementMain
+    )
+    var rate: Float64 = 0
+    var dataSize = UInt32(MemoryLayout<Float64>.size)
+    let err = AudioObjectGetPropertyData(self, &address, 0, nil, &dataSize, &rate)
+    guard err == noErr else {
+      throw CaptureError(code: "nominal_rate_read", message: "read error \(err)")
+    }
+    return rate
+  }
+
+  /// Reads `kAudioDevicePropertyStreamFormat` on the input scope of an audio device.
+  fileprivate func readInputStreamFormat() throws -> AudioStreamBasicDescription {
+    var address = AudioObjectPropertyAddress(
+      mSelector: kAudioDevicePropertyStreamFormat,
+      mScope: kAudioObjectPropertyScopeInput,
+      mElement: kAudioObjectPropertyElementMain
+    )
+    var asbd = AudioStreamBasicDescription()
+    var dataSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+    let err = AudioObjectGetPropertyData(self, &address, 0, nil, &dataSize, &asbd)
+    guard err == noErr else {
+      throw CaptureError(code: "input_format_read", message: "read error \(err)")
+    }
+    return asbd
+  }
+
+  /// Reads `kAudioDevicePropertyStreamConfiguration` on the input scope and
+  /// returns the number of `AudioBuffer` entries (0 on error or output-only).
+  fileprivate func readInputBufferCount() -> Int {
+    var address = AudioObjectPropertyAddress(
+      mSelector: kAudioDevicePropertyStreamConfiguration,
+      mScope: kAudioObjectPropertyScopeInput,
+      mElement: kAudioObjectPropertyElementMain
+    )
+    var dataSize: UInt32 = 0
+    let sizeErr = AudioObjectGetPropertyDataSize(self, &address, 0, nil, &dataSize)
+    guard sizeErr == noErr, dataSize >= UInt32(MemoryLayout<AudioBufferList>.size) else {
+      return 0
+    }
+    let rawPtr = UnsafeMutableRawPointer.allocate(
+      byteCount: Int(dataSize),
+      alignment: MemoryLayout<AudioBufferList>.alignment
+    )
+    defer { rawPtr.deallocate() }
+    let err = AudioObjectGetPropertyData(self, &address, 0, nil, &dataSize, rawPtr)
+    guard err == noErr else {
+      return 0
+    }
+    let abl = rawPtr.assumingMemoryBound(to: AudioBufferList.self)
+    return Int(abl.pointee.mNumberBuffers)
   }
 
   /// `kAudioProcessPropertyIsRunning` — process has any active audio I/O.

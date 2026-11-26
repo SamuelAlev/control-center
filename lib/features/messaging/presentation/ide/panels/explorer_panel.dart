@@ -1634,7 +1634,8 @@ class _CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: t.bgSecondary,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.brSm,
+        border: Border.all(color: t.borderSecondary),
       ),
       child: Text(
         '$count',
@@ -1709,31 +1710,28 @@ class _FiltersButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onPressed,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                AppIcons.slidersHorizontal,
-                size: 13,
+    return CcTappable(
+      onPressed: onPressed,
+      semanticExpanded: expanded,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.slidersHorizontal,
+              size: 13,
+              color: expanded ? t.fg : t.textTertiary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              l10n.ideSearchFilters,
+              style: TextStyle(
+                fontSize: 11,
                 color: expanded ? t.fg : t.textTertiary,
               ),
-              const SizedBox(width: 4),
-              Text(
-                l10n.ideSearchFilters,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: expanded ? t.fg : t.textTertiary,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

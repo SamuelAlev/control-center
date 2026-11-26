@@ -93,7 +93,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('CLIPBOARD ACCESS'), findsOneWidget);
+    expect(find.text('Clipboard access'), findsOneWidget);
     final switches = tester
         .widgetList<CcSwitch>(find.byType(CcSwitch))
         .toList();

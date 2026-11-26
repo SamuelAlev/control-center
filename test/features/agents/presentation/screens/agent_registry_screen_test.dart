@@ -279,7 +279,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('AGENTS'), findsOneWidget);
+    expect(find.text('Agents'), findsNWidgets(2));
     expect(find.text('No agents'), findsOneWidget);
     expect(find.textContaining('Create your first agent'), findsOneWidget);
   });
@@ -433,7 +433,7 @@ void main() {
     await tester.tap(find.text('Logs'));
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    expect(find.text('COMPLETED'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
   });
 
   testWidgets('shows log with pid field', (tester) async {
@@ -573,7 +573,7 @@ void main() {
     await tester.tap(find.text('Logs'));
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    expect(find.text('ERROR'), findsOneWidget);
+    expect(find.text('Error'), findsOneWidget);
     expect(find.textContaining('claude'), findsOneWidget);
   });
 
@@ -970,7 +970,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('RUNNING'), findsOneWidget);
+      expect(find.text('Running'), findsOneWidget);
     });
 
     testWidgets('agent content renders Tabs correctly', (tester) async {
@@ -1624,7 +1624,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       // All three logs should have their status badges visible
-      expect(find.text('COMPLETED'), findsNWidgets(3));
+      expect(find.text('Completed'), findsNWidgets(3));
     });
   });
 
@@ -1653,7 +1653,7 @@ void main() {
       await tester.tap(find.text('Logs'));
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      expect(find.text('PENDING'), findsOneWidget);
+      expect(find.text('Pending'), findsOneWidget);
     });
   });
 
@@ -1686,7 +1686,7 @@ void main() {
 
         // Should not crash; log entry should be visible
         expect(tester.takeException(), isNull);
-        expect(find.text('COMPLETED'), findsOneWidget);
+        expect(find.text('Completed'), findsOneWidget);
       },
     );
   });

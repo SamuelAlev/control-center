@@ -1,8 +1,9 @@
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
-import 'package:cc_ui/src/foundation/cc_motion.dart';
+import 'package:cc_ui/src/foundation/cc_focus_trap.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:cc_ui/src/foundation/cc_trigger_wash.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -75,7 +76,9 @@ class CcPopover extends StatefulWidget {
   /// embedded webview). Defaults on; no-op off-web.
   final bool interceptPointer;
 
-  /// Accessibility label for the trigger.
+  /// Accessibility label for the trigger. With [toggleOnTargetTap] off the
+  /// caller's button is the trigger, so it names itself and reports its own
+  /// expanded state.
   final String? semanticLabel;
 
   @override
@@ -85,9 +88,9 @@ class CcPopover extends StatefulWidget {
 class _CcPopoverState extends State<CcPopover> {
   CcOverlayController? _internal;
 
-  // Focus scope for the open panel: autofocus moves focus into the panel on
-  // open (so keyboard Escape and Tab operate within it) and `closedLoop` traps
-  // Tab inside the popover instead of leaking to the background.
+  // Focus scope for the open panel: the trap moves focus into it on open (so
+  // Escape and Tab operate within it), `closedLoop` keeps Tab inside the
+  // popover, and closing hands focus back to the trigger.
   final FocusScopeNode _panelScope = FocusScopeNode(
     traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
   );
@@ -96,10 +99,33 @@ class _CcPopoverState extends State<CcPopover> {
       widget.controller ?? (_internal ??= CcOverlayController());
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onOpenChanged);
+  }
+
+  @override
+  void didUpdateWidget(CcPopover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      (oldWidget.controller ?? _internal)?.removeListener(_onOpenChanged);
+      _controller.addListener(_onOpenChanged);
+    }
+  }
+
+  @override
   void dispose() {
+    _controller.removeListener(_onOpenChanged);
     _internal?.dispose();
     _panelScope.dispose();
     super.dispose();
+  }
+
+  /// The trigger reports open/closed to assistive technology.
+  void _onOpenChanged() {
+    if (mounted && widget.toggleOnTargetTap) {
+      setState(() {});
+    }
   }
 
   @override
@@ -109,27 +135,9 @@ class _CcPopoverState extends State<CcPopover> {
             onPressed: _controller.toggle,
             borderRadius: AppRadii.brSm,
             semanticLabel: widget.semanticLabel,
-            builder: (context, states) {
-              final t = context.ds;
-              final pressed = states.contains(WidgetState.pressed);
-              final hovered = states.contains(WidgetState.hovered);
-              // Alpha-0 at rest (not transparent black) so the wash lerps
-              // only alpha, the same way a ghost button does.
-              final wash = pressed
-                  ? t.hoverStrong
-                  : hovered
-                  ? t.hover
-                  : t.hover.withValues(alpha: 0);
-              return AnimatedContainer(
-                duration: CcMotion.resolveFade(context, CcMotion.fast),
-                curve: CcMotion.standard,
-                decoration: BoxDecoration(
-                  color: wash,
-                  borderRadius: AppRadii.brSm,
-                ),
-                child: widget.target,
-              );
-            },
+            semanticExpanded: _controller.isOpen,
+            builder: (context, states) =>
+                CcTriggerWash(states: states, child: widget.target),
           )
         : widget.target;
 
@@ -173,9 +181,8 @@ class _CcPopoverState extends State<CcPopover> {
         borderRadius: AppRadii.brLg,
         child: DefaultTextStyle(
           style: baseStyle,
-          child: FocusScope(
+          child: CcFocusTrap(
             node: _panelScope,
-            autofocus: true,
             child: widget.overlayBuilder(context, targetSize),
           ),
         ),

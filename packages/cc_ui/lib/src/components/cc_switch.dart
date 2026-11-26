@@ -48,74 +48,74 @@ class CcSwitch extends StatelessWidget {
     final travel = CcMotion.resolve(context, CcMotion.moderate);
     final fade = CcMotion.resolveFade(context, CcMotion.fast);
 
-    // Exposed as a semantic *switch* (with `toggled`) rather than the generic
-    // button role CcTappable emits by default, so assistive tech announces
-    // on/off state. CcTappable still owns the gesture, keyboard activation,
-    // and the keyboard-only focus ring.
-    return Semantics(
-      toggled: value,
-      enabled: enabled,
-      label: semanticLabel,
-      child: CcTappable(
-        onPressed: enabled ? () => onChanged!(!value) : null,
-        focusNode: focusNode,
-        autofocus: autofocus,
-        semanticButton: false,
-        borderRadius: const BorderRadius.all(Radius.circular(_trackHeight / 2)),
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
+    // Announced as an on/off switch (`toggled`) rather than the generic
+    // button role CcTappable emits by default, matching what Flutter's own
+    // switch exposes. CcTappable owns the gesture, keyboard activation and
+    // the keyboard-only focus ring.
+    return CcTappable(
+      onPressed: enabled ? () => onChanged!(!value) : null,
+      focusNode: focusNode,
+      autofocus: autofocus,
+      semanticButton: false,
+      semanticToggled: value,
+      semanticLabel: semanticLabel,
+      borderRadius: const BorderRadius.all(Radius.circular(_trackHeight / 2)),
+      // The "on" track is the ring's own accent colour, so the ring sits
+      // 2px clear of the track.
+      focusRingOffset: 2,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
 
-          Color trackColor;
-          Color borderColor;
-          if (value) {
-            trackColor = hovered ? t.accentHover : t.accent;
-            borderColor = trackColor;
-          } else {
-            trackColor = t.bgTertiary;
-            borderColor = t.borderPrimary;
-          }
-          if (!enabled) {
-            trackColor = t.bgDisabled;
-            borderColor = t.borderDisabled;
-          }
+        Color trackColor;
+        Color borderColor;
+        if (value) {
+          trackColor = hovered ? t.accentHover : t.accent;
+          borderColor = trackColor;
+        } else {
+          trackColor = t.bgTertiary;
+          borderColor = t.borderPrimary;
+        }
+        if (!enabled) {
+          trackColor = t.bgDisabled;
+          borderColor = t.borderDisabled;
+        }
 
-          final thumbColor = enabled ? t.fgWhite : t.fgDisabled;
+        final thumbColor = enabled ? t.fgWhite : t.fgDisabled;
 
-          return Opacity(
-            opacity: enabled ? 1 : 0.6,
-            child: AnimatedContainer(
-              duration: fade,
-              curve: CcMotion.standard,
-              width: _trackWidth,
-              height: _trackHeight,
-              padding: const EdgeInsets.all(_thumbInset),
-              decoration: BoxDecoration(
-                color: trackColor,
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(_trackHeight / 2),
-                ),
-                border: Border.all(color: borderColor),
+        return Opacity(
+          opacity: enabled ? 1 : 0.6,
+          child: AnimatedContainer(
+            duration: fade,
+            curve: CcMotion.standard,
+            width: _trackWidth,
+            height: _trackHeight,
+            padding: const EdgeInsets.all(_thumbInset),
+            decoration: BoxDecoration(
+              color: trackColor,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(_trackHeight / 2),
               ),
-              child: AnimatedAlign(
-                // Directional: "on" sits at the end of the reading direction.
-                alignment: value
-                    ? AlignmentDirectional.centerEnd
-                    : AlignmentDirectional.centerStart,
-                duration: travel,
-                curve: CcMotion.standard,
-                child: Container(
-                  width: _thumbSize,
-                  height: _thumbSize,
-                  decoration: BoxDecoration(
-                    color: thumbColor,
-                    shape: BoxShape.circle,
-                  ),
+              border: Border.all(color: borderColor),
+            ),
+            child: AnimatedAlign(
+              // Directional: "on" sits at the end of the reading direction.
+              alignment: value
+                  ? AlignmentDirectional.centerEnd
+                  : AlignmentDirectional.centerStart,
+              duration: travel,
+              curve: CcMotion.standard,
+              child: Container(
+                width: _thumbSize,
+                height: _thumbSize,
+                decoration: BoxDecoration(
+                  color: thumbColor,
+                  shape: BoxShape.circle,
                 ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

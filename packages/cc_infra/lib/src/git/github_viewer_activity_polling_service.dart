@@ -36,12 +36,14 @@ class GitHubViewerActivityPollingService {
     required PrChangeSignals changeSignals,
     required this._workspacesForRepo,
     this._onWorkspaceTouched,
+    this._onPrsActive,
     this._shouldPoll,
     this._viewerLogin,
     this._commentFetch,
     this._forUserId,
     this.minInterval = const Duration(seconds: 60),
     this.idleInterval = const Duration(minutes: 5),
+    this.syncTimeout = const Duration(seconds: 5),
     this.loadDedupeState,
     this.saveDedupeState,
     DateTime Function()? now,
@@ -59,6 +61,18 @@ class GitHubViewerActivityPollingService {
 
   /// Optional freshness nudge (the open-PR poller's `pollSoon`).
   final void Function(String workspaceId)? _onWorkspaceTouched;
+
+  /// Awaited surgical PR sync invoked BEFORE publishing notifications for
+  /// active/notified PRs so the inbox immediately reflects them.
+  final Future<void> Function(
+    String workspaceId,
+    List<({String repoFullName, int number, bool merged})> targets,
+  )?
+  _onPrsActive;
+
+  /// Safety timeout for [_onPrsActive] so a stalled sync never delays or drops
+  /// notifications.
+  final Duration syncTimeout;
 
   /// The operator's own forge login, for matching `@mentions` in comment
   /// bodies. Null (or empty) disables the comment lane entirely — the coarse
@@ -185,6 +199,10 @@ class GitHubViewerActivityPollingService {
   /// without any other change.
   DateTime? _persistedWatermark;
 
+  /// The start of the last completed sweep in memory, anchoring comment
+  /// freshness even when no store is wired or a save failed.
+  DateTime? _lastSweepStart;
+
   bool _dedupeDirty = false;
   Future<void>? _dedupeLoad;
 
@@ -273,6 +291,22 @@ class GitHubViewerActivityPollingService {
     return start.isBefore(floor) ? floor : start;
   }
 
+  /// Earliest comment timestamp eligible to notify in this sweep.
+  ///
+  /// GitHub's `updated:>` search returns a PR on any update (such as a commit
+  /// push), while REST comment endpoints return full comment history; without
+  /// this bound, historical replies/mentions not in [_notifiedComments] replay
+  /// as new notifications.
+  DateTime _commentCutoff(DateTime sweepStart) {
+    final anchor = _watermark ?? _lastSweepStart;
+    final floor = sweepStart.subtract(_maxLookback);
+    if (anchor == null) {
+      return floor;
+    }
+    final start = anchor.subtract(_searchLagOverlap);
+    return start.isBefore(floor) ? floor : start;
+  }
+
   /// The readiness gate, failing CLOSED: a gate that throws means we could not
   /// establish that polling is safe, which is not the same as knowing it is.
   Future<bool> _ready() async {
@@ -332,7 +366,35 @@ class GitHubViewerActivityPollingService {
       return routes[repoFullName] = resolved;
     }
 
-    await _handlePendingReviews(activity.reviewRequested, route, silent);
+    final pendingEvents = <DomainEvent>[];
+    final syncByWorkspace =
+        <
+          String,
+          Map<String, ({String repoFullName, int number, bool merged})>
+        >{};
+    void queueSync(
+      String workspaceId,
+      GitHubViewerPr pr, {
+      required bool merged,
+    }) {
+      final byPr = syncByWorkspace.putIfAbsent(workspaceId, () => {});
+      final prev = byPr[pr.key];
+      if (prev == null || (merged && !prev.merged)) {
+        byPr[pr.key] = (
+          repoFullName: pr.repoFullName,
+          number: pr.number,
+          merged: merged,
+        );
+      }
+    }
+
+    await _handlePendingReviews(
+      activity.reviewRequested,
+      route,
+      silent,
+      pendingEvents,
+      queueSync,
+    );
 
     // The comment lane runs BEFORE the coarse mention lane, and reports which
     // PRs it resolved a mention on. A mention that was pinned to a comment is
@@ -340,7 +402,15 @@ class GitHubViewerActivityPollingService {
     // deep-links to the comment — so publishing both would be two pings for
     // one comment. A PR the cap or an error skipped is NOT in the set, so it
     // falls through to the coarse lane rather than being lost.
-    final coveredByComments = await _handleComments(activity, route, silent);
+    final commentCutoff = _commentCutoff(sweepStart);
+    final coveredByComments = await _handleComments(
+      activity,
+      route,
+      silent,
+      commentCutoff: commentCutoff,
+      pendingEvents: pendingEvents,
+      queueSync: queueSync,
+    );
     await _handleOnce(
       activity.mentioned.where((pr) => !coveredByComments.contains(pr.key)),
       route,
@@ -354,6 +424,9 @@ class GitHubViewerActivityPollingService {
         prTitle: pr.title,
         occurredAt: _now(),
       ),
+      pendingEvents: pendingEvents,
+      queueSync: queueSync,
+      merged: false,
     );
     await _handleOnce(
       activity.merged,
@@ -375,29 +448,75 @@ class GitHubViewerActivityPollingService {
         mergedByLogin: pr.mergedByLogin,
         occurredAt: _now(),
       ),
+      pendingEvents: pendingEvents,
+      queueSync: queueSync,
+      merged: true,
     );
 
     // Freshness nudges. Skipped on the baseline pass in every case (not just
     // first-run-ever): the open-PR poller runs its own sweep at boot, so a
     // burst of `pollSoon` here would only duplicate it.
+    final pendingSignals =
+        <({String workspaceId, String repoFullName, int prNumber})>[];
+    final touchedWorkspaces = <String>{};
+    final mergedKeys = {for (final pr in activity.merged) pr.key};
     if (!_baseline) {
       for (final pr in activity.all) {
         final stamp = pr.updatedAt?.millisecondsSinceEpoch ?? 0;
         if (!_seenChanges.add('${pr.key}|$stamp')) {
           continue;
         }
+        final isMerged = mergedKeys.contains(pr.key);
         for (final workspaceId in await route(pr.repoFullName)) {
-          _signals.notify(
+          pendingSignals.add((
             workspaceId: workspaceId,
             repoFullName: pr.repoFullName,
             prNumber: pr.number,
-          );
-          _onWorkspaceTouched?.call(workspaceId);
+          ));
+          touchedWorkspaces.add(workspaceId);
+          queueSync(workspaceId, pr, merged: isMerged);
         }
       }
     }
 
+    // Surgically update the inbox snapshot BEFORE publishing notifications so
+    // an operator clicking into the inbox right away sees the PR immediately.
+    final onPrsActive = _onPrsActive;
+    if (onPrsActive != null && syncByWorkspace.isNotEmpty) {
+      await Future.wait([
+        for (final entry in syncByWorkspace.entries)
+          () async {
+            try {
+              await onPrsActive(
+                entry.key,
+                entry.value.values.toList(growable: false),
+              ).timeout(syncTimeout);
+            } on Object catch (e) {
+              CcInfraLog.warning(
+                'github_activity: pre-notification sync failed for '
+                '${entry.key}: $e',
+              );
+            }
+          }(),
+      ]);
+    }
+
+    for (final event in pendingEvents) {
+      _eventBus.publish(event);
+    }
+    for (final s in pendingSignals) {
+      _signals.notify(
+        workspaceId: s.workspaceId,
+        repoFullName: s.repoFullName,
+        prNumber: s.prNumber,
+      );
+    }
+    for (final workspaceId in touchedWorkspaces) {
+      _onWorkspaceTouched?.call(workspaceId);
+    }
+
     _baseline = false;
+    _lastSweepStart = sweepStart;
     await _saveDedupeState(sweepStart);
   }
 
@@ -406,6 +525,9 @@ class GitHubViewerActivityPollingService {
     List<GitHubViewerPr> pending,
     Future<List<String>> Function(String) route,
     bool silent,
+    List<DomainEvent> pendingEvents,
+    void Function(String workspaceId, GitHubViewerPr pr, {required bool merged})
+    queueSync,
   ) async {
     final present = <String>{};
     for (final pr in pending) {
@@ -427,7 +549,8 @@ class GitHubViewerActivityPollingService {
         continue;
       }
       for (final workspaceId in workspaceIds) {
-        _eventBus.publish(
+        queueSync(workspaceId, pr, merged: false);
+        pendingEvents.add(
           PrReviewRequested(
             workspaceId: workspaceId,
             repoOwner: pr.owner,
@@ -458,8 +581,16 @@ class GitHubViewerActivityPollingService {
   Future<Set<String>> _handleComments(
     GitHubViewerActivity activity,
     Future<List<String>> Function(String) route,
-    bool silent,
-  ) async {
+    bool silent, {
+    required DateTime commentCutoff,
+    required List<DomainEvent> pendingEvents,
+    required void Function(
+      String workspaceId,
+      GitHubViewerPr pr, {
+      required bool merged,
+    })
+    queueSync,
+  }) async {
     final fetch = _commentFetch;
     final loginResolver = _viewerLogin;
     if (fetch == null || loginResolver == null) {
@@ -523,6 +654,9 @@ class GitHubViewerActivityPollingService {
           login,
           fetch,
           silent: silent,
+          commentCutoff: commentCutoff,
+          pendingEvents: pendingEvents,
+          queueSync: queueSync,
         );
         if (resolved) {
           covered.add(pr.key);
@@ -567,6 +701,14 @@ class GitHubViewerActivityPollingService {
     String login,
     ViewerCommentFetchPort fetch, {
     required bool silent,
+    required DateTime commentCutoff,
+    required List<DomainEvent> pendingEvents,
+    required void Function(
+      String workspaceId,
+      GitHubViewerPr pr, {
+      required bool merged,
+    })
+    queueSync,
   }) async {
     final issueComments = await fetch.listIssueComments(
       pr.owner,
@@ -617,6 +759,7 @@ class GitHubViewerActivityPollingService {
       required String body,
       required String? authorLogin,
       required bool isReviewComment,
+      required DateTime? commentAt,
       String? path,
       int? line,
     }) async {
@@ -624,10 +767,12 @@ class GitHubViewerActivityPollingService {
       if (isViewer(authorLogin)) {
         return;
       }
+      final stale =
+          commentAt != null && commentAt.toUtc().isBefore(commentCutoff);
       final threadId = threadIdByComment[id];
       if (bodyMentions(body, login)) {
         mentioned = true;
-        if (!_notifiedComments.add('cm:$id')) {
+        if (stale || !_notifiedComments.add('cm:$id')) {
           return;
         }
         _dedupeDirty = true;
@@ -635,7 +780,8 @@ class GitHubViewerActivityPollingService {
           return;
         }
         for (final workspaceId in workspaceIds) {
-          _eventBus.publish(
+          queueSync(workspaceId, pr, merged: false);
+          pendingEvents.add(
             PrCommentMentioned(
               workspaceId: workspaceId,
               repoOwner: pr.owner,
@@ -661,7 +807,7 @@ class GitHubViewerActivityPollingService {
       if (!isReviewComment || !threadMembers.contains(id)) {
         return;
       }
-      if (!_notifiedComments.add('cr:$id')) {
+      if (stale || !_notifiedComments.add('cr:$id')) {
         return;
       }
       _dedupeDirty = true;
@@ -669,7 +815,8 @@ class GitHubViewerActivityPollingService {
         return;
       }
       for (final workspaceId in workspaceIds) {
-        _eventBus.publish(
+        queueSync(workspaceId, pr, merged: false);
+        pendingEvents.add(
           PrThreadReplied(
             workspaceId: workspaceId,
             repoOwner: pr.owner,
@@ -695,6 +842,7 @@ class GitHubViewerActivityPollingService {
         body: c.body,
         authorLogin: c.user?.login,
         isReviewComment: false,
+        commentAt: c.updatedAt ?? c.createdAt,
       );
     }
     for (final c in reviewComments) {
@@ -703,6 +851,7 @@ class GitHubViewerActivityPollingService {
         body: c.body,
         authorLogin: c.user?.login,
         isReviewComment: true,
+        commentAt: c.updatedAt ?? c.createdAt,
         path: c.path,
         line: c.line ?? c.originalLine ?? c.startLine,
       );
@@ -715,6 +864,9 @@ class GitHubViewerActivityPollingService {
       threadMembers,
       reviewComments,
       silent: silent,
+      isViewer: isViewer,
+      pendingEvents: pendingEvents,
+      queueSync: queueSync,
     );
 
     return mentioned;
@@ -728,6 +880,14 @@ class GitHubViewerActivityPollingService {
     Set<int> threadMembers,
     List<GitHubReviewComment> reviewComments, {
     required bool silent,
+    required bool Function(String?) isViewer,
+    required List<DomainEvent> pendingEvents,
+    required void Function(
+      String workspaceId,
+      GitHubViewerPr pr, {
+      required bool merged,
+    })
+    queueSync,
   }) async {
     if (threads.isEmpty) {
       return;
@@ -750,13 +910,17 @@ class GitHubViewerActivityPollingService {
         continue;
       }
       _dedupeDirty = true;
-      if (silent) {
+      // Resolving your own thread (on github.com or via Control Center)
+      // should not notify you; unknown/null resolvedByLogin degrades to
+      // notifying.
+      if (silent || isViewer(thread.resolvedByLogin)) {
         continue;
       }
       final rootId = thread.commentIds.isEmpty ? null : thread.commentIds.first;
       final root = rootId == null ? null : byId[rootId];
       for (final workspaceId in workspaceIds) {
-        _eventBus.publish(
+        queueSync(workspaceId, pr, merged: false);
+        pendingEvents.add(
           PrThreadResolved(
             workspaceId: workspaceId,
             repoOwner: pr.owner,
@@ -767,6 +931,7 @@ class GitHubViewerActivityPollingService {
             commentId: rootId,
             path: root?.path,
             line: root?.line ?? root?.originalLine ?? root?.startLine,
+            resolvedByLogin: thread.resolvedByLogin,
             forUserId: _forUserId,
             occurredAt: _now(),
           ),
@@ -787,8 +952,16 @@ class GitHubViewerActivityPollingService {
     Future<List<String>> Function(String) route,
     bool silent,
     String lane,
-    DomainEvent Function(GitHubViewerPr pr, String workspaceId) event,
-  ) async {
+    DomainEvent Function(GitHubViewerPr pr, String workspaceId) event, {
+    required List<DomainEvent> pendingEvents,
+    required void Function(
+      String workspaceId,
+      GitHubViewerPr pr, {
+      required bool merged,
+    })
+    queueSync,
+    required bool merged,
+  }) async {
     for (final pr in prs) {
       final workspaceIds = await route(pr.repoFullName);
       if (workspaceIds.isEmpty) {
@@ -802,7 +975,8 @@ class GitHubViewerActivityPollingService {
         continue;
       }
       for (final workspaceId in workspaceIds) {
-        _eventBus.publish(event(pr, workspaceId));
+        queueSync(workspaceId, pr, merged: merged);
+        pendingEvents.add(event(pr, workspaceId));
       }
     }
   }

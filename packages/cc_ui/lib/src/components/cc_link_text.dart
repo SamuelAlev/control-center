@@ -27,7 +27,9 @@ double _underlineReserve(double fontSize) =>
 /// thick. Measure x-span from laid-out [RenderParagraph] (not a parallel
 /// [TextPainter] — ambient [DefaultTextStyle] vs platform default). Bottom
 /// padding keeps the stroke inside the paint box. Display-only; taps stay with
-/// the parent. Markdown uses cc_markdown's renderer instead.
+/// the parent, whose semantics node it marks as a link (pass
+/// `semanticButton: false` to a [CcTappable] parent so it is not also a
+/// button). Markdown uses cc_markdown's renderer instead.
 class CcLinkText extends StatefulWidget {
   /// Creates a [CcLinkText].
   const CcLinkText(
@@ -77,26 +79,31 @@ class _CcLinkTextState extends State<CcLinkText> {
     );
     final fontSize = (widget.textScaler ?? MediaQuery.textScalerOf(context))
         .scale(effectiveStyle.fontSize ?? 14.0);
-    return CustomPaint(
-      foregroundPainter: _CcLinkUnderlinePainter(
-        textKey: _textKey,
-        text: widget.text,
-        underlineColor:
-            widget.underlineColor ??
-            widget.style.decorationColor ??
-            widget.style.color,
-        fontSize: fontSize,
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: _underlineReserve(fontSize)),
-        child: Text(
-          widget.text,
-          key: _textKey,
-          style: effectiveStyle,
-          textAlign: widget.textAlign,
-          maxLines: widget.maxLines,
-          overflow: widget.overflow,
-          textScaler: widget.textScaler,
+    // Not a container: the flag lands on the parent's node, the one that
+    // carries the tap.
+    return Semantics(
+      link: true,
+      child: CustomPaint(
+        foregroundPainter: _CcLinkUnderlinePainter(
+          textKey: _textKey,
+          text: widget.text,
+          underlineColor:
+              widget.underlineColor ??
+              widget.style.decorationColor ??
+              widget.style.color,
+          fontSize: fontSize,
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: _underlineReserve(fontSize)),
+          child: Text(
+            widget.text,
+            key: _textKey,
+            style: effectiveStyle,
+            textAlign: widget.textAlign,
+            maxLines: widget.maxLines,
+            overflow: widget.overflow,
+            textScaler: widget.textScaler,
+          ),
         ),
       ),
     );

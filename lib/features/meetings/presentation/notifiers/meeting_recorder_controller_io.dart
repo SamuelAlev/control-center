@@ -243,6 +243,26 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
             : 'AEC inactive (in-person mode — no far-end reference)',
       );
 
+      // Subscribe to the system-audio tap BEFORE awaiting `mic.startStream` so
+      // the Core Audio tap begins clocking while the mic initializes instead of
+      // starting ~100 ms late (which would starve AEC3's far-end reference and
+      // skew initial calibration).
+      if (captureSystem && system != null) {
+        // loopback → log/health + AEC far-end reference (re-emitted unchanged
+        // for `them`) → stream as `them`.
+        final systemRaw = _logFrames(
+          system.capture(sourceId: sourceId),
+          'system/them',
+          isSystem: true,
+        );
+        final systemStream = _aec?.referenceTap(systemRaw) ?? systemRaw;
+        _systemSub = systemStream.listen(
+          (pcm) => _ingest(_systemUplink, meetingId, pcm),
+          onError: (Object e, StackTrace s) =>
+              AppLog.w('MeetingRecorder', 'system stream error: $e'),
+        );
+      }
+
       // mic → log/health on the RAW input (so dead-mic detection sees the true
       // signal) → AEC clean → stream the cleaned mic as `me`. The capture is
       // pinned to the input device selected in You → Audio (falling back to
@@ -260,22 +280,6 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
         onError: (Object e, StackTrace s) =>
             AppLog.w('MeetingRecorder', 'mic stream error: $e'),
       );
-
-      if (captureSystem && system != null) {
-        // loopback → log/health + AEC far-end reference (re-emitted unchanged
-        // for `them`) → stream as `them`.
-        final systemRaw = _logFrames(
-          system.capture(sourceId: sourceId),
-          'system/them',
-          isSystem: true,
-        );
-        final systemStream = _aec?.referenceTap(systemRaw) ?? systemRaw;
-        _systemSub = systemStream.listen(
-          (pcm) => _ingest(_systemUplink, meetingId, pcm),
-          onError: (Object e, StackTrace s) =>
-              AppLog.w('MeetingRecorder', 'system stream error: $e'),
-        );
-      }
 
       state = MeetingRecorderState.recording(meetingId, DateTime.now());
     } catch (e, s) {

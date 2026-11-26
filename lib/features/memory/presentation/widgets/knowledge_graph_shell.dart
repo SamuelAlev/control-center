@@ -107,11 +107,11 @@ extension _ShellMethods on _KnowledgeGraphState {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.legendLabel.toUpperCase(),
+            l10n.legendLabel,
             style: CcTypography.caption.copyWith(
               color: tokens.textTertiary,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.8,
+              letterSpacing: 0.2,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),

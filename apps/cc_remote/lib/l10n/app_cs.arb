@@ -122,7 +122,6 @@
   "eventNotFound": "Událost nenalezena",
   "eventNotFoundDescription": "Může být mimo okno agendy, nebo byla odstraněna u zdroje.",
   "joinMeeting": "Připojit se ke schůzce",
-  "join": "Připojit se",
   "attendeesCount": "Účastníci ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

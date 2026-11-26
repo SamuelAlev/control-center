@@ -36,8 +36,10 @@ final _testOverrides = [
   workspacesProvider.overrideWith(
     (ref) => const Stream<List<Workspace>>.empty(),
   ),
-  meetingActionItemsProvider.overrideWith((ref, _) => const Stream.empty()),
-  meetingDecisionsProvider.overrideWith((ref, _) => const Stream.empty()),
+  // Empty lists, not empty streams: a stream that never emits is "still
+  // loading", and the meeting detail page waits for both before it paints.
+  meetingActionItemsProvider.overrideWith((ref, _) => Stream.value(const [])),
+  meetingDecisionsProvider.overrideWith((ref, _) => Stream.value(const [])),
   meetingActionItemStatsProvider.overrideWith((ref, _) => const Stream.empty()),
   meetingDecisionCountsProvider.overrideWith((ref, _) => const Stream.empty()),
 ];

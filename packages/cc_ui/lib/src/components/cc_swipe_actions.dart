@@ -45,9 +45,13 @@ class CcSwipeAction {
 }
 
 /// Horizontal swipe uncovering an action panel (mail-list idiom). Row always
-/// settles back to rest after fire (caller removes via normal state). Gesture
-/// must not be the only path — keep pointer/keyboard affordances;
-/// [CustomSemanticsAction]s are additive.
+/// settles back to rest after fire (caller removes via normal state).
+///
+/// The gesture must not be the only path: the row has to offer the same
+/// actions to pointer and keyboard users some other way (a menu on the row
+/// that focus reveals, say), since this widget gives the keyboard nothing.
+/// For assistive tech the actions are custom semantics actions on a node
+/// wrapping the row.
 class CcSwipeActions extends StatefulWidget {
   /// Creates a [CcSwipeActions].
   const CcSwipeActions({
@@ -233,10 +237,11 @@ class _CcSwipeActionsState extends State<CcSwipeActions>
     final uncovered = _actionFor(_offset);
     final gate = widget.requireLongPress;
 
-    // Annotation only, deliberately not a container: the row's own tappable
-    // already owns the semantics node, and these have to land on it rather
-    // than on a parent the focus never stops at.
+    // A node of its own around the row. A bare annotation would merge into
+    // whatever node sits ABOVE the row, since the row's own tappable is a
+    // node boundary; it cannot reach that node from out here.
     return Semantics(
+      container: true,
       customSemanticsActions: {
         for (final action in [widget.startAction, widget.endAction])
           if (action != null)

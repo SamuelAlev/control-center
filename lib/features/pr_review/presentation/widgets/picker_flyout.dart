@@ -283,13 +283,10 @@ class PickerGroupHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
       child: Text(
-        label.toUpperCase(),
+        label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: CcFonts.code(
-          textStyle: CcTypography.label,
-          family: context.ccTheme?.monoFontFamily,
-        ).copyWith(color: t.textTertiary),
+        style: CcTypography.label.copyWith(color: t.textTertiary),
       ),
     );
   }

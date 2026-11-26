@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/test_wrap.dart';
 
-Future<void> _pump(WidgetTester tester) async {
+Future<void> _pump(WidgetTester tester, {String status = 'active'}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -20,7 +20,7 @@ Future<void> _pump(WidgetTester tester) async {
               'device_id': 'device-1',
               'label': 'Oneplus',
               'platform': 'android',
-              'status': 'active',
+              'status': status,
             },
           ]),
         ),
@@ -33,6 +33,20 @@ Future<void> _pump(WidgetTester tester) async {
 
 void main() {
   tearDown(SettingsHoverReveal.debugForgetMouse);
+
+  testWidgets('an active device carries no status tag', (tester) async {
+    await _pump(tester);
+
+    expect(find.byType(CcStatusTag), findsNothing);
+    expect(find.textContaining('active'), findsNothing);
+  });
+
+  testWidgets('a device waiting for approval says so', (tester) async {
+    await _pump(tester, status: 'pendingConfirm');
+
+    expect(find.text('Awaiting approval'), findsOneWidget);
+    expect(find.textContaining('pendingConfirm'), findsNothing);
+  });
 
   testWidgets('clicking a row opens the rename dialog', (tester) async {
     await _pump(tester);

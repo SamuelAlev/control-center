@@ -28,8 +28,8 @@ const int _kParticipantPreview = 5;
 /// Detail pane for a selected calendar event: when/where, conferencing, the
 /// participant roster with RSVP state, the user's own RSVP, the
 /// record-and-link action and the event description. Laid out as a quiet
-/// operator inspector — dense rows, hairline section breaks, mono for the
-/// machine facts (times, counts, meeting codes), accent rationed to the user's
+/// operator inspector — dense rows, hairline section breaks, tabular figures
+/// for times and counts, mono for meeting codes, accent rationed to the user's
 /// own controls.
 class CalendarEventDetailPanel extends ConsumerWidget {
   /// Creates a [CalendarEventDetailPanel].
@@ -46,7 +46,7 @@ class CalendarEventDetailPanel extends ConsumerWidget {
   /// The selected event id, or null when nothing is selected.
   final String? eventId;
 
-  /// Called when "Start recording & link" is pressed.
+  /// Called when "Join and record" (or "Record meeting") is pressed.
   final ValueChanged<CalendarEvent> onStartRecording;
 
   @override
@@ -176,7 +176,7 @@ class CalendarEventDetailPanel extends ConsumerWidget {
         _MetaRow(
           icon: AppIcons.globe,
           text: _gmtLabel(event.startTime.toLocal()),
-          mono: true,
+          numeric: true,
         ),
       );
     }
@@ -187,7 +187,7 @@ class CalendarEventDetailPanel extends ConsumerWidget {
   }
 }
 
-/// The fixed top bar: a mono "EVENT" eyebrow and a close affordance that
+/// The fixed top bar: an "EVENT" eyebrow and a close affordance that
 /// deselects the event (returns to the bare calendar).
 class _HeaderBar extends StatelessWidget {
   const _HeaderBar({required this.label, required this.event});
@@ -209,13 +209,14 @@ class _HeaderBar extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              label.toUpperCase(),
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppFonts.codeStyle(
+              style: TextStyle(
                 fontSize: 11,
+                fontWeight: FontWeight.w600,
                 color: t.textTertiary,
-                letterSpacing: 1,
+                letterSpacing: 0.2,
               ),
             ),
           ),
@@ -235,7 +236,7 @@ class _HeaderBar extends StatelessWidget {
   }
 }
 
-/// The when block: a leading clock, the start → end times in mono with a
+/// The when block: a leading clock, the start → end times in tabular figures with a
 /// duration tag and the human date beneath.
 class _WhenBlock extends StatelessWidget {
   const _WhenBlock({required this.event, required this.l10n});
@@ -330,10 +331,10 @@ class _WhenBlock extends StatelessWidget {
   }
 
   TextStyle _timeStyle(DesignSystemTokens t) =>
-      AppFonts.codeStyle(fontSize: 14, color: t.textPrimary);
+      AppFonts.numericStyle(fontSize: 14, color: t.textPrimary);
 }
 
-/// A small mono tag for the meeting's duration (e.g. `15m`, `1h 30m`).
+/// A small tabular-figure tag for the meeting's duration (e.g. `15m`, `1h 30m`).
 class _DurationTag extends StatelessWidget {
   const _DurationTag({required this.label});
 
@@ -350,7 +351,7 @@ class _DurationTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppFonts.codeStyle(fontSize: 11, color: t.textSecondary),
+        style: AppFonts.numericStyle(fontSize: 11, color: t.textSecondary),
       ),
     );
   }
@@ -359,82 +360,72 @@ class _DurationTag extends StatelessWidget {
 /// A tappable conferencing card: a neutral glyph, the provider label, the
 /// joinable meeting code in mono and a launch affordance. The whole row opens
 /// the meeting URL.
-class _ConferenceCard extends StatefulWidget {
+class _ConferenceCard extends StatelessWidget {
   const _ConferenceCard({required this.url, required this.l10n});
 
   final String url;
   final AppLocalizations l10n;
 
   @override
-  State<_ConferenceCard> createState() => _ConferenceCardState();
-}
-
-class _ConferenceCardState extends State<_ConferenceCard> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final url = widget.url;
     final code = _meetCode(url);
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => unawaitedLaunch(url),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-          decoration: BoxDecoration(
-            color: _hovered ? t.bgSecondaryHover : t.panel,
-            borderRadius: AppRadii.brSm,
-            border: Border.all(color: t.borderSecondary),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: t.bgSecondary,
-                  borderRadius: AppRadii.brSm,
-                ),
-                child: Icon(AppIcons.video, size: 15, color: t.textSecondary),
+    return CcTappable(
+      onPressed: () => unawaitedLaunch(url),
+      borderRadius: AppRadii.brSm,
+      builder: (context, states) => AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+        decoration: BoxDecoration(
+          color: states.contains(WidgetState.hovered)
+              ? t.bgSecondaryHover
+              : t.panel,
+          borderRadius: AppRadii.brSm,
+          border: Border.all(color: t.borderSecondary),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: t.bgSecondary,
+                borderRadius: AppRadii.brSm,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Icon(AppIcons.video, size: 15, color: t.textSecondary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _conferenceLabel(url, l10n),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: t.textPrimary,
+                    ),
+                  ),
+                  if (code != null) ...[
+                    const SizedBox(height: 1),
                     Text(
-                      _conferenceLabel(url, widget.l10n),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: t.textPrimary,
+                      code,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.codeStyle(
+                        fontSize: 11.5,
+                        color: t.textTertiary,
                       ),
                     ),
-                    if (code != null) ...[
-                      const SizedBox(height: 1),
-                      Text(
-                        code,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppFonts.codeStyle(
-                          fontSize: 11.5,
-                          color: t.textTertiary,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Icon(AppIcons.arrowUpRight, size: 15, color: t.textTertiary),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Icon(AppIcons.arrowUpRight, size: 15, color: t.textTertiary),
+          ],
         ),
       ),
     );
@@ -502,7 +493,7 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           tally,
-                          style: AppFonts.codeStyle(
+                          style: AppFonts.numericStyle(
                             fontSize: 11,
                             color: t.textTertiary,
                           ),
@@ -532,9 +523,10 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
           ),
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 25, top: 2),
-            child: GestureDetector(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Padding(
+            child: CcTappable(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              semanticExpanded: _expanded,
+              builder: (context, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Text(
                   _expanded
@@ -656,7 +648,7 @@ class _ParticipantRow extends StatelessWidget {
   }
 }
 
-/// A faint mono tag (organizer / you) sitting beside a participant's name.
+/// A faint tag (organizer / you) sitting beside a participant's name.
 class _Tag extends StatelessWidget {
   const _Tag({required this.label});
 
@@ -669,19 +661,24 @@ class _Tag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: BoxDecoration(color: t.surface, borderRadius: AppRadii.brSm),
       child: Text(
-        label.toUpperCase(),
-        style: AppFonts.codeStyle(
+        label,
+        style: TextStyle(
           fontSize: 9,
           color: t.textTertiary,
-          letterSpacing: 0.6,
+          letterSpacing: 0.2,
         ),
       ),
     );
   }
 }
 
-/// The signature record-and-link action: open the linked meeting note when one
-/// already exists, otherwise start a recording bound to this event.
+/// The signature join-and-record action: open the linked meeting note when one
+/// already exists, otherwise join the call (when the event has one) and start
+/// a recording bound to this event.
+///
+/// Labelled like every other surface that offers it (the agenda, the
+/// meeting-starting banner and OS notification): "Join and record" for an
+/// event with a call link, "Record meeting" for one without.
 class _MeetingNoteAction extends StatelessWidget {
   const _MeetingNoteAction({
     required this.event,
@@ -715,7 +712,11 @@ class _MeetingNoteAction extends StatelessWidget {
           size: CcButtonSize.sm,
           onPressed: () => onStartRecording(event),
           icon: AppIcons.circleDot,
-          child: Text(l10n.calendarStartRecordingAndLink),
+          child: Text(
+            event.meetingUrl != null
+                ? l10n.calendarJoinAndRecord
+                : l10n.meetingsRecordMeeting,
+          ),
         ),
         const SizedBox(height: 8),
         CcButton(
@@ -762,9 +763,11 @@ class _Description extends StatelessWidget {
         for (final link in parsed.links)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: GestureDetector(
-              onTap: () => unawaitedLaunch(link.url),
-              child: Row(
+            // The row opens the URL, so it reads as the link it is.
+            child: CcTappable(
+              onPressed: () => unawaitedLaunch(link.url),
+              semanticButton: false,
+              builder: (context, _) => Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
@@ -832,11 +835,15 @@ class _CalendarSourceRow extends StatelessWidget {
 }
 
 class _MetaRow extends StatelessWidget {
-  const _MetaRow({required this.icon, required this.text, this.mono = false});
+  const _MetaRow({
+    required this.icon,
+    required this.text,
+    this.numeric = false,
+  });
 
   final IconData icon;
   final String text;
-  final bool mono;
+  final bool numeric;
 
   @override
   Widget build(BuildContext context) {
@@ -854,8 +861,8 @@ class _MetaRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: mono
-                  ? AppFonts.codeStyle(fontSize: 12, color: t.textSecondary)
+              style: numeric
+                  ? AppFonts.numericStyle(fontSize: 12, color: t.textSecondary)
                   : TextStyle(fontSize: 13, color: t.textSecondary),
             ),
           ),

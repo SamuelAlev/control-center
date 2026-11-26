@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cc_ui/src/components/cc_sidebar.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
@@ -75,6 +77,9 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
   /// list of taller rows it has to match (a folder among the space cards).
   final double extent;
 
+  static const double _labelSize = 14;
+  static const double _labelHeight = 1.4;
+
   @override
   bool get fluidHoverEnabled => onPressed != null;
 
@@ -100,6 +105,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
     required bool collapsed,
     required bool transitioning,
     required Duration duration,
+    required double rowExtent,
   }) {
     final fg = selected ? t.accentOn : t.textSecondary;
     const iconSize = 18.0;
@@ -156,8 +162,8 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
                               TextSpan(
                                 text: label,
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
+                                  fontSize: _labelSize,
+                                  height: _labelHeight,
                                   fontWeight: selected
                                       ? FontWeight.w700
                                       : CcTypography.regularWeight,
@@ -181,8 +187,8 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 14,
-                                height: 1.4,
+                                fontSize: _labelSize,
+                                height: _labelHeight,
                                 // The selected label goes BOLD on the soft
                                 // tint — weight plus ink carry the current
                                 // destination.
@@ -219,7 +225,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
           // The expanded row height is fixed at 32px (design rule) unless a
           // list of taller rows asks for [extent]; the 18px icon and label
           // center vertically inside it.
-          height: collapsed ? null : extent,
+          height: collapsed ? null : rowExtent,
           decoration: BoxDecoration(
             color: hoverFill,
             borderRadius: AppRadii.brSm,
@@ -293,6 +299,12 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
     final collapsed = CcSidebarScope.collapsedOf(context) ?? this.collapsed;
     final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
     final duration = CcMotion.resolveFade(context, CcMotion.fast);
+    // The row keeps [extent] at the default text size and grows by as much as
+    // the label's line does at a larger one, so the label is never cut off.
+    const line = _labelSize * _labelHeight;
+    final scaledLine =
+        MediaQuery.textScalerOf(context).scale(_labelSize) * _labelHeight;
+    final rowExtent = math.max(extent, extent - line + scaledLine);
 
     final Widget result;
     if (onPressed == null) {
@@ -302,12 +314,15 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
         collapsed: collapsed,
         transitioning: transitioning,
         duration: duration,
+        rowExtent: rowExtent,
       );
     } else {
       result = CcTappable(
         onPressed: onPressed,
         borderRadius: AppRadii.brSm,
-        semanticLabel: label,
+        // The expanded row's visible label names it; the rail has none.
+        semanticLabel: collapsed ? label : null,
+        semanticSelected: selected ? true : null,
         // The brand focus ring would vanish against the selected row's solid
         // brand fill, so on that row the ring is `accentOn` like its ink.
         focusRingColor: selected ? t.accentOn : null,
@@ -321,6 +336,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
           collapsed: collapsed,
           transitioning: transitioning,
           duration: duration,
+          rowExtent: rowExtent,
         ),
       );
     }

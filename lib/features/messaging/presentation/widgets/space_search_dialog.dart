@@ -154,9 +154,9 @@ class _SearchResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
+    return CcTappable(
+      onPressed: onTap,
+      builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,7 @@
 import 'package:cc_ui/src/components/cc_banner.dart';
 import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -191,6 +192,39 @@ void main() {
       expect(semantics.properties.liveRegion, isTrue);
       expect(semantics.properties.label, 'Important update');
     });
+  });
+
+  testWidgets('the dismiss control is named Dismiss with a 24px target', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    var dismissed = 0;
+    await tester.pumpWidget(
+      ccTestApp(
+        Center(
+          child: SizedBox(
+            width: 320,
+            child: CcBanner(
+              title: 'Update ready',
+              onDismiss: () => dismissed++,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final banner = tester.getRect(find.byType(CcBanner));
+    final close = find.byWidgetPredicate(
+      (w) => w is CcTappable && w.semanticLabel == 'Dismiss',
+    );
+    expect(tester.getSize(close), const Size(24, 24));
+    final glyph = tester.getRect(
+      find.descendant(of: close, matching: find.byType(Icon)),
+    );
+    expect(glyph.topRight, banner.topRight + const Offset(-14, 14));
+    await tester.tapAt(glyph.topRight + const Offset(4, -4));
+    expect(dismissed, 1);
+    handle.dispose();
   });
 }
 

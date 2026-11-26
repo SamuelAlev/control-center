@@ -314,9 +314,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get joinMeeting => 'Toplantıya katıl';
 
   @override
-  String get join => 'Katıl';
-
-  @override
   String attendeesCount(int count) {
     return 'Katılımcılar ($count)';
   }

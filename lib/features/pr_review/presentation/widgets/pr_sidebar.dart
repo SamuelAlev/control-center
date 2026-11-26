@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submissio
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/widgets/pr_environment_section.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
@@ -17,7 +18,8 @@ import 'package:control_center/features/pr_review/presentation/widgets/label_pic
 import 'package:control_center/features/pr_review/presentation/widgets/pr_complexity_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_label_wrap.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_status_badge.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_reviewer_row.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_status_menu.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/ship_show_ask_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/workflow_status_icon.dart';
@@ -25,16 +27,12 @@ import 'package:control_center/features/pr_review/providers/pr_filter_providers.
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/ship_show_ask_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
-import 'package:control_center/shared/widgets/github_team_avatar.dart';
-import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 export 'package:control_center/features/pr_review/presentation/widgets/workflow_status_icon.dart';
 
@@ -133,6 +131,10 @@ class PrSidebar extends ConsumerWidget {
     final hasComplexity = files.isNotEmpty;
     final hasShipShowAsk = ref.watch(shipShowAskProvider(prRef)).value != null;
     final canEditLabels = canEdit && _labelsSupported(ref);
+    final canReRequestReview =
+        canEdit &&
+        pr.state == PrState.open &&
+        _reRequestReviewSupported(ref);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,7 +150,7 @@ class PrSidebar extends ConsumerWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
-                PrStatusBadge(pr: pr),
+                PrStatusMenu(pr: pr, prRef: prRef),
                 if (hasShipShowAsk) ShipShowAskBadge(prRef: prRef),
                 if (hasComplexity) PrComplexityBadge.fromFiles(files),
               ],
@@ -189,7 +191,7 @@ class PrSidebar extends ConsumerWidget {
                     spacing: AppSpacing.sm,
                     children: [
                       for (final r in displayReviewers)
-                        _ReviewerRow(
+                        PrReviewerRow(
                           reviewer: r,
                           organization: prRef.repoFullName.split('/').first,
                           pending:
@@ -197,8 +199,11 @@ class PrSidebar extends ConsumerWidget {
                                 r.identity,
                               ) ??
                               false,
+                          onReRequest: _canReRequest(r, canReRequestReview)
+                              ? () => _reRequestReviewer(ref, context, r)
+                              : null,
                           onRemove: (canEdit && !r.isCodeOwner)
-                              ? () => _removeReviewer(ref, r)
+                              ? () => _removeReviewer(ref, context, r)
                               : null,
                         ),
                     ],
@@ -344,13 +349,66 @@ class PrSidebar extends ConsumerWidget {
     }
   }
 
-  void _removeReviewer(WidgetRef ref, PrReviewer r) {
+  /// Re-requesting a review is a forge capability (GitHub only).
+  bool _reRequestReviewSupported(WidgetRef ref) {
+    if (!canEdit) {
+      return false;
+    }
+    return ref.watch(
+      prSupportsProvider((prRef, ForgeCapability.reRequestReview)),
+    );
+  }
+
+  bool _canReRequest(PrReviewer r, bool canReRequestReview) {
+    if (!canReRequestReview || r.state == PrReviewSubmissionState.pending) {
+      return false;
+    }
+    if (r is PrUserReviewer &&
+        pr.author != null &&
+        pr.author!.login.isNotEmpty &&
+        r.user.login.toLowerCase() == pr.author!.login.toLowerCase()) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _reRequestReviewer(
+    WidgetRef ref,
+    BuildContext context,
+    PrReviewer r,
+  ) async {
     final notifier = ref.read(prEditProvider(prRef).notifier);
-    switch (r) {
-      case PrUserReviewer():
-        notifier.removeReviewer(userLogin: r.user.login);
-      case PrTeamReviewer():
-        notifier.removeReviewer(teamSlug: r.slug);
+    final error = switch (r) {
+      PrUserReviewer() => await notifier.requestReviewer(
+        userLogin: r.user.login,
+      ),
+      PrTeamReviewer() => await notifier.requestReviewer(teamSlug: r.slug),
+    };
+    if (error != null && context.mounted) {
+      CcToastScope.maybeOf(context)?.show(
+        AppLocalizations.of(context).failedToUpdateReviewers(error),
+        variant: CcToastVariant.danger,
+      );
+    }
+  }
+
+  Future<void> _removeReviewer(
+    WidgetRef ref,
+    BuildContext context,
+    PrReviewer r,
+  ) async {
+    final notifier = ref.read(prEditProvider(prRef).notifier);
+    final error = switch (r) {
+      PrUserReviewer() => await notifier.removeReviewer(
+        userLogin: r.user.login,
+      ),
+      PrTeamReviewer() => await notifier.removeReviewer(teamSlug: r.slug),
+    };
+    if (error != null && context.mounted) {
+      CcToastScope.maybeOf(context)?.show(
+        AppLocalizations.of(context).failedToUpdateReviewers(error),
+        variant: CcToastVariant.danger,
+      );
     }
   }
 
@@ -514,226 +572,36 @@ class _FileSummaryRow extends StatelessWidget {
   }
 }
 
-/// A reviewer rail row. Renders three shapes from one [PrReviewer]: an
-/// individual user, a pending team, or a team merged with the member who
-/// reviewed on its behalf. Code owners carry a shield and no remove affordance.
-class _ReviewerRow extends StatelessWidget {
-  const _ReviewerRow({
-    required this.reviewer,
-    required this.pending,
-    required this.organization,
-    this.onRemove,
-  });
-
-  final PrReviewer reviewer;
-  final bool pending;
-  final String organization;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final r = reviewer;
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final reviewedBy = r is PrTeamReviewer ? r.reviewedBy : null;
-    final name = _label(r);
-    // One announcement per reviewer — who, their verdict, and the facts the
-    // shield and the colored glyph show — instead of a run of fragments
-    // (an initial letter, a name, an unlabeled icon).
-    final semanticLabel = [
-      name,
-      _ReviewerStateDot.labelFor(r.state, l10n),
-      if (reviewedBy != null) l10n.reviewedOnBehalfOf(reviewedBy.login),
-      if (r.isCodeOwner) l10n.requiredByCodeOwners,
-    ].join(', ');
-
-    final info = ExcludeSemantics(
-      child: Row(
-        children: [
-          if (r.isCodeOwner) ...[
-            CcTooltip(
-              message: l10n.requiredByCodeOwners,
-              child: Icon(AppIcons.shield, size: 14, color: t.fgBrandPrimary),
-            ),
-            const SizedBox(width: 6),
-          ],
-          _ReviewerAvatar(reviewer: r),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CcTypography.caption.copyWith(color: t.textPrimary),
-                ),
-                if (reviewedBy != null)
-                  Text(
-                    l10n.reviewedOnBehalfOf(reviewedBy.login),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(color: t.textTertiary),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-
-    Widget row(bool revealed) => Row(
-      children: [
-        Expanded(
-          child: r is PrTeamReviewer
-              // The team row is itself a link; the tappable carries the label.
-              ? info
-              : Semantics(container: true, label: semanticLabel, child: info),
-        ),
-        if (pending)
-          const CcSpinner(size: 14)
-        else
-          _RevealedRemoveSlot(
-            revealed: revealed,
-            label: l10n.removeLabel(name),
-            onRemove: onRemove,
-            resting: ExcludeSemantics(child: _ReviewerStateDot(state: r.state)),
-          ),
-      ],
-    );
-    final Widget content = HoverFocusReveal(
-      builder: (context, revealed) => row(revealed),
-    );
-
-    if (r is PrUserReviewer) {
-      return GitHubUserHoverTarget(login: r.user.login, child: content);
-    }
-    final team = r as PrTeamReviewer;
-    return GitHubTeamHoverTarget(
-      organization: organization,
-      slug: team.slug,
-      child: CcTappable(
-        onPressed: () => context.go(
-          teamProfileRoute(
-            context.currentWorkspaceId!,
-            organization,
-            team.slug,
-          ),
-        ),
-        semanticLabel: semanticLabel,
-        borderRadius: AppRadii.brSm,
-        builder: (_, _) => content,
-      ),
-    );
-  }
-
-  String _label(PrReviewer r) => switch (r) {
-    PrUserReviewer() => r.user.login,
-    PrTeamReviewer() => r.name,
-  };
-}
-
-/// The trailing slot of a reviewer / assignee row: [resting] (the state glyph,
-/// or nothing) normally, swapped for a remove button on hover or keyboard
-/// focus. The button stays mounted — transparent at rest — so it is reachable
-/// with Tab and by screen readers rather than only under the mouse.
+/// The trailing slot of an assignee row: empty at rest, swapped for a remove
+/// button on hover or keyboard focus. The button stays mounted — transparent
+/// at rest — so it is reachable with Tab and by screen readers rather than only
+/// under the mouse.
 class _RevealedRemoveSlot extends StatelessWidget {
   const _RevealedRemoveSlot({
     required this.revealed,
     required this.label,
     required this.onRemove,
-    this.resting,
   });
 
   final bool revealed;
   final String label;
   final VoidCallback? onRemove;
-  final Widget? resting;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final remove = onRemove;
     if (remove == null) {
-      return resting ?? const SizedBox.shrink();
+      return const SizedBox.shrink();
     }
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        if (resting != null)
-          HoverFocusReveal.fade(revealed: !revealed, child: resting!),
-        HoverFocusReveal.fade(
-          revealed: revealed,
-          child: CcTappable(
-            onPressed: remove,
-            semanticLabel: label,
-            borderRadius: AppRadii.brSm,
-            builder: (context, states) =>
-                Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Avatar for a reviewer row: a user avatar, a team logo, or — for a merged
-/// team — the team logo with the member's avatar badged on it.
-class _ReviewerAvatar extends StatelessWidget {
-  const _ReviewerAvatar({required this.reviewer});
-
-  final PrReviewer reviewer;
-
-  @override
-  Widget build(BuildContext context) {
-    final r = reviewer;
-    if (r is PrUserReviewer) {
-      return GitHubUserAvatar(
-        login: r.user.login,
-        avatarUrl: r.user.avatarUrl,
-        size: 24,
-      );
-    }
-    final team = r as PrTeamReviewer;
-    final teamGlyph = GitHubTeamAvatar(
-      name: team.name,
-      avatarUrl: team.avatarUrl,
-      size: 24,
-    );
-    if (team.reviewedBy == null) {
-      return teamGlyph;
-    }
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          teamGlyph,
-          Positioned(
-            right: -2,
-            bottom: -2,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color:
-                      context.designSystem?.bgPrimary ??
-                      DesignSystemTokens.light().bgPrimary,
-                  width: 1.5,
-                ),
-              ),
-              child: GitHubUserAvatar(
-                login: team.reviewedBy!.login,
-                avatarUrl: team.reviewedBy!.avatarUrl,
-                size: 16,
-                showHoverCard: false,
-              ),
-            ),
-          ),
-        ],
+    return HoverFocusReveal.fade(
+      revealed: revealed,
+      child: CcTappable(
+        onPressed: remove,
+        semanticLabel: label,
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) =>
+            Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
       ),
     );
   }
@@ -883,11 +751,11 @@ class _ChecksRailRow extends StatelessWidget {
           Icon(AppIcons.shieldCheck, size: 14, color: t.textTertiary),
           const SizedBox(width: AppSpacing.xs),
           Text(
-            l10n.checks.toUpperCase(),
+            l10n.checks,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
+              letterSpacing: 0.2,
               color: t.textTertiary,
             ),
           ),
@@ -957,55 +825,5 @@ class _ChecksRailRow extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class _ReviewerStateDot extends StatelessWidget {
-  const _ReviewerStateDot({required this.state});
-
-  final PrReviewSubmissionState state;
-
-  /// The words for [state], used by the glyph's tooltip and the row's
-  /// screen-reader label alike.
-  static String labelFor(
-    PrReviewSubmissionState state,
-    AppLocalizations l10n,
-  ) => switch (state) {
-    PrReviewSubmissionState.approved => l10n.approved,
-    PrReviewSubmissionState.changesRequested => l10n.changesRequested,
-    PrReviewSubmissionState.commented => l10n.commented,
-    // Every requested reviewer's row, not only the viewer's: "requested", not
-    // "awaiting your review".
-    PrReviewSubmissionState.pending => l10n.reviewRequested,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, icon) = _styleFor(state, context);
-    return CcTooltip(
-      message: labelFor(state, AppLocalizations.of(context)),
-      child: Icon(icon, size: 14, color: color),
-    );
-  }
-
-  (Color, IconData) _styleFor(
-    PrReviewSubmissionState state,
-    BuildContext context,
-  ) {
-    final muted =
-        context.designSystem?.textTertiary ??
-        DesignSystemTokens.light().textTertiary;
-    return switch (state) {
-      PrReviewSubmissionState.approved => (
-        ReviewStatusColors.success,
-        AppIcons.checkCircle2,
-      ),
-      PrReviewSubmissionState.changesRequested => (
-        ReviewStatusColors.failure,
-        AppIcons.xCircle,
-      ),
-      PrReviewSubmissionState.commented => (muted, AppIcons.messageCircle),
-      PrReviewSubmissionState.pending => (muted, AppIcons.clock),
-    };
   }
 }

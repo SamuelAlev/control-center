@@ -30,20 +30,24 @@ class PrRepoRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CcFluidHover(
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return CountRailItem(
-          label: entry.repo.fullName,
-          count: entry.count,
-          selected: entry.repo.id == selectedRepoId,
-          onPressed: () => onSelect(entry.repo.id),
-        );
-      },
-      layoutBuilder: (context, items) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: items,
+    // One Tab group: the rail sits beside a list, and without a group of
+    // its own the reading-order sort alternates between the two columns.
+    return FocusTraversalGroup(
+      child: CcFluidHover(
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          final entry = entries[index];
+          return CountRailItem(
+            label: entry.repo.fullName,
+            count: entry.count,
+            selected: entry.repo.id == selectedRepoId,
+            onPressed: () => onSelect(entry.repo.id),
+          );
+        },
+        layoutBuilder: (context, items) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: items,
+        ),
       ),
     );
   }

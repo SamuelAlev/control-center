@@ -7,6 +7,7 @@ import 'package:control_center/features/workspaces/presentation/widgets/add_work
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,5 +143,50 @@ void main() {
     expect(find.text('Workspace picker'), findsOneWidget);
     expect(router.routeInformationProvider.value.uri.path, workspaceListRoute);
     expect(find.byType(EditableText), findsNothing);
+  });
+
+  testWidgets('navigation omits goals and improvements and puts schedules above calendar with clock icon', (
+    tester,
+  ) async {
+    late List<CommandItem> items;
+    final router = GoRouter(
+      initialLocation: inboxRoute('w1'),
+      routes: [
+        GoRoute(
+          path: '/workspaces/:workspaceId/:surface',
+          builder: (_, _) => Consumer(
+            builder: (context, ref, _) {
+              items = ref
+                  .read(navigationCommandSourceProvider)
+                  .buildItems(context, ref);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
+          activeWorkspaceIdOverride('w1'),
+          canCreateWorkspacesProvider.overrideWithValue(true),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final ids = items.map((e) => e.id).toList();
+    expect(ids, isNot(contains('goals')));
+    expect(ids, isNot(contains('improvements')));
+    expect(ids.indexOf('schedules'), lessThan(ids.indexOf('calendar')));
+    final schedules = items.firstWhere((e) => e.id == 'schedules');
+    expect(schedules.icon, AppIcons.clock);
   });
 }

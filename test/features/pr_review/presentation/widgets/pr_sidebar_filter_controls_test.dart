@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar_filter_controls.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -89,5 +90,32 @@ void main() {
 
     expect(find.byType(PrSuffixIconButton), findsNothing);
     expect(find.byIcon(AppIcons.x), findsNothing);
+  });
+
+  testWidgets('the filter toggle is a button that Enter activates', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    var toggles = 0;
+    await tester.pumpWidget(
+      testWrap(
+        PrSidebarFilterToggle(
+          label: 'Search filters',
+          active: false,
+          onToggle: () => toggles++,
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSemantics(find.text('Search filters')),
+      isSemantics(isButton: true, isFocusable: true, label: 'Search filters'),
+    );
+    Focus.of(tester.element(find.text('Search filters'))).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(toggles, 1);
+    handle.dispose();
   });
 }

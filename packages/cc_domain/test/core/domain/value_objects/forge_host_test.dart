@@ -99,6 +99,13 @@ void main() {
       expect(capabilitiesOf(ForgeHost.local).labels, isFalse);
     });
 
+    test('reRequestReview is a GitHub-only capability', () {
+      expect(capabilitiesOf(ForgeHost.github).reRequestReview, isTrue);
+      expect(capabilitiesOf(ForgeHost.gitlab).reRequestReview, isFalse);
+      expect(capabilitiesOf(ForgeHost.bitbucket).reRequestReview, isFalse);
+      expect(capabilitiesOf(ForgeHost.local).reRequestReview, isFalse);
+    });
+
     test('an older wire payload reads missing flags as false', () {
       final caps = ForgeCapabilities.fromJson({'forge': 'github'});
       expect(caps.forge, ForgeHost.github);

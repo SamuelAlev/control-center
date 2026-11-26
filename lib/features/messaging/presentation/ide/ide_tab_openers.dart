@@ -5,10 +5,12 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_tab.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/goal_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_host.dart';
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_tabs.dart';
@@ -213,8 +215,18 @@ class IdeTabOpeners {
       }
       final layout = _host.layout;
       final key = tab.dedupKey;
-      if (key != null && layout.focusTab((t) => t.dedupKey == key)) {
+      final reopenForEdit =
+          tab.kind == MessagingTabKinds.goal &&
+          tab.args['openContractEditor'] == true;
+      if (key != null && !reopenForEdit && layout.focusTab((t) => t.dedupKey == key)) {
         return;
+      }
+      if (key != null && reopenForEdit) {
+        for (final existing in layout.allTabs().toList()) {
+          if (existing.dedupKey == key) {
+            layout.closeTabByIdentity(existing);
+          }
+        }
       }
       layout.openInActiveLeaf(tab);
     });
@@ -424,6 +436,32 @@ class IdeTabOpeners {
         MessagingIdeTabs.chat(spaceId, conversationId: conversationId),
       );
     }
+  }
+
+  /// Opens (or refocuses) the editor tab for durable goal [goalId].
+  void openGoal(String goalId) {
+    final workspaceId = _host.activeWorkspaceId;
+    if (workspaceId == null) {
+      return;
+    }
+    final layout = _host.layout;
+    if (layout.focusTab(
+      (t) => t.kind == MessagingTabKinds.goal && t.args['goalId'] == goalId,
+    )) {
+      return;
+    }
+    final title = _host.ref
+        .read(goalRunViewProvider((workspaceId: workspaceId, id: goalId)))
+        .value
+        ?.goal
+        .userText;
+    layout.openInActiveLeaf(
+      goalTab(
+        workspaceId: workspaceId,
+        goalId: goalId,
+        label: goalTabLabel(_host.context, title),
+      ),
+    );
   }
 
   /// [openConversation] bound to one space, interned so a chat tab's pane

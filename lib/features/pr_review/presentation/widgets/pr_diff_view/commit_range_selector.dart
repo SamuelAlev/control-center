@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
-import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
@@ -11,10 +10,9 @@ import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A dropdown selector that lets users pick which commits to scope the diff to.
-class CommitRangeSelector extends ConsumerStatefulWidget {
+class CommitRangeSelector extends StatefulWidget {
   /// Creates a [CommitRangeSelector].
   const CommitRangeSelector({
     super.key,
@@ -37,11 +35,10 @@ class CommitRangeSelector extends ConsumerStatefulWidget {
   /// `commits.length`, a notice is shown in the overlay.
   final int totalCommitsCount;
   @override
-  ConsumerState<CommitRangeSelector> createState() =>
-      _CommitRangeSelectorState();
+  State<CommitRangeSelector> createState() => _CommitRangeSelectorState();
 }
 
-class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
+class _CommitRangeSelectorState extends State<CommitRangeSelector> {
   final CcOverlayController _controller = CcOverlayController();
   int? _lastClickedIndex;
   late Set<String> _selectedShas;
@@ -148,7 +145,6 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final codeFont = ref.watch(codeFontFamilyProvider);
     return CcPopover(
       controller: _controller,
       // The trigger is a real button, so it owns the tap and the hover.
@@ -166,7 +162,7 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _VersionBadge(label: _chipVersionLabel(), codeFont: codeFont),
+              _VersionBadge(label: _chipVersionLabel()),
               const SizedBox(width: AppSpacing.sm),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 220),
@@ -195,7 +191,6 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
                 date: null,
                 checked: _isAllSelected,
                 onTap: _toggleAll,
-                codeFont: codeFont,
               ),
             ),
             const CcDivider(),
@@ -222,7 +217,6 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
                             !_isAllSelected &&
                             _selectedShas.contains(widget.commits[i].sha),
                         onTap: () => _toggleCommit(i),
-                        codeFont: codeFont,
                       ),
                   ],
                 ),
@@ -289,16 +283,11 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
   }
 }
 
-/// The monospace `vN` version chip used in the trigger and menu rows.
+/// The tabular-figure `vN` version chip used in the trigger and menu rows.
 class _VersionBadge extends StatelessWidget {
-  const _VersionBadge({
-    required this.label,
-    required this.codeFont,
-    this.checked = false,
-  });
+  const _VersionBadge({required this.label, this.checked = false});
 
   final String label;
-  final String codeFont;
   final bool checked;
 
   @override
@@ -318,8 +307,7 @@ class _VersionBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppFonts.codeStyleDynamic(
-          codeFont,
+        style: AppFonts.numericStyle(
           fontSize: 11,
           height: 1.3,
           fontWeight: FontWeight.w700,
@@ -338,7 +326,6 @@ class _CommitMenuRow extends StatelessWidget {
     required this.date,
     required this.checked,
     required this.onTap,
-    required this.codeFont,
   });
   final String versionLabel;
   final String title;
@@ -346,7 +333,6 @@ class _CommitMenuRow extends StatelessWidget {
   final DateTime? date;
   final bool checked;
   final VoidCallback onTap;
-  final String codeFont;
 
   @override
   Widget build(BuildContext context) {
@@ -367,11 +353,7 @@ class _CommitMenuRow extends StatelessWidget {
               child: CcCheckbox(value: checked, onChanged: (_) {}),
             ),
             const SizedBox(width: 10),
-            _VersionBadge(
-              label: versionLabel,
-              codeFont: codeFont,
-              checked: checked,
-            ),
+            _VersionBadge(label: versionLabel, checked: checked),
             const SizedBox(width: 10),
             Expanded(
               child: PrTitleText(

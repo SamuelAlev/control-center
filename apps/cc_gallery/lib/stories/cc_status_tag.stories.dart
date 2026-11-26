@@ -5,9 +5,9 @@ import 'package:widgetbook/widgetbook.dart';
 
 part 'cc_status_tag.stories.g.dart';
 
-/// Stories for [CcStatusTag] — a live-state pill that maps a domain state to a
-/// tone, a dot and a label, so connection / health / lifecycle state never
-/// rests on color alone.
+/// Stories for [CcStatusTag] — a square, hairline-bordered live-state tag that
+/// maps a domain state to a tone, a dot and a label, so connection / health /
+/// lifecycle state never rests on color alone.
 
 const _path = '[Components]/Feedback';
 

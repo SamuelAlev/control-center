@@ -46,6 +46,36 @@ void main() {
     expect(created, false);
   });
 
+  testWidgets('the logo picker is a named button', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appPreferencesProvider.overrideWithValue(prefs)],
+        child: MaterialApp(
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CcTheme(
+            data: CcThemeData.light(),
+            child: const Scaffold(
+              body: SingleChildScrollView(
+                child: AddWorkspaceForm(onCreated: _noop),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(AddWorkspaceForm)),
+    );
+
+    final picker = find.bySemanticsLabel(l10n.uploadImage);
+    expect(picker, findsOneWidget);
+    expect(tester.getSemantics(picker).flagsCollection.isButton, isTrue);
+    handle.dispose();
+  });
+
   testWidgets('renders cancel button when onCancel provided', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

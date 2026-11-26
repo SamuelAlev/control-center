@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/components/cc_text_context_menu.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
+import 'package:cc_ui/src/foundation/cc_submit_keeps_focus.dart';
 import 'package:cc_ui/src/foundation/cc_text_selection_gestures.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -82,6 +83,8 @@ class _CcPanelSearchFieldState extends State<CcPanelSearchField>
       minLines: 1,
       keyboardType: TextInputType.text,
       onChanged: widget.onChanged,
+      // The host acts on Enter; the caret stays in the panel either way.
+      onEditingComplete: ccSubmitKeepsFocus(widget.controller, null),
       style: textStyle,
       cursorColor: input.cursor,
       backgroundCursorColor: input.placeholder,

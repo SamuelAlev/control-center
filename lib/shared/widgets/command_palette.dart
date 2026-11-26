@@ -557,13 +557,10 @@ class _CategoryHeader extends StatelessWidget {
         child: Align(
           alignment: AlignmentDirectional.centerStart,
           child: Text(
-            label.toUpperCase(),
+            label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: CcFonts.code(
-              textStyle: CcTypography.label,
-              family: context.ccTheme?.monoFontFamily,
-            ).copyWith(color: ds.textTertiary),
+            style: CcTypography.label.copyWith(color: ds.textTertiary),
           ),
         ),
       ),

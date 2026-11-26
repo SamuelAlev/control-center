@@ -108,6 +108,88 @@ void main() {
       expect(info.connected, isTrue);
       expect(info.supportsOAuth, isTrue);
       expect(info.supportsApiKey, isTrue);
+      expect(info.hasExpiredSignIn, isFalse);
+    });
+
+    test('hasExpiredSignIn reflects connected and credential expiry', () {
+      const activeHealthy = HarnessProviderInfo(
+        id: 'cursor',
+        displayName: 'Cursor',
+        authMethods: [HarnessAuthMethod.oauth],
+        enabled: HarnessProviderEnabled.oauth,
+        hasCredential: true,
+        credentials: [
+          HarnessCredentialSummary(
+            credentialId: 'oauth:a',
+            method: HarnessAuthMethod.oauth,
+            isActive: true,
+            removable: true,
+            expired: false,
+          ),
+        ],
+      );
+      expect(activeHealthy.hasExpiredSignIn, isFalse);
+
+      const activeExpired = HarnessProviderInfo(
+        id: 'cursor',
+        displayName: 'Cursor',
+        authMethods: [HarnessAuthMethod.oauth],
+        enabled: HarnessProviderEnabled.oauth,
+        hasCredential: true,
+        credentials: [
+          HarnessCredentialSummary(
+            credentialId: 'oauth:a',
+            method: HarnessAuthMethod.oauth,
+            isActive: true,
+            removable: true,
+            expired: true,
+          ),
+        ],
+      );
+      expect(activeExpired.hasExpiredSignIn, isTrue);
+
+      const fallbackExpired = HarnessProviderInfo(
+        id: 'cursor',
+        displayName: 'Cursor',
+        authMethods: [HarnessAuthMethod.oauth],
+        enabled: HarnessProviderEnabled.oauth,
+        hasCredential: true,
+        credentials: [
+          HarnessCredentialSummary(
+            credentialId: 'oauth:a',
+            method: HarnessAuthMethod.oauth,
+            isActive: true,
+            removable: true,
+            expired: false,
+          ),
+          HarnessCredentialSummary(
+            credentialId: 'oauth:b',
+            method: HarnessAuthMethod.oauth,
+            isActive: false,
+            removable: true,
+            expired: true,
+          ),
+        ],
+      );
+      expect(fallbackExpired.hasExpiredSignIn, isTrue);
+
+      const disabledExpired = HarnessProviderInfo(
+        id: 'cursor',
+        displayName: 'Cursor',
+        authMethods: [HarnessAuthMethod.oauth],
+        enabled: HarnessProviderEnabled.disabled,
+        hasCredential: false,
+        credentials: [
+          HarnessCredentialSummary(
+            credentialId: 'oauth:a',
+            method: HarnessAuthMethod.oauth,
+            isActive: true,
+            removable: true,
+            expired: true,
+          ),
+        ],
+      );
+      expect(disabledExpired.hasExpiredSignIn, isFalse);
     });
 
     test('connected is false only when disabled', () {

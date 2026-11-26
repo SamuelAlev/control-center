@@ -171,16 +171,24 @@ ObsTone _statusTone(ToolSegmentStatus status) => switch (status) {
   ToolSegmentStatus.interrupted => ObsTone.warning,
 };
 
-Widget _summaryText(BuildContext context, String text, {bool error = false}) {
+/// A renderer's one-line summary: its arguments (a command, a path, a
+/// pattern, a URL) in the code font, or words ([code] false) in the UI font.
+Widget _summaryText(
+  BuildContext context,
+  String text, {
+  bool error = false,
+  bool code = true,
+}) {
   final t = context.designSystem ?? DesignSystemTokens.light();
+  final style = CcTypography.numeric.copyWith(
+    fontSize: 12,
+    color: error ? t.textErrorPrimary : t.textSecondary,
+  );
   return Text(
     text.isEmpty ? '—' : text,
     maxLines: 1,
     overflow: TextOverflow.ellipsis,
-    style: CcTypography.monoNum.copyWith(
-      fontSize: 12,
-      color: error ? t.textErrorPrimary : t.textSecondary,
-    ),
+    style: code ? CcFonts.code(textStyle: style) : style,
   );
 }
 
@@ -354,6 +362,7 @@ class TaskRenderer extends ToolRenderer {
             context,
             ellipsize(assignment, 72),
             error: s.isError,
+            code: false,
           ),
         ),
       ],
@@ -519,7 +528,12 @@ class MemoryRenderer extends ToolRenderer {
         const ToolChip(label: 'memory'),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: _summaryText(context, ellipsize(query, 72), error: s.isError),
+          child: _summaryText(
+            context,
+            ellipsize(query, 72),
+            error: s.isError,
+            code: false,
+          ),
         ),
       ],
     );
@@ -589,7 +603,11 @@ class TodoRenderer extends ToolRenderer {
   Widget summary(BuildContext context, ToolSegment s) {
     final todos = s.inputs?['todos'] ?? s.inputs?['items'] ?? s.inputs?['plan'];
     final count = todos is List ? todos.length : null;
-    return _summaryText(context, count == null ? 'plan' : '$count items');
+    return _summaryText(
+      context,
+      count == null ? 'plan' : '$count items',
+      code: false,
+    );
   }
 
   @override
@@ -628,21 +646,15 @@ class _SubagentChip extends ConsumerWidget {
       return chip;
     }
     final l10n = AppLocalizations.of(context);
-    return Semantics(
-      button: true,
-      label: l10n.openAgentActivity,
-      child: CcTooltip(
-        message: l10n.openAgentActivity,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: () => scope.openRun(
-              runId: runId,
-              label: label.trim().isEmpty ? l10n.ideAgentActivity : label,
-            ),
-            child: chip,
-          ),
+    return CcTooltip(
+      message: l10n.openAgentActivity,
+      child: CcTappable(
+        onPressed: () => scope.openRun(
+          runId: runId,
+          label: label.trim().isEmpty ? l10n.ideAgentActivity : label,
         ),
+        semanticLabel: l10n.openAgentActivity,
+        builder: (context, _) => chip,
       ),
     );
   }

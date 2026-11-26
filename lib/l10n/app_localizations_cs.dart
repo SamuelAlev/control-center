@@ -1095,13 +1095,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get calendarEmptyNoEvents => 'V tomto rozsahu nejsou žádné události';
 
   @override
-  String get calendarStartRecording => 'Spustit nahrávání';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Spustit nahrávání a propojit';
-
-  @override
   String get calendarJoinMeet => 'Připojit se ke schůzce';
+
+  @override
+  String get calendarJoinAndRecord => 'Připojit a nahrát';
+
+  @override
+  String get calendarRecordFailed => 'Nahrávání se nepodařilo spustit';
 
   @override
   String get calendarFromCalendar => 'Z kalendáře';
@@ -1946,9 +1946,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get activity => 'Aktivita';
-
-  @override
-  String get activityLabel => 'AKTIVITA';
 
   @override
   String get activitySearchHint => 'Hledat v aktivitě';
@@ -2907,7 +2904,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get briefDescription => 'Stručný popis';
 
   @override
-  String get bugLabel => 'CHYBA';
+  String get bugLabel => 'Chyba';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4505,7 +4502,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get pullRequests => 'Pull requesty';
 
   @override
-  String get questionLabel => 'OTÁZKA';
+  String get questionLabel => 'Otázka';
 
   @override
   String get queued => 'Ve frontě';
@@ -4520,7 +4517,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get reasoningEffort => 'Úsilí uvažování';
 
   @override
-  String get recommendLabel => 'DOPORUČIT';
+  String get recommendLabel => 'Doporučit';
 
   @override
   String recordingFromDevice(String device) {
@@ -5195,7 +5192,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get suggestion => 'Návrh';
 
   @override
-  String get suggestLabel => 'NAVRHNOUT';
+  String get suggestLabel => 'Navrhnout';
 
   @override
   String get superseded => 'Nahrazeno';
@@ -5240,7 +5237,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get thisCannotBeUndone => 'Tuto akci nelze vrátit zpět.';
 
   @override
-  String get ticketLabel => 'TICKET';
+  String get ticketLabel => 'Ticket';
 
   @override
   String get titleLabel => 'Název';
@@ -7572,6 +7569,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addReviewers => 'Přidat recenzenty';
 
   @override
+  String get reRequestReview => 'Znovu požádat o kontrolu';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Znovu požádat o kontrolu od $label';
+  }
+
+  @override
   String get addAssignees => 'Přidat přiřazené';
 
   @override
@@ -7739,6 +7744,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get meetingStatusRecording => 'Nahrávání';
 
   @override
+  String get meetingStatusPaused => 'Pozastaveno';
+
+  @override
   String get meetingStatusProcessing => 'Zpracování';
 
   @override
@@ -7768,36 +7776,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count schůzek',
-      many: '$count schůzek',
-      few: '$count schůzky',
-      one: '1 schůzka',
-      zero: 'Žádné schůzky',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Otevřené akce';
-
-  @override
-  String get meetingsLedgerDecisions => 'Rozhodnutí';
-
-  @override
   String get meetingsLiveOpen => 'Otevřít nahrávání';
 
   @override
   String get meetingTemplateShort => 'Šablona';
-
-  @override
-  String get meetingsStatThisWeek => 'Tento týden';
-
-  @override
-  String get meetingsStatRecorded => 'Nahráno';
 
   @override
   String get meetingsFilterAll => 'Vše';
@@ -7843,9 +7825,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total akčních položek';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'vylepšeno';
 
   @override
   String get meetingsTranscribing => 'přepis a shrnutí…';
@@ -8079,9 +8058,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Vypadá to, že probíhá schůzka. Nahrát?';
-
-  @override
-  String get meetingDetectedRecord => 'Nahrát';
 
   @override
   String get meetingDetectedDismiss => 'Zavřít';
@@ -9613,6 +9589,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deviceNeverSeen => 'Nikdy nepřipojeno';
 
   @override
+  String get deviceAwaitingApproval => 'Čeká na schválení';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10447,12 +10426,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Selhalo';
-
-  @override
-  String get bannerMeetingJoin => 'Připojit se';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Nahrát a propojit';
 
   @override
   String get bannerCalendarReconnect => 'Znovu připojit';
@@ -13840,6 +13813,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Komentář se nepodařilo odeslat: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Řádek $line';
   }
@@ -15340,19 +15318,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Zavřít $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count komentářů',
-      many: '$count komentáře',
-      few: '$count komentáře',
-      one: '1 komentář',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21655,10 +21620,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dispatchSettingsTitle => 'Plány';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limity plánů a sledování a co se stane s žádostmi, na které nikdo neodpoví.';
-
-  @override
   String get dispatchLimitsLabel => 'Limity plánů';
 
   @override
@@ -21737,9 +21698,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Cíl';
-
-  @override
-  String get scheduleRecordCrumb => 'Plán';
 
   @override
   String get improvementRecordCrumb => 'Návrh';
@@ -22145,5 +22103,38 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent z $cap, včetně všech plánů v jeho řetězci';
+  }
+
+  @override
+  String get ccLoading => 'Načítání';
+
+  @override
+  String get ccProgress => 'Průběh';
+
+  @override
+  String get ccBreadcrumb => 'Drobečková navigace';
+
+  @override
+  String get ccDialog => 'Dialogové okno';
+
+  @override
+  String get ccResize => 'Změnit velikost';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (neověřeno)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Vybrat $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Vybrat všechny pull requesty';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Vrátit na verzi $version';
   }
 }

@@ -78,6 +78,7 @@ class _FakePort implements OpenPrFetchPort {
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
     String? workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
   }) async {
     if (fail) {
       throw StateError('forge is down');
@@ -87,6 +88,15 @@ class _FakePort implements OpenPrFetchPort {
         r.id: {1: (checksRollup: 'SUCCESS', reviewDecision: null)},
     };
   }
+
+  @override
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
+    String? workspaceId,
+  }) async => fail
+      ? null
+      : {for (final n in prNumbers) n: _pr(n, repo.fullName)};
 
   @override
   Future<ClosedPrOutcome?> closedOutcome(

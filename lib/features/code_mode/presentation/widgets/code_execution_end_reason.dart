@@ -48,9 +48,11 @@ class CodeExecutionEndReason extends StatelessWidget {
           textDirection: TextDirection.ltr,
           child: Text(
             errorKind,
-            style: CcTypography.monoNum.copyWith(
-              fontSize: 12,
-              color: t.textTertiary,
+            style: CcFonts.code(
+              textStyle: CcTypography.numeric.copyWith(
+                fontSize: 12,
+                color: t.textTertiary,
+              ),
             ),
           ),
         ),

@@ -6,6 +6,7 @@ import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
+import 'package:cc_ui/src/foundation/cc_focus_trap.dart';
 import 'package:cc_ui/src/foundation/cc_panel_search_field.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -18,6 +19,8 @@ import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+
+part 'cc_filter_menu_rows.dart';
 
 const Color _transparent = Color(0x00000000);
 
@@ -111,8 +114,12 @@ class CcFilterCategory {
 
 /// Compact multi-dimension filter: category panel + searchable checkbox
 /// flyouts with counts. Hover/→/Enter opens flyout (grace for diagonal reach);
-/// toggles keep the menu open; Esc/← step back. Panels supply their own
-/// [DefaultTextStyle] (root overlay otherwise gets WidgetsApp's 48px fallback).
+/// toggles keep the menu open; Esc/← step back. → and ← open and close only at
+/// the caret's edge of the search text, so they still move the caret. Up/Down
+/// and Enter drive the list; with an empty search, Home/End jump and Space
+/// toggles. Opening moves focus in, Tab stays inside, closing returns it to
+/// the trigger. Panels supply their own [DefaultTextStyle] (root overlay
+/// otherwise gets WidgetsApp's 48px fallback).
 class CcFilterMenu extends StatefulWidget {
   /// Creates a [CcFilterMenu].
   const CcFilterMenu({
@@ -223,12 +230,17 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
     _flyoutAnchor = null;
     _rootHighlight = -1;
     _geometryRetries = 0;
-    _portal.show();
+    // Rebuild the trigger so it reports itself expanded.
+    setState(_portal.show);
   }
 
   void _closeMenu() {
     _switchTimer?.cancel();
-    _portal.hide();
+    if (mounted) {
+      setState(_portal.hide);
+    } else {
+      _portal.hide();
+    }
   }
 
   void _onRootQueryChanged(String _) {
@@ -333,6 +345,25 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
     _rows.reveal(i, from: previous);
   }
 
+  void _setRootHighlight(int index) {
+    if (index < 0 || index >= _filteredCategories.length) {
+      return;
+    }
+    final previous = _rootHighlight;
+    setState(() => _rootHighlight = index);
+    _rows.reveal(index, from: previous);
+  }
+
+  /// The search text the caret is in: the flyout's when it has focus, else
+  /// the root panel's.
+  TextEditingValue get _focusedQuery {
+    final flyout = _flyoutKey.currentState;
+    if (flyout != null && flyout.searchHasFocus) {
+      return flyout.query;
+    }
+    return _rootQuery.value;
+  }
+
   void _activateHighlightedCategory() {
     final categories = _filteredCategories;
     if (_rootHighlight < 0 || _rootHighlight >= categories.length) {
@@ -375,13 +406,44 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
     final outOfFlyoutKey = isRtl
         ? LogicalKeyboardKey.arrowRight
         : LogicalKeyboardKey.arrowLeft;
-    if (key == intoFlyoutKey && !flyoutOpen) {
+    // ← and → also move the caret: they leave the search text only from its
+    // edge (or an empty field), the way a cascading menu inside a text box
+    // behaves.
+    final query = _focusedQuery;
+    final caret = query.selection;
+    final atStart =
+        query.text.isEmpty ||
+        (caret.isValid && caret.isCollapsed && caret.baseOffset == 0);
+    final atEnd =
+        query.text.isEmpty ||
+        (caret.isValid &&
+            caret.isCollapsed &&
+            caret.baseOffset == query.text.length);
+    if (key == intoFlyoutKey && !flyoutOpen && atEnd) {
       _activateHighlightedCategory();
       return KeyEventResult.handled;
     }
-    if (key == outOfFlyoutKey && flyoutOpen) {
+    if (key == outOfFlyoutKey && flyoutOpen && atStart) {
       _closeFlyout(refocusRoot: true);
       return KeyEventResult.handled;
+    }
+    // With nothing typed there is no caret to move and no word to space, so
+    // Home/End and Space work the list.
+    if (query.text.isEmpty) {
+      if (key == LogicalKeyboardKey.home || key == LogicalKeyboardKey.end) {
+        final toEnd = key == LogicalKeyboardKey.end;
+        final flyout = _flyoutKey.currentState;
+        if (flyoutOpen && flyout != null) {
+          flyout.highlightEdge(end: toEnd);
+        } else {
+          _setRootHighlight(toEnd ? _filteredCategories.length - 1 : 0);
+        }
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.space && flyoutOpen) {
+        _flyoutKey.currentState?.toggleHighlighted();
+        return KeyEventResult.handled;
+      }
     }
     if (key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter) {
@@ -407,6 +469,7 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
         child: CcTappable(
           onPressed: _toggleMenu,
           semanticLabel: widget.semanticLabel,
+          semanticExpanded: _portal.isShowing,
           builder: (context, states) => widget.target,
         ),
       ),
@@ -456,7 +519,9 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
 
     final openCategory = _openCategory;
 
-    return FocusScope(
+    // The trigger keeps focus while the menu opens; the trap moves it to the
+    // root search field (its autofocus) and returns it on close.
+    return CcFocusTrap(
       node: _scope,
       child: Focus(
         canRequestFocus: false,
@@ -467,12 +532,18 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
             children: [
               // Dismiss barrier. The interceptor keeps it (and the panels)
               // clickable over an embedded iframe on web (no-op elsewhere).
+              // A screen reader gets the same close as a dismiss action.
               Positioned.fill(
-                child: PointerInterceptor(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _closeMenu,
-                    onSecondaryTap: _closeMenu,
+                child: Semantics(
+                  container: true,
+                  label: context.ccStrings.dismiss,
+                  onDismiss: _closeMenu,
+                  child: PointerInterceptor(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _closeMenu,
+                      onSecondaryTap: _closeMenu,
+                    ),
                   ),
                 ),
               ),
@@ -568,92 +639,6 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Root panel rows
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({
-    required this.category,
-    required this.highlighted,
-    required this.open,
-    required this.onActivate,
-  });
-
-  final CcFilterCategory category;
-  final bool highlighted;
-  final bool open;
-  final VoidCallback onActivate;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-    final selectedCount = category.selected.length;
-
-    return CcTappable(
-      onPressed: onActivate,
-      showFocusRing: false,
-      canRequestFocus: false,
-      semanticLabel: category.label,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final pressed = states.contains(WidgetState.pressed);
-        final fluidActive = CcFluidHover.isItemActive(context);
-        final active = hovered || highlighted || open;
-        final wash = pressed
-            ? t.hoverStrong
-            : open
-            ? t.hover
-            : fluidActive
-            ? _transparent
-            : (active ? t.hover : _transparent);
-        return Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          alignment: AlignmentDirectional.centerStart,
-          decoration: BoxDecoration(color: wash),
-          // A 2px inset accent bar marks the keyboard-highlighted row.
-          foregroundDecoration: highlighted
-              ? BoxDecoration(
-                  border: BorderDirectional(
-                    start: BorderSide(color: t.accent, width: 2),
-                  ),
-                )
-              : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                if (category.icon != null) ...[
-                  Icon(category.icon, size: 16, color: t.textSecondary),
-                  AppSpacing.hGapSm,
-                ],
-                Expanded(
-                  child: CcTruncatedText(
-                    category.label,
-                    style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-                  ),
-                ),
-                if (selectedCount > 0) ...[
-                  AppSpacing.hGapSm,
-                  Text(
-                    '$selectedCount',
-                    style: CcTypography.caption.copyWith(color: t.accent),
-                  ),
-                ],
-                AppSpacing.hGapSm,
-                Icon(CcIcons.chevronRight, size: 14, color: t.textTertiary),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Flyout
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -704,6 +689,24 @@ class _FlyoutPanelState extends State<_FlyoutPanel> {
   /// Focuses the flyout's search field (explicit activation — click, `→`,
   /// `Enter`; hover-open deliberately leaves focus in the root field).
   void focusSearch() => _field.requestFocus();
+
+  /// Whether the caret is in this flyout's search field.
+  bool get searchHasFocus => _field.hasFocus;
+
+  /// The flyout's search text and caret.
+  TextEditingValue get query => _query.value;
+
+  /// Highlights the first or last visible option.
+  void highlightEdge({required bool end}) {
+    final n = _visibleOptions.length;
+    if (n == 0) {
+      return;
+    }
+    final previous = _highlight;
+    final i = end ? n - 1 : 0;
+    setState(() => _highlight = i);
+    _rows.reveal(i, from: previous);
+  }
 
   /// The options shown: pinned first, then the rest in the given order.
   /// Zero-count options are hidden (summarised by the footer) unless pinned
@@ -793,7 +796,7 @@ class _FlyoutPanelState extends State<_FlyoutPanel> {
                   ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Text(
-                        widget.emptySearchLabel ?? 'No matches',
+                        widget.emptySearchLabel ?? context.ccStrings.noMatches,
                         style: CcTypography.bodySm.copyWith(color: t.muted),
                       ),
                     )
@@ -847,88 +850,6 @@ class _FlyoutPanelState extends State<_FlyoutPanel> {
           ],
         ],
       ),
-    );
-  }
-}
-
-class _OptionRow extends StatelessWidget {
-  const _OptionRow({
-    required this.option,
-    required this.checked,
-    required this.highlighted,
-    required this.onToggle,
-  });
-
-  final CcFilterOption option;
-  final bool checked;
-  final bool highlighted;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.ds;
-
-    return CcTappable(
-      onPressed: onToggle,
-      showFocusRing: false,
-      canRequestFocus: false,
-      semanticLabel: option.label,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        final pressed = states.contains(WidgetState.pressed);
-        final fluidActive = CcFluidHover.isItemActive(context);
-        final wash = pressed
-            ? t.hoverStrong
-            : fluidActive
-            ? _transparent
-            : (hovered || highlighted ? t.hover : _transparent);
-        return Container(
-          constraints: const BoxConstraints(minHeight: 40),
-          alignment: AlignmentDirectional.centerStart,
-          decoration: BoxDecoration(color: wash),
-          foregroundDecoration: highlighted
-              ? BoxDecoration(
-                  border: BorderDirectional(
-                    start: BorderSide(color: t.accent, width: 2),
-                  ),
-                )
-              : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                // The row is the tap target; the checkbox is a passive mirror
-                // so its own gesture never competes with the row's tappable.
-                IgnorePointer(
-                  child: CcCheckbox(value: checked, onChanged: (_) {}),
-                ),
-                AppSpacing.hGapMd,
-                if (option.leading != null) ...[
-                  option.leading!,
-                  AppSpacing.hGapSm,
-                ] else if (option.icon != null) ...[
-                  Icon(option.icon, size: 16, color: t.textSecondary),
-                  AppSpacing.hGapSm,
-                ],
-                Expanded(
-                  child: CcTruncatedText(
-                    option.label,
-                    style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-                  ),
-                ),
-                AppSpacing.hGapMd,
-                Text(
-                  option.countLabel ?? '${option.count}',
-                  style: CcTypography.caption.copyWith(color: t.textTertiary),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

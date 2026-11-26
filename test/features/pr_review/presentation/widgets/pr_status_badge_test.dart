@@ -56,25 +56,25 @@ void main() {
       'merged without a timestamp',
       _pr(state: PrState.merged),
       AppIcons.gitMerge,
-      CcBadgeVariant.brand,
+      CcBadgeVariant.merged,
     ),
     (
       'merged with a retained draft flag',
       _pr(state: PrState.merged, isDraft: true),
       AppIcons.gitMerge,
-      CcBadgeVariant.brand,
+      CcBadgeVariant.merged,
     ),
     (
       'REST closed state with a merge timestamp',
       _pr(state: PrState.closed, mergedAt: DateTime(2024)),
       AppIcons.gitMerge,
-      CcBadgeVariant.brand,
+      CcBadgeVariant.merged,
     ),
     (
       'merge timestamp with a retained draft flag',
       _pr(isDraft: true, mergedAt: DateTime(2024)),
       AppIcons.gitMerge,
-      CcBadgeVariant.brand,
+      CcBadgeVariant.merged,
     ),
   ]) {
     testWidgets('$name has matching status, tint and accessible icon', (
@@ -99,11 +99,59 @@ void main() {
         _ => l10n.merged,
       };
       expect(find.text(label), findsOneWidget);
-      expect(tester.widget<CcBadge>(find.byType(CcBadge)).variant, variant);
-      final renderedIcon = tester.widget<Icon>(find.byIcon(icon));
-      expect(renderedIcon.semanticLabel, label);
-      expect(tester.widget<CcTooltip>(find.byType(CcTooltip)).message, label);
+      final badge = tester.widget<CcBadge>(find.byType(CcBadge));
+      expect(badge.variant, variant);
+      expect(badge.icon, icon);
+      expect(
+        find.descendant(
+          of: find.byType(PrStatusBadge),
+          matching: find.byIcon(icon),
+        ),
+        findsOneWidget,
+      );
       final tokens = context.designSystem!;
+      if (variant == CcBadgeVariant.merged) {
+        final box = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byType(PrStatusBadge),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        final decoration = box.decoration as BoxDecoration;
+        expect(decoration.color, tokens.mergedSoft);
+        final badgeIcon = tester.widget<Icon>(
+          find.descendant(
+            of: find.byType(PrStatusBadge),
+            matching: find.byIcon(icon),
+          ),
+        );
+        expect(badgeIcon.color, tokens.textMergedPrimary);
+        final badgeText = tester.widget<Text>(
+          find.descendant(
+            of: find.byType(PrStatusBadge),
+            matching: find.text(label),
+          ),
+        );
+        expect(badgeText.style?.color, tokens.textMergedPrimary);
+      }
+      final renderedIcon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byType(PrStatusIcon),
+          matching: find.byIcon(icon),
+        ),
+      );
+      expect(renderedIcon.semanticLabel, label);
+      expect(
+        tester
+            .widget<CcTooltip>(
+              find.descendant(
+                of: find.byType(PrStatusIcon),
+                matching: find.byType(CcTooltip),
+              ),
+            )
+            .message,
+        label,
+      );
       expect(renderedIcon.color, switch (variant) {
         CcBadgeVariant.neutral => tokens.textTertiary,
         CcBadgeVariant.success => tokens.fgSuccessPrimary,

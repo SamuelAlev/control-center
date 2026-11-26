@@ -122,7 +122,6 @@
   "eventNotFound": "Hendelsen ble ikke funnet",
   "eventNotFoundDescription": "Den kan ligge utenfor agendavinduet, eller være fjernet oppstrøms.",
   "joinMeeting": "Bli med i møte",
-  "join": "Bli med",
   "attendeesCount": "Deltakere ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

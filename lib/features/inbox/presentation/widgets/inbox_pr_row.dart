@@ -148,6 +148,7 @@ class InboxPrRow extends ConsumerWidget {
                   _InboxSelectCheckbox(
                     visible: showCheckbox,
                     selected: selected,
+                    title: stripInlineCode(pr.title),
                     onTap: onToggleSelect!,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -437,7 +438,7 @@ class _ChangesCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final base = CcTypography.caption.copyWith(
-      fontFamily: CcFonts.codeFamily,
+      fontFeatures: CcTypography.numeralFeatures,
       fontWeight: FontWeight.w500,
       color: tokens.textTertiary,
     );
@@ -504,25 +505,32 @@ class _InboxSelectCheckbox extends StatelessWidget {
   const _InboxSelectCheckbox({
     required this.visible,
     required this.selected,
+    required this.title,
     required this.onTap,
   });
 
   final bool visible;
   final bool selected;
+  final String title;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final accent = tokens.accent;
-    return AnimatedOpacity(
-      opacity: visible ? 1 : 0,
-      duration: const Duration(milliseconds: 120),
-      child: IgnorePointer(
-        ignoring: !visible,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
+    return IgnorePointer(
+      ignoring: !visible,
+      child: CcTappable(
+        onPressed: onTap,
+        borderRadius: AppRadii.brSm,
+        semanticLabel: AppLocalizations.of(context).prRowSelect(title),
+        semanticChecked: selected,
+        // Keyboard focus reveals it too, so its Tab stop is never invisible.
+        builder: (context, states) => AnimatedOpacity(
+          opacity: visible || states.contains(WidgetState.focused) ? 1 : 0,
+          duration: const Duration(milliseconds: 120),
+          // Faded out it is still a working control, so it stays announced.
+          alwaysIncludeSemantics: true,
           child: Container(
             width: InboxRowMetrics.select,
             height: InboxRowMetrics.select,

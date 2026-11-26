@@ -82,6 +82,28 @@ void main() {
     expect(tester.takeException(), isNull);
     await gesture.up();
   });
+
+  testWidgets('a selected tile is announced as selected', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(CcTile(title: 'Row', selected: true, onTap: () {})),
+    );
+    expect(
+      tester.getSemantics(find.byType(CcTappable)),
+      matchesSemantics(
+        label: 'Row',
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+  });
 }
 
 void _noop() {}

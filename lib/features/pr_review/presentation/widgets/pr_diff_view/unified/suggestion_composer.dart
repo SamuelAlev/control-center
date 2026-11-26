@@ -9,6 +9,7 @@ import 'package:control_center/features/pr_review/providers/comment_composer_mod
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +31,7 @@ class SuggestionComposer extends ConsumerStatefulWidget {
     this.onSubmitBatched,
     this.onSendToAgent,
     this.reviewInProgress = false,
+    this.autofocus = true,
   });
 
   /// The original code being replaced (shown read-only as a deletion row).
@@ -64,6 +66,9 @@ class SuggestionComposer extends ConsumerStatefulWidget {
 
   /// Called on cancel or Escape.
   final VoidCallback onCancel;
+
+  /// Whether the first replacement block takes focus when this mounts.
+  final bool autofocus;
 
   @override
   ConsumerState<SuggestionComposer> createState() => _SuggestionComposerState();
@@ -212,119 +217,131 @@ class _SuggestionComposerState extends ConsumerState<SuggestionComposer> {
     for (final controller in _codes) {
       controller.configure(languageId: _language, dark: _dark);
     }
-    return Focus(
-      canRequestFocus: false,
-      onKeyEvent: (_, e) {
-        if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.escape) {
-          widget.onCancel();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        decoration: BoxDecoration(
-          color: tokens.bgPrimary,
-          borderRadius: AppRadii.brMd,
-          border: Border.all(color: tokens.borderSecondary),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              color: palette.deletionBg,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: SelectionContainer.disabled(
-                child: Text.rich(
-                  highlightedDiffTextSpan(
-                    text: widget.originalCode,
-                    languageId: _language,
-                    dark: _dark,
-                    baseStyle: codeStyle,
+    // The diff row or button that opened this keeps focus, so the first block
+    // asks for focus itself, and closing hands it back.
+    return FocusOnMount(
+      autofocus: widget.autofocus,
+      focusNode: _codeFocus.first,
+      builder: (_, _) => Focus(
+        canRequestFocus: false,
+        onKeyEvent: (_, e) {
+          if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.escape) {
+            widget.onCancel();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          decoration: BoxDecoration(
+            color: tokens.bgPrimary,
+            borderRadius: AppRadii.brMd,
+            border: Border.all(color: tokens.borderSecondary),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                color: palette.deletionBg,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: SelectionContainer.disabled(
+                  child: Text.rich(
+                    highlightedDiffTextSpan(
+                      text: widget.originalCode,
+                      languageId: _language,
+                      dark: _dark,
+                      baseStyle: codeStyle,
+                    ),
+                    style: codeStyle,
                   ),
-                  style: codeStyle,
                 ),
               ),
-            ),
-            for (var i = 0; i < _codes.length; i++) ...[
-              if (i > 0) const CcDivider(),
-              Container(
-                color: palette.additionBg,
-                padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
-                child: SelectionContainer.disabled(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: CcTextField(
-                          controller: _codes[i],
-                          focusNode: _codeFocus[i],
-                          autofocus: i == 0,
-                          minLines: 1,
-                          maxLines: 12,
-                          textStyle: codeStyle,
-                          chromeless: true,
+              for (var i = 0; i < _codes.length; i++) ...[
+                if (i > 0) const CcDivider(),
+                Container(
+                  color: palette.additionBg,
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
+                  child: SelectionContainer.disabled(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: CcTextField(
+                            controller: _codes[i],
+                            focusNode: _codeFocus[i],
+                            // The diff can rebuild this slot's element while
+                            // it is open; focus then falls back to the scope,
+                            // and the first block takes it again.
+                            autofocus: i == 0,
+                            minLines: 1,
+                            maxLines: 12,
+                            textStyle: codeStyle,
+                            chromeless: true,
+                          ),
                         ),
-                      ),
-                      if (_codes.length > 1)
-                        CcIconButton(
-                          onPressed: () => _removeSuggestion(i),
-                          icon: AppIcons.x,
-                          variant: CcButtonVariant.ghost,
-                          size: CcButtonSize.sm,
-                          tooltip: l10n.remove,
-                        ),
-                    ],
+                        if (_codes.length > 1)
+                          CcIconButton(
+                            onPressed: () => _removeSuggestion(i),
+                            icon: AppIcons.x,
+                            variant: CcButtonVariant.ghost,
+                            size: CcButtonSize.sm,
+                            tooltip: l10n.remove,
+                          ),
+                      ],
+                    ),
                   ),
+                ),
+              ],
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 4),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: CcButton(
+                    onPressed: _addSuggestion,
+                    variant: CcButtonVariant.ghost,
+                    size: CcButtonSize.sm,
+                    child: Text(l10n.addASuggestion),
+                  ),
+                ),
+              ),
+              const CcDivider(),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SelectionContainer.disabled(
+                      child: CcTextField(
+                        controller: _comment,
+                        minLines: 1,
+                        maxLines: 3,
+                        textStyle: CcTypography.body.copyWith(
+                          color: context.ds.textTertiary,
+                        ),
+                        hintText: commentComposerHint(l10n, mode),
+                        chromeless: true,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    CommentSendRow(
+                      modes: modes,
+                      mode: mode,
+                      reviewInProgress: widget.reviewInProgress,
+                      sending: _sending,
+                      onSend: _send,
+                      onCancel: widget.onCancel,
+                    ),
+                  ],
                 ),
               ),
             ],
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 4),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: CcButton(
-                  onPressed: _addSuggestion,
-                  variant: CcButtonVariant.ghost,
-                  size: CcButtonSize.sm,
-                  child: Text(l10n.addASuggestion),
-                ),
-              ),
-            ),
-            const CcDivider(),
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SelectionContainer.disabled(
-                    child: CcTextField(
-                      controller: _comment,
-                      minLines: 1,
-                      maxLines: 3,
-                      textStyle: CcTypography.body.copyWith(
-                        color: context.ds.textTertiary,
-                      ),
-                      hintText: commentComposerHint(l10n, mode),
-                      chromeless: true,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  CommentSendRow(
-                    modes: modes,
-                    mode: mode,
-                    reviewInProgress: widget.reviewInProgress,
-                    sending: _sending,
-                    onSend: _send,
-                    onCancel: widget.onCancel,
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

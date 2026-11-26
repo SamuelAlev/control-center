@@ -98,10 +98,12 @@ class OutputBlock extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Text(
               shown,
-              style: CcTypography.monoNum.copyWith(
-                fontSize: 12,
-                height: 1.4,
-                color: error ? t.textErrorPrimary : t.textSecondary,
+              style: CcFonts.code(
+                textStyle: CcTypography.numeric.copyWith(
+                  fontSize: 12,
+                  height: 1.4,
+                  color: error ? t.textErrorPrimary : t.textSecondary,
+                ),
               ),
             ),
           ),
@@ -145,9 +147,11 @@ class ToolKvGrid extends StatelessWidget {
                 Expanded(
                   child: Text(
                     entry.value,
-                    style: CcTypography.monoNum.copyWith(
-                      fontSize: 12,
-                      color: t.textSecondary,
+                    style: CcFonts.code(
+                      textStyle: CcTypography.numeric.copyWith(
+                        fontSize: 12,
+                        color: t.textSecondary,
+                      ),
                     ),
                   ),
                 ),

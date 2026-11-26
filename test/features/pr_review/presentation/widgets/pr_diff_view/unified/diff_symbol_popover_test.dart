@@ -3,6 +3,7 @@ import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_por
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_symbol_popover.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -108,6 +109,21 @@ void main() {
     await tester.pump();
     expect(openedPath, 'lib/dog.dart');
     expect(openedLine, 4);
+
+    // The same rows answer the keyboard.
+    jumpedPath = null;
+    openedPath = null;
+    Focus.of(tester.element(find.text('animals.Animal'))).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(jumpedPath, 'lib/animal.dart');
+
+    Focus.of(tester.element(find.text('animals.Dog'))).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(openedPath, 'lib/dog.dart');
   });
 
   testWidgets('shows an empty state when nothing is indexed', (tester) async {

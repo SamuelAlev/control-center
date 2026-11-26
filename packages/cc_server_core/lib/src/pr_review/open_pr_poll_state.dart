@@ -147,4 +147,13 @@ class _WorkspacePollState {
   /// re-asked once per branch per subscriber per sweep. A forced refresh
   /// clears it.
   final Map<String, _BranchHistoryBackoff> historyBackoff = {};
+
+  /// Recent surgical PR updates keyed by `repoId -> prNumber -> record`, so an
+  /// in-flight full sweep that started before a surgical update cannot
+  /// overwrite the fresher PR state when it lands.
+  final Map<
+    String,
+    Map<int, ({Map<String, dynamic>? wire, bool merged, DateTime at})>
+  >
+  surgicalUpdates = {};
 }

@@ -50,7 +50,6 @@ class ContextMeterChip extends ConsumerStatefulWidget {
 
 class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
   final CcOverlayController _controller = CcOverlayController();
-  bool _hover = false;
 
   @override
   void initState() {
@@ -140,113 +139,103 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
         controller: _controller,
         agentName: agentName,
       ),
-      target: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _toggle,
-          child: Semantics(
-            button: true,
-            label: label,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8),
-              // The header row STRETCHES its children vertically; Center
-              // hands the wash loose constraints so it hugs the meter
-              // instead of filling the header's full height. The tap
-              // target keeps the full height — only the decoration shrinks.
-              child: Center(
-                child: AnimatedContainer(
-                  duration: CcMotion.resolve(context, CcMotion.fast),
-                  curve: CcMotion.standard,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    // Idle is the SAME color at alpha 0, never transparent
-                    // black: lerping to 0x00000000 sweeps through dark
-                    // translucent shades — a visible flash on unhover.
-                    // No radius: a rounded wash read as a bordered chip
-                    // around the numbers.
-                    color: _hover || _controller.isOpen
-                        ? tokens.bgSecondaryHover
-                        : tokens.bgSecondaryHover.withValues(alpha: 0),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Whose window this is, past one agent. The meter
-                      // follows whoever is working, so an unattributed number
-                      // would change subject silently and read as a context
-                      // window that shrank. Passive by construction (no
-                      // hover card): the tap belongs to the chip.
-                      if (agentName != null) ...[
-                        AgentAvatar(
-                          agentId: widget.agentId,
-                          name: agentName,
-                          size: 16,
-                          showHoverCard: false,
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '${_fmt(breakdown.totalTokens)} / '
-                            '${_fmt(breakdown.windowTokens)}',
-                            style: TextStyle(
-                              fontFamily: CcFonts.codeFamily,
-                              fontSize: 11,
-                              height: 1.1,
-                              color: isWarning
-                                  ? fillColor
-                                  : _hover || _controller.isOpen
-                                  ? tokens.textSecondary
-                                  : tokens.textTertiary,
-                              decoration: TextDecoration.none,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          SizedBox(
-                            width: 64,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
-                              child: Stack(
-                                children: [
-                                  // A fill-TINTED track: bgTertiary
-                                  // disappears into the hover wash
-                                  // (bgSecondaryHover).
-                                  Container(
-                                    height: 3,
-                                    color: fillColor.withValues(alpha: 0.18),
-                                  ),
-                                  FractionallySizedBox(
-                                    widthFactor: breakdown.fraction.clamp(
-                                      0.02,
-                                      1.0,
-                                    ),
-                                    child: Container(
-                                      height: 3,
-                                      color: fillColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+      target: CcTappable(
+        onPressed: _toggle,
+        semanticLabel: label,
+        semanticExpanded: _controller.isOpen,
+        builder: (context, states) {
+          final lit =
+              states.contains(WidgetState.hovered) || _controller.isOpen;
+          return Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            // The header row STRETCHES its children vertically; Center
+            // hands the wash loose constraints so it hugs the meter
+            // instead of filling the header's full height. The tap
+            // target keeps the full height — only the decoration shrinks.
+            child: Center(
+              child: AnimatedContainer(
+                duration: CcMotion.resolve(context, CcMotion.fast),
+                curve: CcMotion.standard,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  // Idle is the SAME color at alpha 0, never transparent
+                  // black: lerping to 0x00000000 sweeps through dark
+                  // translucent shades — a visible flash on unhover.
+                  // No radius: a rounded wash read as a bordered chip
+                  // around the numbers.
+                  color: lit
+                      ? tokens.bgSecondaryHover
+                      : tokens.bgSecondaryHover.withValues(alpha: 0),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Whose window this is, past one agent. The meter
+                    // follows whoever is working, so an unattributed number
+                    // would change subject silently and read as a context
+                    // window that shrank. Passive by construction (no
+                    // hover card): the tap belongs to the chip.
+                    if (agentName != null) ...[
+                      AgentAvatar(
+                        agentId: widget.agentId,
+                        name: agentName,
+                        size: 16,
+                        showHoverCard: false,
                       ),
+                      const SizedBox(width: 6),
                     ],
-                  ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${_fmt(breakdown.totalTokens)} / '
+                          '${_fmt(breakdown.windowTokens)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            height: 1.1,
+                            color: isWarning
+                                ? fillColor
+                                : lit
+                                ? tokens.textSecondary
+                                : tokens.textTertiary,
+                            decoration: TextDecoration.none,
+                            fontFeatures: CcTypography.numeralFeatures,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        SizedBox(
+                          width: 64,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: Stack(
+                              children: [
+                                // A fill-TINTED track: bgTertiary
+                                // disappears into the hover wash
+                                // (bgSecondaryHover).
+                                Container(
+                                  height: 3,
+                                  color: fillColor.withValues(alpha: 0.18),
+                                ),
+                                FractionallySizedBox(
+                                  widthFactor: breakdown.fraction.clamp(
+                                    0.02,
+                                    1.0,
+                                  ),
+                                  child: Container(height: 3, color: fillColor),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

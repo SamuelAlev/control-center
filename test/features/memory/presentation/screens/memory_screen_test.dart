@@ -1,5 +1,7 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/improvement_proposal_view.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/features/memory/presentation/screens/memory_screen.dart';
 import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -20,6 +22,7 @@ Widget _wrap({
   required String workspaceId,
   List<MemoryFact> facts = const [],
   List<MemoryPolicy> policies = const [],
+  List<ImprovementProposalView> improvements = const [],
 }) => ProviderScope(
   overrides: [
     activeWorkspaceIdProvider.overrideWith(
@@ -29,6 +32,9 @@ Widget _wrap({
     memoryPoliciesProvider(
       workspaceId,
     ).overrideWith((ref) => Stream.value(policies)),
+    workspaceImprovementsProvider(
+      workspaceId,
+    ).overrideWith((ref) => Stream.value(improvements)),
   ],
   child: testWrap(const MemoryScreen()),
 );
@@ -40,6 +46,7 @@ void main() {
 
     expect(find.text('Facts'), findsOneWidget);
     expect(find.text('Policies'), findsOneWidget);
+    expect(find.text('Improvements'), findsOneWidget);
     expect(find.text('Knowledge graph'), findsOneWidget);
   });
 

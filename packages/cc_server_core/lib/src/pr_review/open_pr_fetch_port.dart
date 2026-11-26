@@ -56,8 +56,22 @@ abstract interface class OpenPrFetchPort {
   /// The check-rollup + review-decision overlay per repo id, per PR number,
   /// for the first page of open PRs — the cheap status-only pass between full
   /// fetches.
+  ///
+  /// When [prNodeIdsByRepoId] provides a repo's known GraphQL PR node IDs
+  /// (including `const []` for a repo with 0 open PRs), adapters that support
+  /// node-ID lookup can skip cursor pagination and query `nodes(ids:)` directly.
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
     List<Repo> repos, {
+    required String workspaceId,
+    Map<String, List<String>>? prNodeIdsByRepoId,
+  });
+
+  /// Fetches specific pull requests by [prNumbers] in [repo] (with checks and
+  /// review decision included) for surgical pre-notification updates. Returns
+  /// null when the forge cannot answer.
+  Future<Map<int, PullRequest>?> fetchPullRequests(
+    Repo repo,
+    List<int> prNumbers, {
     required String workspaceId,
   });
 

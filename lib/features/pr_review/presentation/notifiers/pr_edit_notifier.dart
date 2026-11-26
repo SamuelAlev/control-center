@@ -563,13 +563,42 @@ class PrEditNotifier extends Notifier<PrEditState> {
     }
   }
 
-  /// Removes a single requested reviewer (user or team) via the inline remove.
-  Future<String?> removeReviewer({String? userLogin, String? teamSlug}) async {
+  /// Requests a review (or re-request) from a single user or team.
+  Future<String?> requestReviewer({String? userLogin, String? teamSlug}) async {
+    assert(userLogin != null || teamSlug != null);
     final key = userLogin != null
         ? 'user:${userLogin.toLowerCase()}'
         : 'team:${teamSlug!.toLowerCase()}';
     final repo = _repo;
-    if (repo == null) {
+    if (repo == null || state.pendingReviewers.contains(key)) {
+      return null;
+    }
+    state = state.copyWith(pendingReviewers: {...state.pendingReviewers, key});
+    try {
+      await repo.requestReviewers(
+        prNumber: prNumber,
+        userLogins: userLogin != null ? [userLogin] : const [],
+        teamSlugs: teamSlug != null ? [teamSlug] : const [],
+      );
+      _refreshReviewers();
+      return null;
+    } catch (e) {
+      return _fail(e);
+    } finally {
+      state = state.copyWith(
+        pendingReviewers: state.pendingReviewers.difference({key}),
+      );
+    }
+  }
+
+  /// Removes a single requested reviewer (user or team) via the inline remove.
+  Future<String?> removeReviewer({String? userLogin, String? teamSlug}) async {
+    assert(userLogin != null || teamSlug != null);
+    final key = userLogin != null
+        ? 'user:${userLogin.toLowerCase()}'
+        : 'team:${teamSlug!.toLowerCase()}';
+    final repo = _repo;
+    if (repo == null || state.pendingReviewers.contains(key)) {
       return null;
     }
     state = state.copyWith(pendingReviewers: {...state.pendingReviewers, key});

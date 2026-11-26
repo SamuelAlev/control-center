@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_area.dart';
 import 'package:flutter/gestures.dart';
@@ -250,6 +252,49 @@ void main() {
       expect(b.text, 'on b');
       expect(a.text, '');
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('CcTextArea semantics', () {
+    testWidgets('is an enabled field named by its label', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          const CcTextArea(
+            label: 'Notes',
+            helperText: 'Markdown works',
+            hintText: 'Write here',
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.byType(EditableText));
+      expect(node.label, 'Notes');
+      expect(node.hint, 'Markdown works');
+      expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+      expect(find.semantics.byLabel('Notes'), findsOne);
+      expect(find.semantics.byLabel('Write here'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('read-only and error states reach semantics', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          const CcTextArea(label: 'Notes', readOnly: true, errorText: 'Bad'),
+        ),
+      );
+      expect(
+        tester
+            .getSemantics(find.byType(EditableText))
+            .flagsCollection
+            .isReadOnly,
+        isTrue,
+      );
+      expect(
+        tester.getSemantics(find.text('Bad')).flagsCollection.isLiveRegion,
+        isTrue,
+      );
+      semantics.dispose();
     });
   });
 }

@@ -841,7 +841,7 @@ class _WorkspaceRow extends ConsumerWidget {
                     l10n.workspaceReposAgents(repos, agents),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppFonts.code(
+                    style: AppFonts.numeric(
                       textStyle: TextStyle(
                         fontSize: 11,
                         height: 1.3,
@@ -1146,20 +1146,18 @@ class _FactCell extends StatelessWidget {
         children: [
           Text(
             value,
-            style: AppFonts.code(
+            style: AppFonts.numeric(
               textStyle: TextStyle(fontSize: 22, height: 1, color: fg),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            label.toUpperCase(),
-            style: AppFonts.code(
-              textStyle: TextStyle(
-                fontSize: 11,
-                height: 1.2,
-                letterSpacing: 0.5,
-                color: muted,
-              ),
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              letterSpacing: 0.2,
+              color: muted,
             ),
           ),
         ],
@@ -1303,7 +1301,7 @@ class _SaveBar extends StatelessWidget {
 }
 
 
-/// Header row for a panel: title on the left, an optional mono [count] and/or
+/// Header row for a panel: title on the left, an optional tabular [count] and/or
 /// [trailing] widget on the right, with a bottom hairline.
 class _PanelHeader extends StatelessWidget {
   const _PanelHeader({
@@ -1348,7 +1346,7 @@ class _PanelHeader extends StatelessWidget {
           if (count != null)
             Text(
               count!,
-              style: AppFonts.code(
+              style: AppFonts.numeric(
                 textStyle: TextStyle(fontSize: 12, color: muted),
               ),
             ),

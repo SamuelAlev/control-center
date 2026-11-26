@@ -2144,6 +2144,7 @@ Map<String, dynamic> prCodeReviewCommentToWire(
   'thread_id': ?c.threadId,
   if (c.isResolved) 'is_resolved': true,
   if (c.isFileLevel) 'file_level': true,
+  if (c.isOutdated) 'is_outdated': true,
   'reactions': c.reactions.map(reactionGroupToWire).toList(),
 };
 
@@ -2410,15 +2411,20 @@ typedef GitHubReadFetchers = ({
   /// no-caller lane — which resolves app identity first — got a FORBIDDEN
   /// "Resource not accessible by integration" on every hover. A user-to-server
   /// token reads the whole profile, orgs and teams included.
-  Future<Map<String, dynamic>?> Function(String login, String actingUserId)
+  Future<Map<String, dynamic>?> Function(
+    String login,
+    String actingUserId, {
+    bool force,
+  })
   userProfile,
 
   /// A GitHub team profile read on [actingUserId]'s own credential.
   Future<GitHubTeamProfile?> Function(
     String organization,
     String slug,
-    String actingUserId,
-  )
+    String actingUserId, {
+    bool force,
+  })
   teamProfile,
 
   /// Workspace-scoped PR activity for one or more GitHub authors, read on
@@ -2428,6 +2434,8 @@ typedef GitHubReadFetchers = ({
     List<String> logins,
     String actingUserId, {
     required String workspaceId,
+    required String targetKey,
+    bool force,
   })
   profileActivity,
 

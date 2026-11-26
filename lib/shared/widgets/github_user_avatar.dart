@@ -28,7 +28,7 @@ class GitHubUserAvatar extends ConsumerStatefulWidget {
   /// The size of the avatar in logical pixels.
   final double size;
 
-  /// Whether to wrap the avatar in a [GestureDetector] that navigates to the user's profile on tap.
+  /// Whether the avatar is a button that opens the user's profile.
   final bool showHoverCard;
 
   @override
@@ -68,10 +68,13 @@ class _GitHubUserAvatarState extends ConsumerState<GitHubUserAvatar> {
       return avatar;
     }
 
-    return GestureDetector(
-      onTap: _navigateToProfile,
-      behavior: HitTestBehavior.opaque,
-      child: avatar,
+    return CcTappable(
+      onPressed: _navigateToProfile,
+      semanticLabel: widget.login,
+      borderRadius: BorderRadius.circular(widget.size / 2),
+      // The button carries the name; the avatar's own initials node would
+      // announce it a second time.
+      builder: (context, _) => ExcludeSemantics(child: avatar),
     );
   }
 }

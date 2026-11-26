@@ -712,6 +712,7 @@ class _FakeHost {
       case 'pr_review.invalidateDiff':
       case 'pr_review.markFileAsViewed':
       case 'pr_review.replyToReviewComment':
+      case 'pr_review.postIssueComment':
       case 'pr_review.toggleReviewCommentReaction':
       case 'pr_review.toggleIssueCommentReaction':
       case 'pr_review.togglePullRequestReaction':
@@ -3133,6 +3134,10 @@ void main() {
     expect(merged.merged, isTrue);
     expect(host.sentPrReviewOps.last['op'], 'pr_review.mergePullRequest');
     expect(host.sentPrReviewOps.last['merge_method'], 'squash');
+
+    await repo.postIssueComment(prNumber: 7, body: 'nice');
+    expect(host.sentPrReviewOps.last['op'], 'pr_review.postIssueComment');
+    expect(host.sentPrReviewOps.last['body'], 'nice');
 
     await repo.submitReview(prNumber: 7, event: 'APPROVE', body: 'great');
     expect(host.sentPrReviewOps.last['op'], 'pr_review.submitReview');

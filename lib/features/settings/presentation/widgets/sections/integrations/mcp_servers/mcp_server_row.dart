@@ -126,7 +126,7 @@ class McpServerRow extends ConsumerWidget {
             ],
           ),
           meta: [
-            SettingsMetaFact(value: definition.transport.wire),
+            SettingsMetaFact(value: definition.transport.wire, code: true),
             if (entry.isConnected)
               SettingsMetaFact(
                 label: l10n.mcpBridgedToolsLabel,

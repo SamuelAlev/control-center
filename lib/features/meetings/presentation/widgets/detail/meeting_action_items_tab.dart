@@ -36,9 +36,10 @@ Future<void> showAddMeetingActionItemDialog(
 }
 
 /// The Action items tab: each persisted action item with a checkbox (its
-/// `done` state is stored on the row), an owner line, edit/delete affordances,
-/// and a "Create ticket" action that files a real ticket and links it back to
-/// the item. A footer row adds a custom action item the agent didn't extract.
+/// `done` state is stored on the row) and an owner line. Hovering a row
+/// reveals its actions: "Create ticket", which files a real ticket and links
+/// it back to the item, then edit and delete. A footer button adds a custom
+/// action item the agent didn't extract.
 class MeetingActionItemsTab extends ConsumerWidget {
   /// Creates a [MeetingActionItemsTab].
   const MeetingActionItemsTab({
@@ -168,79 +169,86 @@ class _ActionItemRow extends ConsumerWidget {
     final ticket = item.ticketId;
     final owner = item.owner;
 
-    return Padding(
+    final hasTicket = ticket != null && ticket.isNotEmpty;
+    return MeetingHoverActionsRow(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // The design system's own checkbox, not a hand-rolled one: it carries
-          // the shared hover/press/focus treatment, keyboard activation and the
-          // ≥32px tap target the bespoke 18px box did not.
-          Padding(
-            padding: const EdgeInsets.only(top: 1),
-            child: CcCheckbox(
-              value: done,
-              onChanged: (_) => _toggleDone(ref),
-              semanticLabel: item.content,
-            ),
+      actions: [
+        if (!hasTicket) ...[
+          CcButton(
+            variant: CcButtonVariant.secondary,
+            size: CcButtonSize.sm,
+            onPressed: () => _createTicket(context, ref),
+            child: Text(l10n.meetingCreateTicket),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.content,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: done ? ds.muted : ds.fg,
-                    decoration: done ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(AppIcons.user, size: 12, color: ds.muted),
-                    const SizedBox(width: 5),
-                    Text(
-                      owner != null && owner.isNotEmpty
-                          ? owner
-                          : l10n.meetingActionItemFrom,
-                      style: meetingMono(context, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          if (ticket != null && ticket.isNotEmpty)
-            _TicketTag(label: ticket.split('-').first.toUpperCase())
-          else
-            CcButton(
-              variant: CcButtonVariant.secondary,
-              size: CcButtonSize.sm,
-              onPressed: () => _createTicket(context, ref),
-              icon: AppIcons.plus,
-              child: Text(l10n.meetingCreateTicket),
-            ),
           const SizedBox(width: AppSpacing.xs),
-          MeetingRowIconButton(
-            icon: AppIcons.pencil,
-            tooltip: l10n.meetingEditActionItem,
-            onTap: () => _edit(context, ref),
+        ],
+        CcIconButton(
+          icon: AppIcons.pencil,
+          size: CcButtonSize.sm,
+          tooltip: l10n.meetingEditActionItem,
+          onPressed: () => _edit(context, ref),
+        ),
+        CcIconButton(
+          icon: AppIcons.trash2,
+          size: CcButtonSize.sm,
+          tooltip: l10n.meetingDeleteActionItem,
+          onPressed: () => _delete(ref),
+        ),
+      ],
+      children: [
+        // The design system's own checkbox, not a hand-rolled one: it carries
+        // the shared hover/press/focus treatment, keyboard activation and the
+        // ≥32px tap target the bespoke 18px box did not.
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: CcCheckbox(
+            value: done,
+            onChanged: (_) => _toggleDone(ref),
+            semanticLabel: item.content,
           ),
-          MeetingRowIconButton(
-            icon: AppIcons.trash2,
-            tooltip: l10n.meetingDeleteActionItem,
-            onTap: () => _delete(ref),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.content,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: done ? ds.muted : ds.fg,
+                  decoration: done ? TextDecoration.lineThrough : null,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(AppIcons.user, size: 12, color: ds.muted),
+                  const SizedBox(width: 5),
+                  Text(
+                    owner != null && owner.isNotEmpty
+                        ? owner
+                        : l10n.meetingActionItemFrom,
+                    style: meetingMeta(context, fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // The filed ticket is state, not an action: it stays visible.
+        if (hasTicket) ...[
+          const SizedBox(width: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: _TicketTag(label: ticket.split('-').first.toUpperCase()),
           ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -265,7 +273,7 @@ class _TicketTag extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: meetingMono(context, fontSize: 11, color: context.mSuccess),
+            style: meetingMeta(context, fontSize: 11, color: context.mSuccess),
           ),
         ],
       ),

@@ -106,7 +106,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('secret-layer'), findsNothing);
-    expect(find.text('STACK'), findsNothing);
+    expect(find.text('Stack'), findsNothing);
   });
 
   testWidgets('a long branch name stays inside the chip', (tester) async {

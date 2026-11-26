@@ -148,7 +148,7 @@ class ColorTokens extends StatelessWidget {
         children: [
           for (final entry in sections.entries) ...[
             Text(
-              entry.key.toUpperCase(),
+              entry.key,
               style: CcTypography.label.copyWith(color: t.textTertiary),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -197,9 +197,11 @@ class _Swatch extends StatelessWidget {
           ),
           Text(
             _hex(color),
-            style: CcTypography.monoNum.copyWith(
-              color: t.textTertiary,
-              fontSize: 10,
+            style: CcFonts.code(
+              textStyle: CcTypography.numeric.copyWith(
+                color: t.textTertiary,
+                fontSize: 10,
+              ),
             ),
           ),
         ],

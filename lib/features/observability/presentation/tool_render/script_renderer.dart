@@ -19,19 +19,22 @@ class ScriptRenderer extends ToolRenderer {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final description = s.inputs?['description'];
     final code = s.inputs?['code'];
-    final text = description is String && description.trim().isNotEmpty
+    final described = description is String && description.trim().isNotEmpty;
+    final text = described
         ? description.trim().split('\n').first
         : code is String
         ? code.trim().split('\n').first
         : '';
+    final style = CcTypography.numeric.copyWith(
+      fontSize: 12,
+      color: s.isError ? t.textErrorPrimary : t.textSecondary,
+    );
     return Text(
       text.isEmpty ? '—' : ellipsize(text, 88),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: CcTypography.monoNum.copyWith(
-        fontSize: 12,
-        color: s.isError ? t.textErrorPrimary : t.textSecondary,
-      ),
+      // The description is words; the script's first line is code.
+      style: described || text.isEmpty ? style : CcFonts.code(textStyle: style),
     );
   }
 

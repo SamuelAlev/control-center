@@ -29,6 +29,7 @@ import 'package:control_center/core/server/sso_login_web.dart'
     show openSsoWebFragment;
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/storage/web_local_storage_backend.dart';
+import 'package:control_center/core/theme/cc_strings_l10n.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
@@ -218,7 +219,8 @@ class _ControlCenterWebAppState extends State<ControlCenterWebApp>
             // `const` widget so this `builder` re-running (e.g. on a theme
             // change) reuses the same element subtree and never remounts the
             // gate / re-triggers the connect flow.
-            builder: (context, _) => const _WebGateHost(),
+            builder: (context, _) =>
+                const LocalizedCcStrings(child: _WebGateHost()),
           );
         },
       ),

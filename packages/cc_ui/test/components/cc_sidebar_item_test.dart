@@ -483,4 +483,92 @@ void main() {
       );
     }
   });
+
+  testWidgets('a selected row is announced once, as selected', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(
+        CcSidebarItem(
+          icon: CcIcons.house,
+          label: 'Inbox',
+          selected: true,
+          onPressed: () {},
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(CcTappable)),
+      matchesSemantics(
+        label: 'Inbox',
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a rail item is named by its label', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      ccTestApp(
+        Center(
+          child: CcSidebarItem(
+            icon: CcIcons.house,
+            label: 'Inbox',
+            collapsed: true,
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byType(CcTappable)).label,
+      contains('Inbox'),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('the row grows with the text size and keeps 32px at 1x', (
+    tester,
+  ) async {
+    final scale = ValueNotifier<double>(1);
+    addTearDown(scale.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<double>(
+          valueListenable: scale,
+          builder: (context, factor, _) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(factor)),
+            child: Center(
+              child: SizedBox(
+                width: 240,
+                child: CcSidebarItem(
+                  icon: CcIcons.house,
+                  label: 'Inbox',
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(CcSidebarItem)).height, 32);
+
+    scale.value = 2;
+    await tester.pumpAndSettle();
+    final row = tester.getRect(find.byType(CcSidebarItem));
+    final label = tester.getRect(find.text('Inbox'));
+    expect(row.height, greaterThan(32));
+    expect(row.top, lessThanOrEqualTo(label.top));
+    expect(row.bottom, greaterThanOrEqualTo(label.bottom));
+  });
 }

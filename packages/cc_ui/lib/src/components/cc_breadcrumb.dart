@@ -33,7 +33,9 @@ class CcBreadcrumbItem {
 /// Draws [children] separated by a chevron. The [CcBreadcrumbItem.current]
 /// segment renders in `textPrimary` (medium weight); the rest render in
 /// `textTertiary` and, when they carry an `onPress`, become hoverable
-/// [CcTappable] links.
+/// [CcTappable] links. Assistive tech reads the trail as one group named
+/// `CcStrings.breadcrumb`, the segments with an `onPress` as links and the
+/// current one as selected.
 class CcBreadcrumb extends StatelessWidget {
   /// Creates a [CcBreadcrumb].
   const CcBreadcrumb({super.key, required this.children});
@@ -68,21 +70,25 @@ class CcBreadcrumb extends StatelessWidget {
               ),
             );
           }
-          final segment = _segment(t, children[i]);
+          final segment = _segment(context, t, children[i]);
           row.add(
             bounded && i == lastIndex ? Flexible(child: segment) : segment,
           );
         }
         return Semantics(
           container: true,
-          label: 'Breadcrumb',
+          label: context.ccStrings.breadcrumb,
           child: Row(mainAxisSize: MainAxisSize.min, children: row),
         );
       },
     );
   }
 
-  Widget _segment(DesignSystemTokens t, CcBreadcrumbItem item) {
+  Widget _segment(
+    BuildContext context,
+    DesignSystemTokens t,
+    CcBreadcrumbItem item,
+  ) {
     final color = item.current ? t.textPrimary : t.textTertiary;
     final styled = DefaultTextStyle.merge(
       style: CcTypography.bodySm.copyWith(
@@ -98,25 +104,35 @@ class CcBreadcrumb extends StatelessWidget {
     );
 
     if (item.onPress == null || item.current) {
-      return Padding(
+      final segment = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: styled,
       );
+      // Flutter has no "current page" flag; a selected node of its own is the
+      // closest reading, and keeps the page's name apart from the links.
+      return item.current
+          ? Semantics(container: true, selected: true, child: segment)
+          : segment;
     }
 
     return CcTappable(
       onPressed: item.onPress,
       borderRadius: AppRadii.brSm,
+      // A trail segment navigates, so it reads as a link, not a button.
+      semanticButton: false,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: hovered ? t.hover : const Color(0x00000000),
-            borderRadius: AppRadii.brSm,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: styled,
+        return Semantics(
+          link: true,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: hovered ? t.hover : const Color(0x00000000),
+              borderRadius: AppRadii.brSm,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: styled,
+            ),
           ),
         );
       },

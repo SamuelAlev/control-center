@@ -1,7 +1,12 @@
+import 'dart:ui' show CheckedState, Tristate;
+
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_multi_select.dart';
 import 'package:cc_ui/src/components/cc_select.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
+import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,7 +58,7 @@ void main() {
       // when hovering the close icon of the filterable tag).
       expect(
         find.byWidgetPredicate(
-          (w) => w is CcTooltip && w.message == 'Clear all selected options',
+          (w) => w is CcTooltip && w.message == 'Clear all',
         ),
         findsOneWidget,
       );
@@ -724,7 +729,7 @@ void main() {
       );
 
       final appleChip = find
-          .ancestor(of: find.text('Apple'), matching: find.byType(DecoratedBox))
+          .ancestor(of: find.text('Apple'), matching: find.byType(Stack))
           .first;
       await tester.tap(
         find.descendant(of: appleChip, matching: find.byIcon(CcIcons.x)),
@@ -732,6 +737,225 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(current, {'b'});
+    });
+  });
+
+  group('CcMultiSelect keyboard and focus', () {
+    late FocusNode after;
+    setUp(() => after = FocusNode(debugLabel: 'after'));
+    tearDown(() => after.dispose());
+
+    Widget host({
+      required Set<String> values,
+      required ValueChanged<Set<String>> onChanged,
+      bool filterable = false,
+      bool showChips = false,
+    }) => ccTestApp(
+      Column(
+        children: [
+          CcMultiSelect<String>(
+            options: _options,
+            values: values,
+            hintText: 'Pick fruit',
+            filterable: filterable,
+            showChips: showChips,
+            onChanged: onChanged,
+          ),
+          CcTappable(
+            focusNode: after,
+            onPressed: () {},
+            builder: (context, states) => const Text('After'),
+          ),
+        ],
+      ),
+    );
+
+    // The trigger is the first tappable in the select; its ✕ buttons follow.
+    Finder triggerFinder() => find
+        .descendant(
+          of: find.byType(CcMultiSelect<String>),
+          matching: find.byType(CcTappable),
+        )
+        .first;
+
+    FocusNode trigger(WidgetTester tester) =>
+        tester.widget<CcTappable>(triggerFinder()).focusNode!;
+
+    Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
+      await tester.sendKeyEvent(k);
+      await tester.pump();
+    }
+
+    Future<void> open(WidgetTester tester) async {
+      trigger(tester).requestFocus();
+      await tester.pump();
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+    }
+
+    testWidgets('opening moves focus in, Space toggles, Tab stays inside, '
+        'Escape returns focus', (tester) async {
+      var values = <String>{};
+      await tester.pumpWidget(
+        host(values: values, onChanged: (v) => values = v),
+      );
+      await open(tester);
+      expect(find.text('Banana'), findsOneWidget);
+      expect(trigger(tester).hasFocus, isFalse);
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.space);
+      expect(values, {'a'});
+      await key(tester, LogicalKeyboardKey.tab);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasFocus, isFalse);
+      expect(find.text('Banana'), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.text('Banana'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(after.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('an outside tap returns focus to the trigger', (tester) async {
+      await tester.pumpWidget(host(values: const {}, onChanged: (_) {}));
+      await open(tester);
+      await tester.tapAt(const Offset(780, 580));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Banana'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('the passive checkboxes add no Tab stop or node', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(host(values: const {'b'}, onChanged: (_) {}));
+      await open(tester);
+      final row = tester.getSemantics(find.text('Banana').last);
+      expect(row.label, 'Banana');
+      expect(row.flagsCollection.isChecked, CheckedState.isTrue);
+      final apple = tester.getSemantics(find.text('Apple'));
+      expect(apple.flagsCollection.isChecked, CheckedState.isFalse);
+      // Every Tab stays on the list node: no checkbox is a stop.
+      for (var i = 0; i < 4; i++) {
+        await key(tester, LogicalKeyboardKey.tab);
+        expect(
+          FocusManager.instance.primaryFocus?.debugLabel,
+          'CcMultiSelect list',
+        );
+      }
+      semantics.dispose();
+    });
+
+    testWidgets('filterable: typing keeps focus in the field, Space types, '
+        'arrows and Escape drive the list', (tester) async {
+      var values = <String>{};
+      await tester.pumpWidget(
+        host(values: values, filterable: true, onChanged: (v) => values = v),
+      );
+      await open(tester);
+      await tester.pump();
+      final field = tester.widget<EditableText>(find.byType(EditableText));
+      expect(field.focusNode.hasPrimaryFocus, isTrue);
+
+      await tester.enterText(find.byType(EditableText), 'an');
+      // Space reaches the text, not the trigger behind it.
+      expect(await tester.sendKeyEvent(LogicalKeyboardKey.space), isFalse);
+      await tester.enterText(find.byType(EditableText), 'an ');
+      await tester.pump();
+      expect(field.controller.text, 'an ');
+      expect(find.text('Banana'), findsOneWidget);
+      expect(find.text('Apple'), findsNothing);
+
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.enter);
+      expect(values, {'b'});
+      expect(field.focusNode.hasPrimaryFocus, isTrue);
+
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.byType(EditableText), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('filterable: a mouse click outside on desktop returns focus '
+        'to the trigger', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await tester.pumpWidget(
+          host(values: const {}, filterable: true, onChanged: (_) {}),
+        );
+        await open(tester);
+        await tester.pump();
+        expect(find.text('Banana'), findsOneWidget);
+        final gesture = await tester.startGesture(
+          const Offset(780, 580),
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.up();
+        await gesture.removePointer();
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Banana'), findsNothing);
+        expect(trigger(tester).hasPrimaryFocus, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('filterable: Tab away closes and lands on the page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(values: const {}, filterable: true, onChanged: (_) {}),
+      );
+      await open(tester);
+      await tester.pump();
+      expect(find.text('Banana'), findsOneWidget);
+      await key(tester, LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(after.hasPrimaryFocus, isTrue);
+      expect(find.text('Banana'), findsNothing);
+    });
+
+    testWidgets('the trigger ✕ buttons are sibling Tab stops with names', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      var values = <String>{'a', 'b'};
+      await tester.pumpWidget(
+        host(values: values, showChips: true, onChanged: (v) => values = v),
+      );
+      final node = tester.getSemantics(triggerFinder());
+      // The chip text is part of the trigger's value, not a node of its own.
+      expect(node.label, 'Pick fruit');
+      expect(node.value, 'Apple, Banana');
+      expect(node.flagsCollection.isExpanded, Tristate.isFalse);
+      expect(find.semantics.byLabel('Remove Apple'), findsOne);
+      expect(find.semantics.byLabel('Remove Banana'), findsOne);
+
+      trigger(tester).requestFocus();
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(find.text('Banana'), findsOneWidget);
+      // Space on the focused ✕ removes that chip without opening the panel.
+      await key(tester, LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(values, {'b'});
+      semantics.dispose();
+    });
+
+    testWidgets('the count tag ✕ is named from the strings', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(host(values: const {'a'}, onChanged: (_) {}));
+      final node = tester.getSemantics(triggerFinder());
+      expect(node.label, 'Pick fruit');
+      expect(node.value, '1 selected');
+      expect(find.semantics.byLabel('Clear all'), findsOne);
+      semantics.dispose();
     });
   });
 }

@@ -1084,13 +1084,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Không có sự kiện trong khoảng này';
 
   @override
-  String get calendarStartRecording => 'Bắt đầu ghi';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Bắt đầu ghi & liên kết';
-
-  @override
   String get calendarJoinMeet => 'Tham gia cuộc họp';
+
+  @override
+  String get calendarJoinAndRecord => 'Tham gia và ghi';
+
+  @override
+  String get calendarRecordFailed => 'Không thể bắt đầu ghi âm';
 
   @override
   String get calendarFromCalendar => 'Từ lịch';
@@ -1923,9 +1923,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get activity => 'Hoạt động';
-
-  @override
-  String get activityLabel => 'HOẠT ĐỘNG';
 
   @override
   String get activitySearchHint => 'Tìm hoạt động';
@@ -2879,7 +2876,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get briefDescription => 'Mô tả ngắn';
 
   @override
-  String get bugLabel => 'BUG';
+  String get bugLabel => 'Bug';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -5138,7 +5135,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get suggestion => 'Đề xuất';
 
   @override
-  String get suggestLabel => 'ĐỀ XUẤT';
+  String get suggestLabel => 'Đề xuất';
 
   @override
   String get superseded => 'Đã thay thế';
@@ -5183,7 +5180,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get thisCannotBeUndone => 'Không thể hoàn tác.';
 
   @override
-  String get ticketLabel => 'PHIẾU';
+  String get ticketLabel => 'Phiếu';
 
   @override
   String get titleLabel => 'Tiêu đề';
@@ -7484,6 +7481,14 @@ class AppLocalizationsVi extends AppLocalizations {
   String get addReviewers => 'Thêm người review';
 
   @override
+  String get reRequestReview => 'Yêu cầu review lại';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Yêu cầu $label review lại';
+  }
+
+  @override
   String get addAssignees => 'Thêm người được gán';
 
   @override
@@ -7650,6 +7655,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get meetingStatusRecording => 'Đang ghi';
 
   @override
+  String get meetingStatusPaused => 'Tạm dừng';
+
+  @override
   String get meetingStatusProcessing => 'Đang xử lý';
 
   @override
@@ -7677,34 +7685,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count cuộc họp',
-      one: '1 cuộc họp',
-      zero: 'Không có cuộc họp',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Hành động còn mở';
-
-  @override
-  String get meetingsLedgerDecisions => 'Quyết định';
-
-  @override
   String get meetingsLiveOpen => 'Mở bản ghi';
 
   @override
   String get meetingTemplateShort => 'Mẫu';
-
-  @override
-  String get meetingsStatThisWeek => 'Tuần này';
-
-  @override
-  String get meetingsStatRecorded => 'Đã ghi';
 
   @override
   String get meetingsFilterAll => 'Tất cả';
@@ -7748,9 +7732,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total mục hành động';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'nâng cao';
 
   @override
   String get meetingsTranscribing => 'đang phiên âm và tóm tắt…';
@@ -7984,9 +7965,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Có vẻ đang có cuộc họp. Ghi lại?';
-
-  @override
-  String get meetingDetectedRecord => 'Ghi';
 
   @override
   String get meetingDetectedDismiss => 'Bỏ qua';
@@ -9509,6 +9487,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deviceNeverSeen => 'Chưa từng kết nối';
 
   @override
+  String get deviceAwaitingApproval => 'Đang chờ phê duyệt';
+
+  @override
   String get profileSectionLabel => 'Hồ sơ';
 
   @override
@@ -10337,12 +10318,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Thất bại';
-
-  @override
-  String get bannerMeetingJoin => 'Tham gia';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Ghi và liên kết';
 
   @override
   String get bannerCalendarReconnect => 'Kết nối lại';
@@ -13658,6 +13633,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Không đăng được bình luận: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Dòng $line';
   }
@@ -15133,16 +15113,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Đóng $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count bình luận',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21416,10 +21386,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dispatchSettingsTitle => 'Lịch';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Giới hạn cho lịch và theo dõi, và việc gì xảy ra với các yêu cầu không ai trả lời.';
-
-  @override
   String get dispatchLimitsLabel => 'Giới hạn lịch';
 
   @override
@@ -21499,9 +21465,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Mục tiêu';
-
-  @override
-  String get scheduleRecordCrumb => 'Lịch';
 
   @override
   String get improvementRecordCrumb => 'Đề xuất';
@@ -21904,5 +21867,38 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent trên $cap, tính tất cả lịch trong chuỗi của nó';
+  }
+
+  @override
+  String get ccLoading => 'Đang tải';
+
+  @override
+  String get ccProgress => 'Tiến độ';
+
+  @override
+  String get ccBreadcrumb => 'Đường dẫn';
+
+  @override
+  String get ccDialog => 'Hộp thoại';
+
+  @override
+  String get ccResize => 'Thay đổi kích thước';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (chưa xác minh)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Chọn $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Chọn tất cả pull request';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Khôi phục về phiên bản $version';
   }
 }

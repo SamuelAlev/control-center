@@ -60,7 +60,7 @@ void main() {
       await tester.pumpWidget(_host(ReviewNodeBubble(message: _bugMessage())));
       await tester.pump();
 
-      expect(find.text('BUG'), findsOneWidget);
+      expect(find.text('Bug'), findsOneWidget);
       expect(find.textContaining('P1'), findsOneWidget);
       expect(find.textContaining('87%'), findsOneWidget);
       // The row carries the BASENAME so the finding's own headline gets the
@@ -106,7 +106,7 @@ void main() {
       expect(find.text('lib/foo.dart:42'), findsNothing);
       expect(find.widgetWithText(CcButton, 'Fix'), findsNothing);
 
-      await tester.tap(find.text('BUG'));
+      await tester.tap(find.text('Bug'));
       await tester.pumpAndSettle();
 
       expect(find.text('lib/foo.dart:42'), findsOneWidget);

@@ -20,6 +20,9 @@ class _RecordingRepo extends EmptyPrReviewRepository {
   String? lastCommentBody;
   List<String> addedLabels = const [];
   List<String> removedLabels = const [];
+  int requestReviewersCalls = 0;
+  List<String> requestedUserLogins = const [];
+  List<String> requestedTeamSlugs = const [];
   Completer<void>? gate;
   Object? refuseWith;
 
@@ -90,6 +93,25 @@ class _RecordingRepo extends EmptyPrReviewRepository {
     required List<String> names,
   }) async {
     removedLabels = names;
+  }
+
+  @override
+  Future<void> requestReviewers({
+    required int prNumber,
+    List<String> userLogins = const [],
+    List<String> teamSlugs = const [],
+  }) async {
+    requestReviewersCalls++;
+    final refusal = refuseWith;
+    if (refusal != null) {
+      throw refusal;
+    }
+    requestedUserLogins = userLogins;
+    requestedTeamSlugs = teamSlugs;
+    final wait = gate;
+    if (wait != null) {
+      await wait.future;
+    }
   }
 }
 
@@ -300,6 +322,54 @@ void main() {
         container.read(prEditProvider(prRef)).optimisticReviewComments,
         isEmpty,
       );
+    });
+  });
+
+  group('requestReviewer', () {
+    test('requests review for a user and clears pendingReviewers', () async {
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      final error = await notifier.requestReviewer(userLogin: 'Alice');
+      expect(error, isNull);
+      expect(repo.requestedUserLogins, ['Alice']);
+      expect(repo.requestedTeamSlugs, isEmpty);
+      expect(container.read(prEditProvider(prRef)).pendingReviewers, isEmpty);
+    });
+
+    test('requests review for a team', () async {
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      final error = await notifier.requestReviewer(teamSlug: 'platform');
+      expect(error, isNull);
+      expect(repo.requestedUserLogins, isEmpty);
+      expect(repo.requestedTeamSlugs, ['platform']);
+      expect(container.read(prEditProvider(prRef)).pendingReviewers, isEmpty);
+    });
+
+    test('tracks pendingReviewers and suppresses duplicate calls while in flight',
+        () async {
+      repo.gate = Completer<void>();
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      final first = notifier.requestReviewer(userLogin: 'Alice');
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(prEditProvider(prRef)).pendingReviewers,
+        {'user:alice'},
+      );
+      expect(await notifier.requestReviewer(userLogin: 'alice'), isNull);
+      expect(repo.requestReviewersCalls, 1);
+
+      repo.gate!.complete();
+      expect(await first, isNull);
+      expect(container.read(prEditProvider(prRef)).pendingReviewers, isEmpty);
+    });
+
+    test('reports failures and clears pendingReviewers', () async {
+      repo.refuseWith = RemoteRpcException(
+        RpcErrorCodes.unauthorized,
+        'Denied',
+      );
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      expect(await notifier.requestReviewer(userLogin: 'alice'), isNotNull);
+      expect(container.read(prEditProvider(prRef)).pendingReviewers, isEmpty);
     });
   });
 }

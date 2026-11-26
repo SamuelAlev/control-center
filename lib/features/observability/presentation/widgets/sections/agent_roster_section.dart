@@ -225,7 +225,12 @@ class _AgentRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value, style: CcTypography.monoNum.copyWith(color: t.textPrimary)),
+        Text(
+          value,
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
+          ),
+        ),
         Text(
           label,
           style: CcTypography.caption.copyWith(color: t.textQuaternary),

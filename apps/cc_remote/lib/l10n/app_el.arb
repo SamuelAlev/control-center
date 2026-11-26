@@ -122,7 +122,6 @@
   "eventNotFound": "Το γεγονός δεν βρέθηκε",
   "eventNotFoundDescription": "Μπορεί να είναι εκτός του παραθύρου ατζέντας ή να αφαιρέθηκε στην πηγή.",
   "joinMeeting": "Συμμετοχή στη σύσκεψη",
-  "join": "Συμμετοχή",
   "attendeesCount": "Παρευρισκόμενοι ({count})",
   "@attendeesCount": {
     "description": "Event detail: attendees section header with count.",

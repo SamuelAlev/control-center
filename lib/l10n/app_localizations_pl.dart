@@ -1097,13 +1097,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Brak wydarzeń w tym zakresie';
 
   @override
-  String get calendarStartRecording => 'Rozpocznij nagrywanie';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Rozpocznij nagrywanie i powiąż';
-
-  @override
   String get calendarJoinMeet => 'Dołącz do spotkania';
+
+  @override
+  String get calendarJoinAndRecord => 'Dołącz i nagraj';
+
+  @override
+  String get calendarRecordFailed => 'Nie udało się rozpocząć nagrywania';
 
   @override
   String get calendarFromCalendar => 'Z kalendarza';
@@ -1953,9 +1953,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get activity => 'Aktywność';
-
-  @override
-  String get activityLabel => 'AKTYWNOŚĆ';
 
   @override
   String get activitySearchHint => 'Szukaj w aktywności';
@@ -2922,7 +2919,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get briefDescription => 'Krótki opis';
 
   @override
-  String get bugLabel => 'BŁĄD';
+  String get bugLabel => 'Błąd';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4527,7 +4524,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get pullRequests => 'Pull requesty';
 
   @override
-  String get questionLabel => 'PYTANIE';
+  String get questionLabel => 'Pytanie';
 
   @override
   String get queued => 'W kolejce';
@@ -4542,7 +4539,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reasoningEffort => 'Wysiłek rozumowania';
 
   @override
-  String get recommendLabel => 'POLECANE';
+  String get recommendLabel => 'Polecane';
 
   @override
   String recordingFromDevice(String device) {
@@ -5216,7 +5213,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get suggestion => 'Sugestia';
 
   @override
-  String get suggestLabel => 'SUGESTIA';
+  String get suggestLabel => 'Sugestia';
 
   @override
   String get superseded => 'Zastąpiono';
@@ -5261,7 +5258,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get thisCannotBeUndone => 'Tej operacji nie można cofnąć.';
 
   @override
-  String get ticketLabel => 'ZGŁOSZENIE';
+  String get ticketLabel => 'Zgłoszenie';
 
   @override
   String get titleLabel => 'Tytuł';
@@ -7601,6 +7598,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get addReviewers => 'Dodaj recenzentów';
 
   @override
+  String get reRequestReview => 'Poproś ponownie o recenzję';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Poproś $label ponownie o recenzję';
+  }
+
+  @override
   String get addAssignees => 'Dodaj osoby przypisane';
 
   @override
@@ -7767,6 +7772,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get meetingStatusRecording => 'Nagrywanie';
 
   @override
+  String get meetingStatusPaused => 'Wstrzymany';
+
+  @override
   String get meetingStatusProcessing => 'Przetwarzanie';
 
   @override
@@ -7796,36 +7804,10 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count spotkań',
-      many: '$count spotkań',
-      few: '$count spotkania',
-      one: '1 spotkanie',
-      zero: 'Brak spotkań',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Otwarte zadania';
-
-  @override
-  String get meetingsLedgerDecisions => 'Decyzje';
-
-  @override
   String get meetingsLiveOpen => 'Otwórz nagranie';
 
   @override
   String get meetingTemplateShort => 'Szablon';
-
-  @override
-  String get meetingsStatThisWeek => 'W tym tygodniu';
-
-  @override
-  String get meetingsStatRecorded => 'Nagrane';
 
   @override
   String get meetingsFilterAll => 'Wszystkie';
@@ -7871,9 +7853,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total zadań';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'ulepszone';
 
   @override
   String get meetingsTranscribing => 'transkrypcja i podsumowanie…';
@@ -8110,9 +8089,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Wygląda na to, że trwa spotkanie. Nagrać?';
-
-  @override
-  String get meetingDetectedRecord => 'Nagraj';
 
   @override
   String get meetingDetectedDismiss => 'Odrzuć';
@@ -9652,6 +9628,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get deviceNeverSeen => 'Nigdy nie połączone';
 
   @override
+  String get deviceAwaitingApproval => 'Oczekuje na zatwierdzenie';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10487,12 +10466,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Niezdane';
-
-  @override
-  String get bannerMeetingJoin => 'Dołącz';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Nagraj i podlinkuj';
 
   @override
   String get bannerCalendarReconnect => 'Połącz ponownie';
@@ -13889,6 +13862,11 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Nie udało się dodać komentarza: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Wiersz $line';
   }
@@ -15396,19 +15374,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Zamknij $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count komentarza',
-      many: '$count komentarzy',
-      few: '$count komentarze',
-      one: '$count komentarz',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21765,10 +21730,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get dispatchSettingsTitle => 'Harmonogramy';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Limity harmonogramów i obserwacji oraz to, co dzieje się z prośbami, na które nikt nie odpowiada.';
-
-  @override
   String get dispatchLimitsLabel => 'Limity harmonogramów';
 
   @override
@@ -21847,9 +21808,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Cel';
-
-  @override
-  String get scheduleRecordCrumb => 'Harmonogram';
 
   @override
   String get improvementRecordCrumb => 'Propozycja';
@@ -22265,5 +22223,38 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent z $cap, wliczając każdy harmonogram w jego łańcuchu';
+  }
+
+  @override
+  String get ccLoading => 'Ładowanie';
+
+  @override
+  String get ccProgress => 'Postęp';
+
+  @override
+  String get ccBreadcrumb => 'Ścieżka nawigacji';
+
+  @override
+  String get ccDialog => 'Okno dialogowe';
+
+  @override
+  String get ccResize => 'Zmień rozmiar';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (niezweryfikowane)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Wybierz $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Wybierz wszystkie pull requesty';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Przywróć wersję $version';
   }
 }

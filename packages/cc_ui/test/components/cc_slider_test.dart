@@ -334,4 +334,86 @@ void main() {
       expect(received, closeTo(2.0, 0.001));
     });
   });
+
+  group('keyboard and focus', () {
+    Finder ring() => find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+    );
+
+    Future<List<double>> pumpSlider(
+      WidgetTester tester, {
+      double value = 0.5,
+      int? divisions,
+    }) async {
+      final received = <double>[];
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: SizedBox(
+              width: 240,
+              child: CcSlider(
+                value: value,
+                divisions: divisions,
+                autofocus: true,
+                onChanged: received.add,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      return received;
+    }
+
+    testWidgets('Up and Down step toward max and min', (tester) async {
+      final received = await pumpSlider(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      expect(received[0], closeTo(0.51, 0.001));
+      expect(received[1], closeTo(0.49, 0.001));
+    });
+
+    testWidgets('Page Up and Page Down move a tenth of the range', (
+      tester,
+    ) async {
+      final received = await pumpSlider(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.pageUp);
+      await tester.sendKeyEvent(LogicalKeyboardKey.pageDown);
+      expect(received[0], closeTo(0.6, 0.001));
+      expect(received[1], closeTo(0.4, 0.001));
+    });
+
+    testWidgets('a page is at least one division', (tester) async {
+      final received = await pumpSlider(tester, divisions: 4);
+      await tester.sendKeyEvent(LogicalKeyboardKey.pageUp);
+      expect(received.single, closeTo(0.75, 0.001));
+    });
+
+    testWidgets('pressing the track focuses it without the ring', (
+      tester,
+    ) async {
+      final received = <double>[];
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: SizedBox(
+              width: 240,
+              child: CcSlider(value: 0.5, onChanged: received.add),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(CcSlider.trackKey));
+      await tester.pump();
+      final node = Focus.of(tester.element(find.byKey(CcSlider.trackKey)));
+      expect(node.hasPrimaryFocus, isTrue);
+      expect(ring(), findsNothing);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      expect(received.last, closeTo(0.51, 0.001));
+    });
+  });
 }

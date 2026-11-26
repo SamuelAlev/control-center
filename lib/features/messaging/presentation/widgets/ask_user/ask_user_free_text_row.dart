@@ -103,7 +103,7 @@ class AskUserFreeTextRow extends StatelessWidget {
                 child: Text(
                   '$index',
                   style: CcFonts.code(
-                    textStyle: CcTypography.monoNum.copyWith(
+                    textStyle: CcTypography.numeric.copyWith(
                       color: t.textTertiary,
                       fontWeight: CcTypography.semiboldWeight,
                     ),

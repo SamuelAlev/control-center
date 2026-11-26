@@ -474,9 +474,9 @@
   "calendarDisconnect": "قطع الاتصال",
   "calendarReconnect": "إعادة الاتصال",
   "calendarEmptyNoEvents": "لا أحداث في هذا النطاق",
-  "calendarStartRecording": "بدء التسجيل",
-  "calendarStartRecordingAndLink": "بدء التسجيل والربط",
   "calendarJoinMeet": "الانضمام إلى الاجتماع",
+  "calendarJoinAndRecord": "الانضمام والتسجيل",
+  "calendarRecordFailed": "تعذّر بدء التسجيل",
   "calendarFromCalendar": "من التقويم",
   "calendarLinkedMeeting": "اجتماع مرتبط",
   "calendarToday": "اليوم",
@@ -899,7 +899,6 @@
   "actions": "إجراءات",
   "activate": "تفعيل",
   "activity": "النشاط",
-  "activityLabel": "النشاط",
   "activitySearchHint": "البحث في النشاط",
   "activityNoMatches": "لا يوجد نشاط يطابق عوامل التصفية",
   "activityPageRange": "{start}–{end} من {total}",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "القالب",
   "prTemplateDefault": "افتراضي",
   "addReviewers": "إضافة مراجعين",
-  "addAssignees": "إضافة معيّنين",
+
+  "reRequestReview": "إعادة طلب المراجعة",
+  "reRequestReviewFor": "إعادة طلب المراجعة من {label}",  "addAssignees": "إضافة معيّنين",
   "addLabels": "إضافة التسميات",
   "searchLabels": "البحث في التسميات…",
   "noMatchingLabels": "لا توجد تسميات مطابقة",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "دوّن ملاحظات سريعة — يوسّعها الوكيل بعد الاجتماع.",
   "meetingSpeakerMe": "أنت",
   "meetingStatusRecording": "جارٍ التسجيل",
+  "meetingStatusPaused": "متوقفة مؤقتًا",
   "meetingStatusProcessing": "قيد المعالجة",
   "meetingStatusDone": "تم",
   "meetingStatusFailed": "فشل",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, zero{لا اجتماعات} one{اجتماع واحد} two{اجتماعان} few{{count} اجتماعات} many{{count} اجتماعًا} other{{count} اجتماع}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "بنود عمل مفتوحة",
-  "meetingsLedgerDecisions": "القرارات",
   "meetingsLiveOpen": "فتح التسجيل",
   "meetingTemplateShort": "قالب",
-  "meetingsStatThisWeek": "هذا الأسبوع",
-  "meetingsStatRecorded": "مسجَّلة",
   "meetingsFilterAll": "الكل",
   "meetingsFilterDone": "تم",
   "meetingsFilterProcessing": "قيد المعالجة",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "محسَّنة",
   "meetingsTranscribing": "جارٍ التفريغ والتلخيص…",
   "meetingsOpenAction": "فتح",
   "meetingsStopProcessing": "إيقاف",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "يبدو أن اجتماعًا يجري الآن. هل تريد تسجيله؟",
-  "meetingDetectedRecord": "تسجيل",
   "meetingDetectedDismiss": "تجاهل",
   "meetingAutoStopTitle": "يبدو أن هذا الاجتماع انتهى. هل تريد إيقاف التسجيل؟",
   "meetingAutoStopStop": "إيقاف",
@@ -4883,7 +4871,7 @@
   "ideNewTab": "فتح محرر",
   "ideNewTabMenu": "علامة تبويب جديدة",
   "ideReviewCode": "مراجعة الكود",
-  "ideReviewCodeInRepo": "مراجعة الكود (\u2068{repo}\u2069)",
+  "ideReviewCodeInRepo": "مراجعة الكود (⁨{repo}⁩)",
   "ideRevertConfirmTitle": "إرجاع التغييرات",
   "ideRevertUntracked": "لا يمكن إرجاع الملفات غير المتتبعة",
   "ideRevertFailed": "تعذر إرجاع الملفات. قد تكون شجرة عمل المحادثة غير متاحة.",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "لم يتصل مطلقًا",
+  "deviceAwaitingApproval": "بانتظار الموافقة",
   "profileSectionLabel": "الملف الشخصي",
   "profileSectionDescription": "كيف تظهر للفريق وفي مؤلفية إيداعات git في مساحة العمل هذه. الحقول الفارغة ترث اسم حسابك وبريدك.",
   "displayNameLabel": "الاسم المعروض",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "قيد التشغيل",
   "evalsStatusPassed": "ناجح",
   "evalsStatusFailed": "فاشل",
-  "bannerMeetingJoin": "انضمام",
-  "bannerMeetingRecordAndLink": "تسجيل وربط",
   "bannerCalendarReconnect": "إعادة الاتصال",
   "bannerView": "عرض",
   "soundscapeTitle": "المشاهد الصوتية",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "تعذّر نشر التعليق: {error}",
   "commentOnLine": "السطر {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "السماح دائمًا بالنسخ من الحاويات",
   "rigClipboardAlwaysCopyDescription": "وضع محتوى الحافظة من أي حاوية على هذا الجهاز دون طلب إذن.",
   "imageDiffBefore": "قبل",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "بعد",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "جنباً إلى جنب",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "تمرير",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "الفرق",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "تغير {percent}٪",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "صور",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "المصدر",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "محذوف",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "تم وضع علامة على {path} كغير معروض",
   "prLineChangesSemantics": "الأسطر المضافة: {additions}، الأسطر المحذوفة: {deletions}",
   "closeTabNamed": "إغلاق {tab}",
-  "threadCommentCount": "{count, plural, zero{لا تعليقات} one{تعليق واحد} two{تعليقان} few{{count} تعليقات} many{{count} تعليقًا} other{{count} تعليق}}",
   "notificationAgentAwaitingInput": "وكيل يحتاج إلى انتباهك",
   "notifyAgentAwaitingInput": "عندما يحتاج وكيل إلى موافقتك أو إجابتك أو بيانات اعتماد صالحة، أو تحظر السياسة إجراءً",
   "notificationAgentNeedsApproval": "{agent} يحتاج إلى موافقتك",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "يقرر مسؤول",
   "improvementNotFound": "هذا الاقتراح غير موجود، أو هو في مساحة لا تستطيع فتحها.",
   "dispatchSettingsTitle": "الجدولات",
-  "dispatchSettingsSubtitle": "حدود الجدولات والمراقبات، وما يحدث للطلبات التي لا يرد عليها أحد.",
   "dispatchLimitsLabel": "حدود الجدولة",
   "dispatchLimitsSubtitle": "سقوف لعدد الجدولات والمراقبات التي يجوز للوكلاء امتلاكها، والقيم الافتراضية.",
   "dispatchLimitRange": "من 1 إلى {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "في {zone}، وهي المنطقة الزمنية أعلاه.",
   "dispatchDigestHourRange": "من 0 إلى 23",
   "goalRecordCrumb": "هدف",
-  "scheduleRecordCrumb": "جدولة",
   "improvementRecordCrumb": "اقتراح",
   "goalNodeNeedsAgent": "اختر الوكيل الذي يعمل على الهدف.",
   "goalNodeNeedsObjective": "اكتب الغاية.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "هذا ليس الرمز الذي عرضه متصفحك. {count, plural, zero{لم تبقَ أي محاولات.} one{تبقّت محاولة واحدة.} two{تبقّت محاولتان.} few{تبقّت {count} محاولات.} many{تبقّت {count} محاولة.} other{تبقّت {count} محاولة.}}",
   "mcpServerSignInEnded": "انتهت المهلة، أو رُفض الطلب، أو أدخلت رموزاً خاطئة أكثر من اللازم. ابدأ من جديد للحصول على صفحة تسجيل دخول جديدة.",
   "mcpServerSignInStartAgain": "ابدأ من جديد",
-  "mcpServerSignedIn": "تم تسجيل الدخول إلى {name}."
+  "mcpServerSignedIn": "تم تسجيل الدخول إلى {name}.",
+  "ccLoading": "جارٍ التحميل",
+  "ccProgress": "التقدم",
+  "ccBreadcrumb": "مسار التنقّل",
+  "ccDialog": "مربع حوار",
+  "ccResize": "تغيير الحجم",
+  "ccUnverifiedLabel": "{label} (غير متحقق منه)",
+  "prRowSelect": "تحديد {title}",
+  "prTableSelectAll": "تحديد كل طلبات السحب",
+  "planVersionRewind": "الرجوع إلى الإصدار {version}"
 }

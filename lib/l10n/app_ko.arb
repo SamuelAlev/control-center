@@ -474,9 +474,9 @@
   "calendarDisconnect": "연결 해제",
   "calendarReconnect": "다시 연결",
   "calendarEmptyNoEvents": "이 범위에 일정이 없습니다",
-  "calendarStartRecording": "녹음 시작",
-  "calendarStartRecordingAndLink": "녹음 시작 및 연결",
   "calendarJoinMeet": "회의 참가",
+  "calendarJoinAndRecord": "참가하고 녹음",
+  "calendarRecordFailed": "녹음을 시작할 수 없습니다",
   "calendarFromCalendar": "캘린더에서",
   "calendarLinkedMeeting": "연결된 회의",
   "calendarToday": "오늘",
@@ -899,7 +899,6 @@
   "actions": "작업",
   "activate": "활성화",
   "activity": "활동",
-  "activityLabel": "활동",
   "activitySearchHint": "활동 검색",
   "activityNoMatches": "필터와 일치하는 활동이 없습니다",
   "activityPageRange": "{total}개 중 {start}–{end}",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "템플릿",
   "prTemplateDefault": "기본",
   "addReviewers": "리뷰어 추가",
-  "addAssignees": "담당자 추가",
+
+  "reRequestReview": "리뷰 다시 요청",
+  "reRequestReviewFor": "{label}에게 리뷰 다시 요청",  "addAssignees": "담당자 추가",
   "addLabels": "레이블 추가",
   "searchLabels": "레이블 검색…",
   "noMatchingLabels": "일치하는 레이블 없음",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "간단히 메모해 두세요. 회의가 끝나면 에이전트가 내용을 확장합니다.",
   "meetingSpeakerMe": "나",
   "meetingStatusRecording": "녹음 중",
+  "meetingStatusPaused": "일시 중지됨",
   "meetingStatusProcessing": "처리 중",
   "meetingStatusDone": "완료",
   "meetingStatusFailed": "실패",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{회의 없음} =1{회의 1건} other{회의 {count}건}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "미완료 할 일",
-  "meetingsLedgerDecisions": "결정 사항",
   "meetingsLiveOpen": "녹음 열기",
   "meetingTemplateShort": "템플릿",
-  "meetingsStatThisWeek": "이번 주",
-  "meetingsStatRecorded": "녹음됨",
   "meetingsFilterAll": "전체",
   "meetingsFilterDone": "완료",
   "meetingsFilterProcessing": "처리 중",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "향상됨",
   "meetingsTranscribing": "전사 및 요약 중…",
   "meetingsOpenAction": "열기",
   "meetingsStopProcessing": "중지",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "미팅이 진행 중인 것 같습니다. 녹음할까요?",
-  "meetingDetectedRecord": "녹음",
   "meetingDetectedDismiss": "닫기",
   "meetingAutoStopTitle": "미팅이 끝난 것 같습니다. 녹음을 중지할까요?",
   "meetingAutoStopStop": "중지",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "한 번도 연결되지 않음",
+  "deviceAwaitingApproval": "승인 대기 중",
   "profileSectionLabel": "프로필",
   "profileSectionDescription": "이 작업 공간에서 팀과 git 커밋 작성자에 어떻게 보이는지입니다. 빈 필드는 계정의 이름과 이메일을 상속합니다.",
   "displayNameLabel": "표시 이름",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "실행 중",
   "evalsStatusPassed": "통과",
   "evalsStatusFailed": "실패",
-  "bannerMeetingJoin": "참여",
-  "bannerMeetingRecordAndLink": "녹화 및 연결",
   "bannerCalendarReconnect": "다시 연결",
   "bannerView": "보기",
   "soundscapeTitle": "사운드스케이프",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "댓글을 게시하지 못했습니다: {error}",
   "commentOnLine": "{line}번 줄",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "환경에서 복사 항상 허용",
   "rigClipboardAlwaysCopyDescription": "확인 없이 모든 환경의 클립보드 내용을 이 기기에 넣습니다.",
   "imageDiffBefore": "이전",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "이후",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "나란히",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "밀기",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "차이",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% 변경됨",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "그림",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "소스",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "삭제됨",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path}을(를) 확인 안 함으로 표시함",
   "prLineChangesSemantics": "추가된 줄: {additions}, 삭제된 줄: {deletions}",
   "closeTabNamed": "{tab} 닫기",
-  "threadCommentCount": "{count, plural, other{댓글 {count}개}}",
   "notificationAgentAwaitingInput": "에이전트 확인 필요",
   "notifyAgentAwaitingInput": "에이전트에게 승인, 답변 또는 유효한 자격 증명이 필요하거나 정책으로 작업이 차단될 때",
   "notificationAgentNeedsApproval": "{agent}에게 승인이 필요합니다",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "관리자가 결정합니다",
   "improvementNotFound": "이 제안은 없거나, 열 수 없는 스페이스에 있습니다.",
   "dispatchSettingsTitle": "일정",
-  "dispatchSettingsSubtitle": "일정과 감시의 한도, 그리고 아무도 답하지 않는 요청의 처리 방식입니다.",
   "dispatchLimitsLabel": "일정 한도",
   "dispatchLimitsSubtitle": "에이전트가 가질 수 있는 일정과 감시의 상한, 그리고 기본값입니다.",
   "dispatchLimitRange": "1~{max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "{zone} 기준, 위에서 고른 시간대입니다.",
   "dispatchDigestHourRange": "0~23",
   "goalRecordCrumb": "목표",
-  "scheduleRecordCrumb": "일정",
   "improvementRecordCrumb": "제안",
   "goalNodeNeedsAgent": "목표를 추진할 에이전트를 고르세요.",
   "goalNodeNeedsObjective": "목표를 입력하세요.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "브라우저에 표시된 코드가 아닙니다. {count, plural, other{시도 {count}회 남았습니다.}}",
   "mcpServerSignInEnded": "시간이 너무 오래 걸렸거나, 거부되었거나, 잘못된 코드를 너무 많이 입력했습니다. 다시 시작해서 새 로그인 페이지를 받으세요.",
   "mcpServerSignInStartAgain": "다시 시작",
-  "mcpServerSignedIn": "{name}에 로그인했습니다."
+  "mcpServerSignedIn": "{name}에 로그인했습니다.",
+  "ccLoading": "로드 중",
+  "ccProgress": "진행률",
+  "ccBreadcrumb": "탐색 경로",
+  "ccDialog": "대화 상자",
+  "ccResize": "크기 조정",
+  "ccUnverifiedLabel": "{label} (확인되지 않음)",
+  "prRowSelect": "{title} 선택",
+  "prTableSelectAll": "모든 풀 리퀘스트 선택",
+  "planVersionRewind": "{version} 버전으로 되돌리기"
 }

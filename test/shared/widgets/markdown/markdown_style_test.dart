@@ -79,6 +79,8 @@ void main() {
             'h6': style.h6,
             'link': style.link,
             'blockquote': style.blockquote,
+            'bold': style.bold,
+            'italic': style.italic,
             'listBullet': style.listBullet,
             'tableHead': style.tableHead,
             'tableBody': style.tableBody,
@@ -176,6 +178,41 @@ void main() {
         }),
       );
     });
+
+    testWidgets(
+      'custom UI font requests bold, italic, and semibold cuts from CcFontRegistry',
+      (tester) async {
+        CcFontRegistry.instance.resetForTests();
+        addTearDown(CcFontRegistry.instance.resetForTests);
+        final requested = <(int, bool)>[];
+        CcFontRegistry.instance.install(
+          loader: ({required family, required weight, required italic}) async {
+            if (family == 'InterMarkdownTest') {
+              requested.add((weight, italic));
+            }
+            return null;
+          },
+        );
+
+        await tester.pumpWidget(
+          _buildTestApp(fontFamily: 'InterMarkdownTest', (context) {
+            final style = appMarkdownStyle(context);
+            expect(style.bold?.fontFamily, 'InterMarkdownTest');
+            expect(style.bold?.fontWeight, FontWeight.w700);
+            expect(style.bold?.color, isNull);
+            expect(style.italic?.fontFamily, 'InterMarkdownTest');
+            expect(style.italic?.fontStyle, FontStyle.italic);
+            expect(style.h1?.fontWeight, FontWeight.w700);
+            expect(style.h4?.fontWeight, FontWeight.w600);
+            expect(style.tableHead?.fontWeight, FontWeight.w600);
+            return const SizedBox.shrink();
+          }),
+        );
+        await tester.pump();
+
+        expect(requested, containsAll([(700, false), (400, true), (600, false)]));
+      },
+    );
   });
 
   group('style and builder interning', () {

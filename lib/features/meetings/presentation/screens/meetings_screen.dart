@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting_action_item.dart';
 import 'package:cc_ui/cc_ui.dart';
 
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
@@ -8,7 +7,6 @@ import 'package:control_center/features/meetings/presentation/notifiers/meeting_
 import 'package:control_center/features/meetings/presentation/utils/meeting_format.dart';
 import 'package:control_center/features/meetings/presentation/utils/meeting_theme.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_detection_banner.dart';
-import 'package:control_center/features/meetings/presentation/widgets/meeting_ledger_strip.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_list_row.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_live_strip.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_toolbar.dart';
@@ -37,14 +35,11 @@ enum MeetingListFilter {
   processing,
 }
 
-/// Meetings home: the standard page header carrying a live subtitle and the
-/// record CTA, the capture ledger, the toolbar and one section card per day
-/// bucket.
+/// Meetings home: the standard page header carrying a subtitle and the record
+/// CTA, the toolbar and one section card per day bucket.
 ///
-/// The two full-width panels that used to sit between the header and the list —
-/// a four-card stat grid and a permanent "capture is armed" pitch — are gone.
-/// The numbers survive as a single mono ledger line and the band they occupied
-/// is now used only when something is actually recording.
+/// Nothing sits between the header and the list unless something is actually
+/// recording: no stat grid, no totals line, no standing pitch.
 class MeetingsScreen extends ConsumerStatefulWidget {
   /// Creates a [MeetingsScreen].
   const MeetingsScreen({super.key});
@@ -140,8 +135,8 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
       title: l10n.navMeetings,
       // One short line about what the page is, where three lines of product
       // pitch used to sit. Live state has its own homes and is deliberately
-      // not repeated here: the processing pill, the live strip and the ledger
-      // each own exactly one fact.
+      // not repeated here: the processing pill and the live strip each own
+      // exactly one fact.
       subtitle: l10n.meetingsSubtitle,
       actions: [
         if (processingCount > 0) _ProcessingPill(count: processingCount),
@@ -162,49 +157,6 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
     );
   }
 
-  /// The four ledger numbers, folded over the meeting list once.
-  _MeetingAggregate _aggregate(
-    String workspaceId,
-    List<Meeting> meetings,
-    DateTime now,
-  ) {
-    final actionStatsAsync = ref.watch(
-      meetingActionItemStatsProvider(workspaceId),
-    );
-    final decisionCountsAsync = ref.watch(
-      meetingDecisionCountsProvider(workspaceId),
-    );
-    final actionStats = actionStatsAsync.hasError
-        ? const <String, MeetingActionItemStats>{}
-        : actionStatsAsync.value ?? const <String, MeetingActionItemStats>{};
-    final decisionCounts = decisionCountsAsync.hasError
-        ? const <String, int>{}
-        : decisionCountsAsync.value ?? const <String, int>{};
-
-    var thisWeek = 0;
-    var recorded = Duration.zero;
-    for (final m in meetings) {
-      final bucket = MeetingFormat.bucketFor(m.startedAt, now);
-      if (bucket == MeetingDayBucket.today ||
-          bucket == MeetingDayBucket.yesterday ||
-          bucket == MeetingDayBucket.earlierThisWeek) {
-        thisWeek++;
-      }
-      if (m.endedAt != null) {
-        recorded += MeetingFormat.duration(m.startedAt, m.endedAt, now);
-      }
-    }
-    return (
-      thisWeek: thisWeek,
-      recorded: recorded,
-      openActions: actionStats.values.fold<int>(
-        0,
-        (sum, s) => sum + (s.total - s.done),
-      ),
-      decisions: decisionCounts.values.fold<int>(0, (sum, c) => sum + c),
-    );
-  }
-
   Widget _buildBody(
     BuildContext context,
     AppLocalizations l10n,
@@ -213,8 +165,6 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
     MeetingRecorderState recorder,
   ) {
     final now = DateTime.now();
-    final stats = _aggregate(workspaceId, meetings, now);
-
     final query = _query.trim().toLowerCase();
     final filtered = meetings.where((m) {
       switch (_filter) {
@@ -280,18 +230,10 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
         ],
-        MeetingLedgerStrip(
-          thisWeek: stats.thisWeek,
-          recorded: stats.recorded,
-          openActions: stats.openActions,
-          decisions: stats.decisions,
-        ),
-        const SizedBox(height: AppSpacing.lg),
         MeetingToolbar(
           filter: _filter,
           searchController: _searchController,
           onFilterChanged: (f) => setState(() => _filter = f),
-          resultCount: filtered.length,
         ),
         const SizedBox(height: AppSpacing.lg),
         if (filtered.isEmpty)
@@ -339,14 +281,6 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
     context.go(meetingDetailRoute(context.currentWorkspaceId!, m.id));
   }
 }
-
-/// The four aggregate numbers the header and the ledger both read.
-typedef _MeetingAggregate = ({
-  int thisWeek,
-  Duration recorded,
-  int openActions,
-  int decisions,
-});
 
 /// One day bucket: a collapsible header row carrying the day's name and count,
 /// over that day's rows.
@@ -465,7 +399,7 @@ class _DaySection extends StatelessWidget {
   }
 }
 
-/// The day's meeting count, in the app's shared count-chip treatment (mono on
+/// The day's meeting count, in the app's shared count-chip treatment (on
 /// the hover-strong wash).
 class _DayCount extends StatelessWidget {
   const _DayCount({required this.count});
@@ -474,20 +408,7 @@ class _DayCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ds = context.ds;
-    return Container(
-      constraints: const BoxConstraints(minWidth: 22),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: ds.hoverStrong,
-        borderRadius: const BorderRadius.all(Radius.circular(AppRadii.pill)),
-      ),
-      child: Text(
-        '$count',
-        style: meetingMono(context, fontSize: 11, color: ds.muted),
-      ),
-    );
+    return CcBadge(label: '$count');
   }
 }
 
@@ -562,7 +483,7 @@ class _ProcessingPill extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: ds.panel,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderRadius: AppRadii.brSm,
         border: Border.all(color: ds.borderSecondary),
       ),
       child: Row(
@@ -572,7 +493,7 @@ class _ProcessingPill extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(
             l10n.meetingsProcessingNow(count),
-            style: meetingMono(context, fontSize: 12),
+            style: meetingMeta(context, fontSize: 12),
           ),
         ],
       ),

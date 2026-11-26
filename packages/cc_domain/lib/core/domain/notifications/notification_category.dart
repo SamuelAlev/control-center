@@ -143,6 +143,23 @@ extension NotificationCategoryGrouping on NotificationCategory {
   };
 }
 
+/// How one event reads inside a category that carries both good and bad news.
+///
+/// A category is a concern the operator toggles ("merge readiness"), not a
+/// verdict: the same category announces "ready to merge" and "no longer
+/// mergeable". The tone is the verdict, so a surface can color and badge the
+/// two differently.
+enum NotificationTone {
+  /// Good news: approved, ready, recovered.
+  positive,
+
+  /// Bad news that needs the operator: blocked, changes requested, failed.
+  negative,
+
+  /// Neither: something was withdrawn or changed hands.
+  neutral,
+}
+
 /// How prominently a notification should surface in the app.
 ///
 /// Banner status is **earned**, never the default: an event is promoted to
@@ -186,9 +203,11 @@ class AppNotification {
     required this.route,
     required this.workspaceId,
     this.spaceId,
+    this.tone,
     this.presentation = NotificationPresentation.centerOnly,
     this.suppressWhenViewingTarget = true,
     this.wait,
+    this.meeting,
   });
 
   /// Which notification category this belongs to.
@@ -214,6 +233,10 @@ class AppNotification {
   /// suppresses delivery only while this specific space is being viewed.
   final String? spaceId;
 
+  /// The verdict of this event, when its [category] alone does not give one
+  /// (see [NotificationTone]). Null when the category reads one way only.
+  final NotificationTone? tone;
+
   /// How prominently this notification surfaces. Defaults to
   /// [NotificationPresentation.centerOnly]; the event-to-notification mappers
   /// promote only time-critical, actionable events to
@@ -234,6 +257,13 @@ class AppNotification {
   /// server-authorized call as the in-app approval card.
   final NotificationWait? wait;
 
+  /// The calendar meeting this announces, when it announces one.
+  ///
+  /// Present only on meeting-starting notifications. It lets the banner and
+  /// the OS notification join the call, or join and record it, without first
+  /// opening the event. It also makes the OS notification time-sensitive.
+  final NotificationMeeting? meeting;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -244,9 +274,11 @@ class AppNotification {
           route == other.route &&
           workspaceId == other.workspaceId &&
           spaceId == other.spaceId &&
+          tone == other.tone &&
           presentation == other.presentation &&
           suppressWhenViewingTarget == other.suppressWhenViewingTarget &&
-          wait == other.wait;
+          wait == other.wait &&
+          meeting == other.meeting;
 
   @override
   int get hashCode => Object.hash(
@@ -256,10 +288,54 @@ class AppNotification {
     route,
     workspaceId,
     spaceId,
+    tone,
     presentation,
     suppressWhenViewingTarget,
     wait,
+    meeting,
   );
+}
+
+/// Identifies the calendar meeting an [AppNotification] announces.
+class NotificationMeeting {
+  /// Creates a [NotificationMeeting] for the calendar event [eventId] in
+  /// [workspaceId]. [meetingUrl] is the call link, null when the event has
+  /// none (an in-person meeting can still be recorded).
+  NotificationMeeting({
+    required this.workspaceId,
+    required this.eventId,
+    this.meetingUrl,
+  }) {
+    if (workspaceId.isEmpty) {
+      throw ArgumentError('workspaceId must not be empty');
+    }
+    if (eventId.isEmpty) {
+      throw ArgumentError('eventId must not be empty');
+    }
+  }
+
+  /// The workspace that owns the calendar event.
+  final String workspaceId;
+
+  /// The calendar event's id.
+  final String eventId;
+
+  /// The call link to join, when the event has one.
+  final String? meetingUrl;
+
+  /// Whether there is a call to join.
+  bool get joinable => meetingUrl != null;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NotificationMeeting &&
+          workspaceId == other.workspaceId &&
+          eventId == other.eventId &&
+          meetingUrl == other.meetingUrl;
+
+  @override
+  int get hashCode => Object.hash(workspaceId, eventId, meetingUrl);
 }
 
 /// Identifies the agent wait an [AppNotification] announces.

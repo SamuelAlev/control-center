@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/source_control/scm_view.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -25,6 +26,54 @@ PrFile _file(String filename) => PrFile(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // FocusModality is a process-wide singleton whose key handler only survives
+  // the test that first registers it (the binding clears keyboard handlers
+  // between tests), so the keyboard case runs first.
+  group('ScmFileRow keyboard', () {
+    testWidgets('Enter opens the row, and focus reveals its actions', (
+      tester,
+    ) async {
+      var opened = 0;
+      var staged = 0;
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            width: 320,
+            child: ScmFileRow(
+              file: _file('lib/src/main.dart'),
+              selected: false,
+              onTap: () => opened++,
+              actions: [
+                (
+                  icon: AppIcons.plus,
+                  tooltip: 'Stage changes',
+                  onPressed: () => staged++,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(ScmIconAction), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(find.byType(ScmIconAction), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(opened, 1);
+
+      // Tab moves into the revealed action, which stays shown while focused.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(find.byType(ScmIconAction), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(staged, 1);
+      expect(opened, 1);
+    });
+  });
 
   group('ScmFileRow hover', () {
     for (final filename in ['package.json', 'lib/src/main.dart']) {

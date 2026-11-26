@@ -5,6 +5,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/editable_pr_title.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_activity_timeline.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_conversation_composer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sign_in_notice.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -73,6 +74,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
   // description's markdown, every timeline card and the sidebar's lookups.
   final GlobalKey _headerKey = GlobalKey(debugLabel: 'pr-overview-header');
   final GlobalKey _timelineKey = GlobalKey(debugLabel: 'pr-overview-timeline');
+  final GlobalKey _composerKey = GlobalKey(debugLabel: 'pr-overview-composer');
   final GlobalKey _sidebarKey = GlobalKey(debugLabel: 'pr-overview-sidebar');
 
   @override
@@ -115,6 +117,11 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
       onOpenCommentInDiff: widget.onOpenCommentInDiff,
       onOpenCommit: widget.onOpenCommit,
     );
+    final composer = PrConversationComposer(
+      key: _composerKey,
+      pr: pr,
+      prRef: prRef,
+    );
     final sidebar = PrSidebar(
       key: _sidebarKey,
       pr: pr,
@@ -141,8 +148,12 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
                   sliver: SliverToBoxAdapter(child: header),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
                   sliver: timeline,
+                ),
+                SliverPadding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 16),
+                  sliver: SliverToBoxAdapter(child: composer),
                 ),
                 const SliverToBoxAdapter(child: CcDivider()),
                 SliverToBoxAdapter(
@@ -171,8 +182,22 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
                         sliver: SliverToBoxAdapter(child: header),
                       ),
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          24,
+                          0,
+                          24,
+                          0,
+                        ),
                         sliver: timeline,
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          24,
+                          0,
+                          24,
+                          24,
+                        ),
+                        sliver: SliverToBoxAdapter(child: composer),
                       ),
                     ],
                   ),

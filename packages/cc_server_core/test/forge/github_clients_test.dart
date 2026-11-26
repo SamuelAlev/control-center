@@ -659,6 +659,87 @@ void main() {
         401,
       );
     });
+
+    test(
+      'httpForRepo with actingUserId and viaPerson: false mints an '
+      'installation token (ghs_, bot scope) rather than using the person token',
+      () async {
+        final app = ProviderAppSettings(
+          secrets: secrets,
+          githubAppFactory: ({required appId, required pem}) => GitHubAppClient(
+            appId: appId,
+            privateKeyPem: pem,
+            httpClient: TestHttpClient(
+              handler: (request) {
+                final uri = httpRequestUri(request);
+                appRequests.add(uri.path);
+                if (uri.path == '/app/installations') {
+                  return httpTextResponse(request, const [
+                    {
+                      'id': 99,
+                      'account': {'login': 'acme', 'id': 1},
+                      'target_type': 'Organization',
+                      'repository_selection': 'selected',
+                    },
+                  ]);
+                }
+                if (uri.path == '/app/installations/99/access_tokens') {
+                  return httpTextResponse(request, {
+                    'token': 'ghs_review_bot',
+                    'expires_at': DateTime.now()
+                        .toUtc()
+                        .add(const Duration(hours: 1))
+                        .toIso8601String(),
+                    'repository_selection': 'selected',
+                    'repositories': const [
+                      {'id': 101, 'name': 'api'},
+                    ],
+                    'permissions': GitHubTokenScope.bot.permissions,
+                  }, statusCode: 201);
+                }
+                return httpTextResponse(request, const {
+                  'message': 'Not Found',
+                }, statusCode: 404);
+              },
+            ),
+          ),
+        );
+        apps = app;
+        final github = await clients(
+          member: 'alice',
+          rest: _OwnAppRepoFactsRest(),
+        );
+        await credentials.storeSignIn(
+          ForgeHost.github,
+          'alice',
+          ProviderToken(
+            accessToken: 'ghu_alice_personal',
+            refreshToken: 'ghr_refresh',
+            expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
+            source: ForgeCredentialSource.oauth,
+            accountLogin: 'alice',
+            accountId: '1',
+            appId: 'Iv1.client',
+          ),
+        );
+
+        final token = await github.tokenForRepoRequest(
+          workspaceId,
+          'acme',
+          'api',
+          method: 'POST',
+          url: 'https://api.github.com/repos/acme/api/pulls/1/comments',
+          actingUserId: 'alice',
+        );
+
+        expect(token, 'ghs_review_bot');
+        expect(token, isNot('ghu_alice_personal'));
+        expect(
+          appRequests,
+          contains('/app/installations/99/access_tokens'),
+        );
+      },
+    );
   });
 
   group('the repo access registry', () {
@@ -1131,6 +1212,30 @@ final class _RateLimitedOnce extends GitHubRest {
               headers: {'x-ratelimit-remaining': '0'},
             )
           : const GitHubRestResponse(404, {'message': 'Not Found'});
+    }
+    return const GitHubRestResponse(404, {'message': 'Not Found'});
+  }
+}
+
+/// Answers repository facts for `acme/api` when probed with Alice's token.
+final class _OwnAppRepoFactsRest extends GitHubRest {
+  @override
+  Future<GitHubRestResponse> send(
+    String method,
+    String path, {
+    Map<String, String>? query,
+    String? bearer,
+    ({String clientId, String clientSecret})? basic,
+    Object? body,
+  }) async {
+    if (path == '/repos/acme/api' && bearer == 'ghu_alice_personal') {
+      return const GitHubRestResponse(200, {
+        'id': 101,
+        'owner': {'login': 'acme', 'id': 1},
+        'name': 'api',
+        'private': true,
+        'permissions': {'push': true, 'pull': true},
+      });
     }
     return const GitHubRestResponse(404, {'message': 'Not Found'});
   }

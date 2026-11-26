@@ -482,9 +482,9 @@
   "calendarDisconnect": "ยกเลิกการเชื่อมต่อ",
   "calendarReconnect": "เชื่อมต่ออีกครั้ง",
   "calendarEmptyNoEvents": "ไม่มีเหตุการณ์ในช่วงนี้",
-  "calendarStartRecording": "เริ่มบันทึก",
-  "calendarStartRecordingAndLink": "เริ่มบันทึกและลิงก์",
   "calendarJoinMeet": "เข้าร่วมการประชุม",
+  "calendarJoinAndRecord": "เข้าร่วมและบันทึก",
+  "calendarRecordFailed": "เริ่มการบันทึกไม่ได้",
   "calendarFromCalendar": "จากปฏิทิน",
   "calendarLinkedMeeting": "การประชุมที่ลิงก์แล้ว",
   "calendarToday": "วันนี้",
@@ -937,7 +937,6 @@
   "actions": "การกระทำ",
   "activate": "เปิดใช้",
   "activity": "กิจกรรม",
-  "activityLabel": "กิจกรรม",
   "activitySearchHint": "ค้นหากิจกรรม",
   "activityNoMatches": "ไม่มีกิจกรรมที่ตรงกับตัวกรอง",
   "activityPageRange": "{start}–{end} จาก {total}",
@@ -4462,7 +4461,9 @@
   "prTemplateLabel": "เทมเพลต",
   "prTemplateDefault": "ค่าเริ่มต้น",
   "addReviewers": "เพิ่มผู้รีวิว",
-  "addAssignees": "เพิ่มผู้รับมอบหมาย",
+
+  "reRequestReview": "ขอรีวิวอีกครั้ง",
+  "reRequestReviewFor": "ขอรีวิวอีกครั้งจาก {label}",  "addAssignees": "เพิ่มผู้รับมอบหมาย",
   "addLabels": "เพิ่มป้ายกำกับ",
   "searchLabels": "ค้นหาป้ายกำกับ…",
   "noMatchingLabels": "ไม่มีป้ายกำกับที่ตรงกัน",
@@ -4559,6 +4560,7 @@
   "meetingNotesHint": "จดโน้ตสั้นๆ — เอเจนต์จะขยายหลังการประชุม",
   "meetingSpeakerMe": "คุณ",
   "meetingStatusRecording": "กำลังบันทึก",
+  "meetingStatusPaused": "หยุดชั่วคราว",
   "meetingStatusProcessing": "กำลังประมวลผล",
   "meetingStatusDone": "เสร็จแล้ว",
   "meetingStatusFailed": "ล้มเหลว",
@@ -4572,20 +4574,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{ไม่มีการประชุม} =1{1 การประชุม} other{{count} การประชุม}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "การดำเนินการที่เปิด",
-  "meetingsLedgerDecisions": "การตัดสินใจ",
   "meetingsLiveOpen": "เปิดการบันทึก",
   "meetingTemplateShort": "เทมเพลต",
-  "meetingsStatThisWeek": "สัปดาห์นี้",
-  "meetingsStatRecorded": "บันทึกแล้ว",
   "meetingsFilterAll": "ทั้งหมด",
   "meetingsFilterDone": "เสร็จแล้ว",
   "meetingsFilterProcessing": "กำลังประมวลผล",
@@ -4614,7 +4604,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "เสริมแล้ว",
   "meetingsTranscribing": "กำลังถอดเสียงและสรุป…",
   "meetingsOpenAction": "เปิด",
   "meetingsStopProcessing": "หยุด",
@@ -4712,7 +4701,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "ดูเหมือนมีการประชุมเกิดขึ้น บันทึกหรือไม่?",
-  "meetingDetectedRecord": "บันทึก",
   "meetingDetectedDismiss": "ปิดทิ้ง",
   "meetingAutoStopTitle": "ดูเหมือนการประชุมจบแล้ว หยุดบันทึกหรือไม่?",
   "meetingAutoStopStop": "หยุด",
@@ -5727,6 +5715,7 @@
     }
   },
   "deviceNeverSeen": "ไม่เคยเชื่อมต่อ",
+  "deviceAwaitingApproval": "รอการอนุมัติ",
   "profileSectionLabel": "โปรไฟล์",
   "profileSectionDescription": "คุณปรากฏต่อทีมและในผู้แต่งคอมมิต git ในพื้นที่นี้อย่างไร ช่องว่างสืบทอดชื่อและอีเมลของบัญชี",
   "displayNameLabel": "ชื่อที่แสดง",
@@ -6345,8 +6334,6 @@
   "evalsStatusRunning": "กำลังรัน",
   "evalsStatusPassed": "ผ่าน",
   "evalsStatusFailed": "ล้มเหลว",
-  "bannerMeetingJoin": "เข้าร่วม",
-  "bannerMeetingRecordAndLink": "บันทึกและลิงก์",
   "bannerCalendarReconnect": "เชื่อมต่ออีกครั้ง",
   "bannerView": "ดู",
   "soundscapeTitle": "ซาวด์สเคป",
@@ -8296,6 +8283,7 @@
       }
     }
   },
+  "failedToPostComment": "โพสต์ความคิดเห็นไม่ได้: {error}",
   "commentOnLine": "บรรทัด {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8963,27 +8951,27 @@
   "rigClipboardAlwaysCopyTitle": "อนุญาตให้คัดลอกจากสภาพแวดล้อมเสมอ",
   "rigClipboardAlwaysCopyDescription": "วางเนื้อหาคลิปบอร์ดจากสภาพแวดล้อมใดก็ได้บนอุปกรณ์นี้โดยไม่ต้องถาม",
   "imageDiffBefore": "ก่อน",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "หลัง",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "เทียบคู่",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "ปัด",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "ส่วนต่าง",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "เปลี่ยน {percent}%",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8992,11 +8980,11 @@
     }
   },
   "imageDiffPictures": "รูปภาพ",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "ต้นฉบับ",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "ลบแล้ว",
@@ -9090,7 +9078,6 @@
   "diffFileMarkedNotViewedAnnouncement": "ทำเครื่องหมาย {path} ว่ายังไม่ได้ดู",
   "prLineChangesSemantics": "บรรทัดที่เพิ่ม: {additions}, บรรทัดที่ลบ: {deletions}",
   "closeTabNamed": "ปิด {tab}",
-  "threadCommentCount": "{count, plural, other{{count} ความคิดเห็น}}",
   "notificationAgentAwaitingInput": "เอเจนต์ต้องการให้คุณตรวจสอบ",
   "notifyAgentAwaitingInput": "เมื่อเอเจนต์ต้องการการอนุมัติ คำตอบ หรือข้อมูลรับรองที่ใช้ได้ หรือเมื่อนโยบายบล็อกการดำเนินการ",
   "notificationAgentNeedsApproval": "{agent} ต้องการการอนุมัติจากคุณ",
@@ -10780,7 +10767,6 @@
   "improvementRowNeedsAdmin": "ผู้ดูแลเป็นผู้ตัดสิน",
   "improvementNotFound": "ไม่มีข้อเสนอนี้ หรืออยู่ในสเปซที่คุณเปิดไม่ได้",
   "dispatchSettingsTitle": "ตารางเวลา",
-  "dispatchSettingsSubtitle": "ขีดจำกัดของตารางเวลาและการเฝ้าดู และสิ่งที่เกิดขึ้นกับคำขอที่ไม่มีใครตอบ",
   "dispatchLimitsLabel": "ขีดจำกัดตารางเวลา",
   "dispatchLimitsSubtitle": "จำนวนสูงสุดของตารางเวลาและการเฝ้าดูที่เอเจนต์ถือได้ และค่าเริ่มต้น",
   "dispatchLimitRange": "1 ถึง {max}",
@@ -10803,7 +10789,6 @@
   "dispatchDigestHourHelp": "ตาม {zone} ซึ่งเป็นเขตเวลาด้านบน",
   "dispatchDigestHourRange": "0 ถึง 23",
   "goalRecordCrumb": "เป้าหมาย",
-  "scheduleRecordCrumb": "ตารางเวลา",
   "improvementRecordCrumb": "ข้อเสนอ",
   "goalNodeNeedsAgent": "เลือกเอเจนต์ที่จะดำเนินการตามเป้าหมาย",
   "goalNodeNeedsObjective": "เขียนวัตถุประสงค์",
@@ -10924,5 +10909,14 @@
   "mcpServerSignInWrongCode": "นั่นไม่ใช่รหัสที่เบราว์เซอร์แสดง {count, plural, other{เหลืออีก {count} ครั้ง}}",
   "mcpServerSignInEnded": "ใช้เวลานานเกินไป ถูกปฏิเสธ หรือกรอกรหัสผิดเกินกำหนด เริ่มใหม่เพื่อรับหน้าลงชื่อเข้าใช้ใหม่",
   "mcpServerSignInStartAgain": "เริ่มใหม่",
-  "mcpServerSignedIn": "ลงชื่อเข้าใช้ {name} แล้ว"
+  "mcpServerSignedIn": "ลงชื่อเข้าใช้ {name} แล้ว",
+  "ccLoading": "กำลังโหลด",
+  "ccProgress": "ความคืบหน้า",
+  "ccBreadcrumb": "เส้นทางการนำทาง",
+  "ccDialog": "กล่องโต้ตอบ",
+  "ccResize": "ปรับขนาด",
+  "ccUnverifiedLabel": "{label} (ยังไม่ได้ตรวจสอบ)",
+  "prRowSelect": "เลือก {title}",
+  "prTableSelectAll": "เลือก Pull request ทั้งหมด",
+  "planVersionRewind": "ย้อนกลับไปยังเวอร์ชัน {version}"
 }

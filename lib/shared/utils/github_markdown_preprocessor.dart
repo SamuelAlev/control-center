@@ -260,9 +260,19 @@ String _convertImgTag(String tag) {
     return tag;
   }
 
-  final alt = _extractAttr(tag, 'alt') ?? '';
+  final alt = _escapeAlt(_extractAttr(tag, 'alt') ?? '');
   return '![${_encodeAltWithDimensions(tag, alt)}]($src)';
 }
+
+final _altSpecialRe = RegExp(r'\\?[|\[\]]');
+
+/// Backslash-escapes the characters that would end the markdown image's alt
+/// text (`[`, `]`) or split a table cell (`|`). One already escaped in the
+/// source stays as written.
+String _escapeAlt(String alt) => alt.replaceAllMapped(_altSpecialRe, (m) {
+  final match = m.group(0)!;
+  return match.length == 2 ? match : '\\$match';
+});
 
 /// Sentinel prefix used to smuggle `<img>` dimensions through the markdown
 /// pipeline via the alt-text. We can't use the URL fragment (`#WxH`)
@@ -270,16 +280,16 @@ String _convertImgTag(String tag) {
 /// `imageBuilder` — see its `builder.dart:600`. Alt text, on the other
 /// hand, is passed through verbatim.
 ///
-/// Encoded form: `ccdim:w=NNN&h=NNN|<original alt>`. Real alt text
+/// Encoded form: `ccdim:w=NNN&h=NNN;<original alt>`. Real alt text
 /// effectively never starts with `ccdim:` so collisions are negligible.
 /// Public sentinel — alt text starting with this carries dimension hints.
 const String ccDimSentinel = 'ccdim:';
 
 /// Separator between the encoded payload and the original alt text.
-const String ccDimDelimiter = '|';
+const String ccDimDelimiter = ';';
 
 /// If the tag carries `width` / `height` attributes, returns
-/// `ccdim:w=NNN&h=NNN|<alt>`. Otherwise returns [alt] unchanged.
+/// `ccdim:w=NNN&h=NNN;<alt>`. Otherwise returns [alt] unchanged.
 String _encodeAltWithDimensions(String tag, String alt) {
   final parts = <String>[];
   final w = _parseDimension(_extractAttr(tag, 'width'));
@@ -311,19 +321,19 @@ class AltDecodeResult {
   final ImageDimensionHint hint;
 }
 
-/// Strips the `ccdim:w=NNN&h=NNN|` prefix (if any) from [alt] and returns
+/// Strips the `ccdim:w=NNN&h=NNN;` prefix (if any) from [alt] and returns
 /// the remaining text plus the parsed dimension hint. Always succeeds —
 /// when no sentinel is present, returns [alt] unchanged with an empty hint.
 AltDecodeResult decodeAltWithDimensions(String? alt) {
   if (alt == null || !alt.startsWith(ccDimSentinel)) {
     return AltDecodeResult(alt: alt ?? '', hint: const ImageDimensionHint());
   }
-  final pipe = alt.indexOf(ccDimDelimiter, ccDimSentinel.length);
-  if (pipe < 0) {
+  final end = alt.indexOf(ccDimDelimiter, ccDimSentinel.length);
+  if (end < 0) {
     return AltDecodeResult(alt: alt, hint: const ImageDimensionHint());
   }
-  final payload = alt.substring(ccDimSentinel.length, pipe);
-  final rest = alt.substring(pipe + 1);
+  final payload = alt.substring(ccDimSentinel.length, end);
+  final rest = alt.substring(end + 1);
 
   double? widthPx;
   double? heightPx;

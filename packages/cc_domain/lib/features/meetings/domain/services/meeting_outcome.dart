@@ -19,6 +19,28 @@ class ParsedActionItem {
   int get hashCode => Object.hash(text, owner);
 }
 
+/// One targeted ASR term replacement inferred by the meeting-summary agent
+/// (for example fixing `"Cold Rabbit"` → `"CodeRabbit"` or `"M C P"` → `"MCP"`).
+class TranscriptCorrection {
+  /// Creates a [TranscriptCorrection].
+  const TranscriptCorrection({required this.find, required this.replace});
+
+  /// Exact phrase (case-insensitive, ASCII word-bounded) to replace.
+  final String find;
+
+  /// Corrected spelling / capitalization.
+  final String replace;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TranscriptCorrection &&
+      other.find == find &&
+      other.replace == replace;
+
+  @override
+  int get hashCode => Object.hash(find, replace);
+}
+
 /// The normalized, structured result of a meeting-summary agent run.
 ///
 /// The `meeting_summary` pipeline's agent step returns its result through the
@@ -37,6 +59,7 @@ class MeetingOutcome {
     this.actionItems = const [],
     this.decisions = const [],
     this.speakerNames = const {},
+    this.transcriptCorrections = const [],
     this.isStructured = false,
   });
 
@@ -63,6 +86,9 @@ class MeetingOutcome {
           if (d is String && d.trim().isNotEmpty) d.trim(),
       ],
       speakerNames: _speakerNames(json['speakerNames']),
+      transcriptCorrections: _transcriptCorrections(
+        json['transcriptCorrections'],
+      ),
     );
   }
 
@@ -102,6 +128,17 @@ class MeetingOutcome {
         'type': 'object',
         'additionalProperties': {'type': 'string'},
       },
+      'transcriptCorrections': {
+        'type': 'array',
+        'items': {
+          'type': 'object',
+          'required': ['find', 'replace'],
+          'properties': {
+            'find': {'type': 'string'},
+            'replace': {'type': 'string'},
+          },
+        },
+      },
     },
   };
 
@@ -135,6 +172,10 @@ class MeetingOutcome {
   /// rename always wins) — see `meeting.saveNotes`.
   final Map<String, String> speakerNames;
 
+  /// Targeted term replacements fixing ASR misrecognitions of technical words,
+  /// acronyms, or proper nouns in the transcript. Applied by `meeting.saveNotes`.
+  final List<TranscriptCorrection> transcriptCorrections;
+
   /// Parses [raw] — the value the engine wrote under the agent step's
   /// `outputKey`. Accepts a `Map` (structured), a JSON string, a fenced
   /// ```` ```json ```` block, or plain markdown (kept verbatim as
@@ -160,6 +201,9 @@ class MeetingOutcome {
       ),
       decisions: _decisions(map['decisions'] ?? map['Decisions']),
       speakerNames: _speakerNames(map['speakerNames'] ?? map['speaker_names']),
+      transcriptCorrections: _transcriptCorrections(
+        map['transcriptCorrections'] ?? map['transcript_corrections'],
+      ),
     );
   }
 
@@ -293,6 +337,32 @@ class MeetingOutcome {
         }
       }
     });
+    return out;
+  }
+
+  /// Parses `transcriptCorrections`: trims `find` and `replace`, dropping empty,
+  /// identical, or `< 3`-character `find` entries so short tokens cannot cause
+  /// broad false replacements.
+  static List<TranscriptCorrection> _transcriptCorrections(Object? v) {
+    if (v is! List) {
+      return const [];
+    }
+    final out = <TranscriptCorrection>[];
+    for (final e in v) {
+      if (e is! Map) {
+        continue;
+      }
+      final m = e.cast<String, dynamic>();
+      final find = _str(m['find']);
+      final replace = _str(m['replace']);
+      if (find == null || replace == null) {
+        continue;
+      }
+      if (find.length < 3 || find == replace) {
+        continue;
+      }
+      out.add(TranscriptCorrection(find: find, replace: replace));
+    }
     return out;
   }
 }

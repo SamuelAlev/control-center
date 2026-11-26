@@ -82,8 +82,8 @@ class ActivityLedgerRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: AppTimestamp.relative(
                 at,
-                style: CcFonts.code(
-                  textStyle: CcTypography.monoNum.copyWith(
+                style: CcFonts.numeric(
+                  textStyle: CcTypography.numeric.copyWith(
                     fontSize: 12,
                     color: t.textTertiary,
                   ),
@@ -97,12 +97,18 @@ class ActivityLedgerRow extends StatelessWidget {
   }
 }
 
-/// A machine token (an op name like `agents.upsert`, an outcome like
-/// `denied`): monospace, on a quiet surface chip, scannable without
-/// pretending to be prose. [color] tints the text (an outcome's tone).
+/// A token on a quiet surface chip, scannable without pretending to be prose:
+/// a machine string (an op name like `agents.upsert`) in the code face, or,
+/// with [code] off, a word (an outcome like "Denied") in the UI face. [color]
+/// tints the text (an outcome's tone).
 class ActivityCodeToken extends StatelessWidget {
   /// Creates a token showing [label].
-  const ActivityCodeToken({super.key, required this.label, this.color});
+  const ActivityCodeToken({
+    super.key,
+    required this.label,
+    this.color,
+    this.code = true,
+  });
 
   /// The token, verbatim.
   final String label;
@@ -110,9 +116,16 @@ class ActivityCodeToken extends StatelessWidget {
   /// Text color; secondary text when null.
   final Color? color;
 
+  /// Whether [label] is a machine string, set in the code face.
+  final bool code;
+
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final style = CcTypography.numeric.copyWith(
+      fontSize: 12,
+      color: color ?? t.textSecondary,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       color: t.bgTertiary,
@@ -122,12 +135,7 @@ class ActivityCodeToken extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         // RTL carve-out: an op name is a machine string read left to right.
         textDirection: TextDirection.ltr,
-        style: CcFonts.code(
-          textStyle: CcTypography.monoNum.copyWith(
-            fontSize: 12,
-            color: color ?? t.textSecondary,
-          ),
-        ),
+        style: code ? CcFonts.code(textStyle: style) : style,
       ),
     );
   }

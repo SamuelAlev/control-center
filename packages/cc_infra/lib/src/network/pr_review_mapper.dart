@@ -289,7 +289,11 @@ PullRequest pullRequestFromGraphQlNode(
     number: number,
     title: node['title'] as String? ?? '',
     body: '',
-    state: PrState.open,
+    state: switch ((node['state'] as String?)?.toUpperCase()) {
+      'MERGED' => PrState.merged,
+      'CLOSED' => PrState.closed,
+      _ => PrState.open,
+    },
     isDraft: node['isDraft'] as bool? ?? false,
     author: _prUserFromGraphQl(node['author'] as Map<String, dynamic>?),
     createdAt: DateTime.tryParse(node['createdAt'] as String? ?? ''),
@@ -441,12 +445,15 @@ Set<String> codeOwnerIdentitiesFromReviewState(GitHubPrReviewState raw) {
 
 /// Resolves the raw GraphQL review state into the enriched reviewer rows.
 ///
-/// - Pending user/team requests become `pending` rows; `isCodeOwner` is the
-///   GraphQL `asCodeOwner` flag OR-ed with membership in `knownCodeOwnerIds`.
-/// - A completed review with `onBehalfOf` merges into the team's row, carrying
-///   the member who reviewed and the team's review verdict.
-/// - A completed review without `onBehalfOf` is an individual review and
-///   overrides any pending row for that user (completed state wins).
+/// - Completed reviews are seeded first: an individual review builds a user
+///   row with its verdict, and an `onBehalfOf` review builds a team row
+///   carrying the member who reviewed.
+/// - Outstanding pending user/team requests are applied second so an active
+///   review request (including a re-request after a prior review) overrides a
+///   completed verdict and transitions the row back to `pending` (with
+///   `reviewedBy` cleared on teams). `isCodeOwner` is the GraphQL
+///   `asCodeOwner` flag OR-ed with any prior row's flag and membership in
+///   `knownCodeOwnerIds`.
 /// Users dedupe by login, teams by slug. Users render before teams.
 List<PrReviewer> prReviewersFromReviewState(
   GitHubPrReviewState raw, {
@@ -454,32 +461,6 @@ List<PrReviewer> prReviewersFromReviewState(
 }) {
   final users = <String, PrUserReviewer>{};
   final teams = <String, PrTeamReviewer>{};
-
-  for (final u in raw.pendingUsers) {
-    if (u.login.isEmpty) {
-      continue;
-    }
-    final key = u.login.toLowerCase();
-    users[key] = PrUserReviewer(
-      user: PrUser(login: u.login, avatarUrl: u.avatarUrl),
-      isCodeOwner: u.asCodeOwner || knownCodeOwnerIds.contains('user:$key'),
-      state: PrReviewSubmissionState.pending,
-    );
-  }
-
-  for (final t in raw.pendingTeams) {
-    if (t.slug.isEmpty) {
-      continue;
-    }
-    final key = t.slug.toLowerCase();
-    teams[key] = PrTeamReviewer(
-      name: t.name,
-      slug: t.slug,
-      avatarUrl: t.avatarUrl,
-      isCodeOwner: t.asCodeOwner || knownCodeOwnerIds.contains('team:$key'),
-      state: PrReviewSubmissionState.pending,
-    );
-  }
 
   for (final r in raw.completedReviews) {
     final state = prReviewerStateFromGraphQl(r.state);
@@ -516,6 +497,47 @@ List<PrReviewer> prReviewersFromReviewState(
     }
   }
 
+  for (final u in raw.pendingUsers) {
+    if (u.login.isEmpty) {
+      continue;
+    }
+    final key = u.login.toLowerCase();
+    final existing = users[key];
+    users[key] = PrUserReviewer(
+      user: PrUser(
+        login: u.login,
+        avatarUrl: u.avatarUrl.isNotEmpty
+            ? u.avatarUrl
+            : (existing?.user.avatarUrl ?? ''),
+      ),
+      isCodeOwner:
+          u.asCodeOwner ||
+          (existing?.isCodeOwner ?? false) ||
+          knownCodeOwnerIds.contains('user:$key'),
+      state: PrReviewSubmissionState.pending,
+    );
+  }
+
+  for (final t in raw.pendingTeams) {
+    if (t.slug.isEmpty) {
+      continue;
+    }
+    final key = t.slug.toLowerCase();
+    final existing = teams[key];
+    teams[key] = PrTeamReviewer(
+      name: t.name.isNotEmpty ? t.name : (existing?.name ?? t.slug),
+      slug: t.slug,
+      avatarUrl: t.avatarUrl.isNotEmpty
+          ? t.avatarUrl
+          : (existing?.avatarUrl ?? ''),
+      isCodeOwner:
+          t.asCodeOwner ||
+          (existing?.isCodeOwner ?? false) ||
+          knownCodeOwnerIds.contains('team:$key'),
+      state: PrReviewSubmissionState.pending,
+    );
+  }
+
   return <PrReviewer>[...users.values, ...teams.values];
 }
 
@@ -548,7 +570,7 @@ PrCodeReviewComment prCodeReviewCommentFromGitHub(GitHubReviewComment c) {
     body: c.body,
     user: _toPrUser(c.user),
     path: c.path,
-    position: c.line ?? c.originalLine,
+    position: c.line,
     createdAt: c.createdAt,
     side: c.side,
     inReplyToId: c.inReplyToId,
@@ -559,6 +581,7 @@ PrCodeReviewComment prCodeReviewCommentFromGitHub(GitHubReviewComment c) {
     reactions: reactionGroupsFromSummary(c.reactions),
     reviewId: c.pullRequestReviewId,
     isFileLevel: c.isFileLevel,
+    isOutdated: !c.isFileLevel && c.line == null,
   );
 }
 

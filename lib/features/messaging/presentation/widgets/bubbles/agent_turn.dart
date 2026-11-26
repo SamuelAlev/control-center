@@ -228,7 +228,6 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
               children: [
                 AgentTurnHeader(
                   message: message,
-                  codeFont: widget.codeFont,
                   collapseHeader: widget.collapseHeader,
                 ),
                 // Only the body area rebuilds on structural stream changes
@@ -240,7 +239,6 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
                 AgentTurnFooter(
                   listed: widget.message,
                   shown: message,
-                  codeFont: widget.codeFont,
                   canRetry: widget.canRetry,
                 ),
               ],
@@ -385,7 +383,7 @@ class _TurnBody extends ConsumerWidget {
 
 /// The quiet trailing line under an agent turn: the timestamp, then —
 /// once the turn has resolved (`turnOutcome != null`) — duration · cost ·
-/// tokens, in a mono, tabular-figures style (DESIGN.md `mono-num`). The
+/// tokens, in the UI font with tabular figures. The
 /// timestamp is always shown (so a turn is dateable even mid-stream); the
 /// metadata is appended only when known. Replaces the per-prose-block timestamp
 /// the old bubble body printed, so the continuous flow has exactly one.
@@ -395,23 +393,17 @@ class _TurnBody extends ConsumerWidget {
 /// and token counts show a click cursor, pop the timestamp hover card and copy
 /// an ISO instant on tap — none of which they describe. The metadata run is
 /// inert text carrying its own leading separator, so the line still reads
-/// unbroken with identical metrics (same mono style, so the default
+/// unbroken with identical metrics (same style, so the default
 /// [CrossAxisAlignment.center] lands both runs on the same baseline).
 class _AgentTrailer extends StatelessWidget {
-  const _AgentTrailer({
-    required this.message,
-    required this.codeFont,
-    required this.tokens,
-  });
+  const _AgentTrailer({required this.message, required this.tokens});
 
   final Message message;
-  final String codeFont;
   final DesignSystemTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    final style = AppFonts.codeDynamic(
-      codeFont,
+    final style = AppFonts.numeric(
       textStyle: CcTypography.caption.copyWith(
         color: tokens.textQuaternary,
         fontSize: 11,

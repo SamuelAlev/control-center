@@ -162,7 +162,7 @@ void main() {
     testWidgets('renders Reader preferences section', (tester) async {
       _setupViewport(tester);
       await _pumpScreen(tester, overrides: await _defaultOverrides());
-      expect(find.text('READER PREFERENCES'), findsOneWidget);
+      expect(find.text('Reader preferences'), findsOneWidget);
     });
 
     testWidgets('renders Open in app preference', (tester) async {
@@ -211,7 +211,7 @@ void main() {
         tester,
         overrides: await _defaultOverrides(feeds: feeds),
       );
-      expect(find.textContaining('FEEDS (1)'), findsOneWidget);
+      expect(find.textContaining('Feeds (1)'), findsOneWidget);
     });
 
     testWidgets('renders empty feeds message', (tester) async {
@@ -454,7 +454,7 @@ void main() {
           ],
         ),
       );
-      expect(find.textContaining('FEEDS (2)'), findsOneWidget);
+      expect(find.textContaining('Feeds (2)'), findsOneWidget);
       expect(find.text('Feed A'), findsOneWidget);
       expect(find.text('Feed B'), findsOneWidget);
       expect(find.byIcon(AppIcons.trash2), findsAtLeast(2));
@@ -499,15 +499,15 @@ void main() {
       (tester) async {
         _setupViewport(tester);
         await _pumpScreen(tester, overrides: await _blockingOverrides());
-        expect(find.text('FILTER LISTS'), findsOneWidget);
-        expect(find.text('TRUSTED SITES'), findsOneWidget);
+        expect(find.text('Filter lists'), findsOneWidget);
+        expect(find.text('Trusted sites'), findsOneWidget);
 
         final switches = find.byType(CcSwitch);
         await tester.tap(switches.at(1));
         await tester.pumpAndSettle();
 
-        expect(find.text('FILTER LISTS'), findsNothing);
-        expect(find.text('TRUSTED SITES'), findsNothing);
+        expect(find.text('Filter lists'), findsNothing);
+        expect(find.text('Trusted sites'), findsNothing);
       },
     );
 
@@ -539,7 +539,7 @@ void main() {
     ) async {
       _setupViewport(tester);
       await _pumpScreen(tester, overrides: await _blockingOverrides());
-      expect(find.text('FILTER LISTS'), findsOneWidget);
+      expect(find.text('Filter lists'), findsOneWidget);
     });
 
     testWidgets('shows Check for updates button', (tester) async {
@@ -687,7 +687,7 @@ void main() {
     ) async {
       _setupViewport(tester);
       await _pumpScreen(tester, overrides: await _blockingOverrides());
-      expect(find.text('TRUSTED SITES'), findsOneWidget);
+      expect(find.text('Trusted sites'), findsOneWidget);
     });
 
     testWidgets('shows empty state when no trusted sites', (tester) async {
@@ -802,7 +802,7 @@ void main() {
           ],
         ),
       );
-      expect(find.textContaining('FEEDS (3)'), findsOneWidget);
+      expect(find.textContaining('Feeds (3)'), findsOneWidget);
     });
   });
 }

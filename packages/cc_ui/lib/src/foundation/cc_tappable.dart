@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
+import 'package:cc_ui/src/foundation/cc_focus_keeper.dart';
 import 'package:cc_ui/src/primitives/focus_ring.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -34,8 +35,18 @@ class CcTappable extends StatefulWidget {
     this.semanticLabel,
     this.semanticButton = true,
     this.canRequestFocus = true,
+    this.requestFocusOnTap = true,
+    this.focusableWhenDisabled = false,
     this.statesController,
     this.shortcuts,
+    this.semanticSelected,
+    this.semanticChecked,
+    this.semanticMixed,
+    this.semanticToggled,
+    this.semanticExpanded,
+    this.semanticInMutuallyExclusiveGroup,
+    this.semanticValue,
+    this.semanticHint,
   });
 
   /// Paints the child for the current interaction states.
@@ -79,6 +90,44 @@ class CcTappable extends StatefulWidget {
 
   /// Whether the tappable can take focus.
   final bool canRequestFocus;
+
+  /// Whether a click or tap moves keyboard focus here, so the next Tab starts
+  /// from the control the person just used. Focus stays put while it sits in
+  /// a text input or under a [CcFocusKeeper]. Has no effect when
+  /// [canRequestFocus] is false.
+  final bool requestFocusOnTap;
+
+  /// Whether the tappable stays a focus target while it has no handler. A
+  /// control that is briefly busy (a button showing its loading state) sets
+  /// this so focus is not thrown off it; activation is still refused.
+  final bool focusableWhenDisabled;
+
+  /// Selected state for assistive technology (a tab, a nav row, a chip).
+  final bool? semanticSelected;
+
+  /// Checked state for assistive technology (a checkbox, a radio).
+  final bool? semanticChecked;
+
+  /// Mixed (indeterminate) state for assistive technology. Mutually exclusive
+  /// with a true [semanticChecked].
+  final bool? semanticMixed;
+
+  /// On/off state for assistive technology (a switch).
+  final bool? semanticToggled;
+
+  /// Expanded state for assistive technology (a disclosure header, a trigger
+  /// that owns a popup).
+  final bool? semanticExpanded;
+
+  /// Whether this is one of a set where only one can be chosen (a radio, a
+  /// segment).
+  final bool? semanticInMutuallyExclusiveGroup;
+
+  /// Current value for assistive technology (a dropdown's selection).
+  final String? semanticValue;
+
+  /// Extra description for assistive technology.
+  final String? semanticHint;
 
   /// Optional external states controller (e.g. shared with a component).
   final WidgetStatesController? statesController;
@@ -124,18 +173,17 @@ class _CcTappableState extends State<CcTappable> {
   final _StatesChanged _visibleChanged = _StatesChanged();
 
   late final Map<Type, Action<Intent>> _actions = {
-    ActivateIntent: CallbackAction<ActivateIntent>(
-      onInvoke: (_) {
-        _activate();
-        return null;
-      },
-    ),
+    ActivateIntent: _ActivateAction(this),
   };
 
+  // A held key activates once, not on every repeat.
   static const Map<ShortcutActivator, Intent> _defaultShortcuts = {
-    SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
-    SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
-    SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+    SingleActivator(LogicalKeyboardKey.enter, includeRepeats: false):
+        ActivateIntent(),
+    SingleActivator(LogicalKeyboardKey.numpadEnter, includeRepeats: false):
+        ActivateIntent(),
+    SingleActivator(LogicalKeyboardKey.space, includeRepeats: false):
+        ActivateIntent(),
   };
 
   @override
@@ -209,6 +257,53 @@ class _CcTappableState extends State<CcTappable> {
     widget.onPressed?.call();
   }
 
+  /// The defaults with [extra] laid over them. An entry of [extra] replaces
+  /// the default bound to the same key, whatever its repeat setting.
+  static Map<ShortcutActivator, Intent> _mergedShortcuts(
+    Map<ShortcutActivator, Intent>? extra,
+  ) {
+    if (extra == null) {
+      return _defaultShortcuts;
+    }
+    final overridden = <LogicalKeyboardKey>{
+      for (final activator in extra.keys)
+        if (activator is SingleActivator) activator.trigger,
+    };
+    return {
+      for (final entry in _defaultShortcuts.entries)
+        if (!overridden.contains((entry.key as SingleActivator).trigger))
+          entry.key: entry.value,
+      ...extra,
+    };
+  }
+
+  /// A held activation key activates once. The repeats are consumed here so
+  /// they reach neither this tappable's shortcuts nor the app-level ones that
+  /// map the same keys to [ActivateIntent].
+  KeyEventResult _swallowActivationRepeat(FocusNode node, KeyEvent event) {
+    if (event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    final activates =
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter ||
+        key == LogicalKeyboardKey.space;
+    return activates ? KeyEventResult.handled : KeyEventResult.ignored;
+  }
+
+  /// A pointer activation: take focus first, so Tab continues from here and
+  /// a surface this opens can hand focus back when it closes.
+  void _handleTap() {
+    if (widget.requestFocusOnTap &&
+        widget.canRequestFocus &&
+        !_focusNode.hasPrimaryFocus &&
+        !CcFocusKeeper.holds(FocusManager.instance.primaryFocus)) {
+      _focusNode.requestFocus();
+    }
+    _activate();
+  }
+
   void _setPressed(bool pressed) {
     if (widget.enabled) {
       _states.update(WidgetState.pressed, pressed);
@@ -218,6 +313,8 @@ class _CcTappableState extends State<CcTappable> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
+    final focusable =
+        widget.canRequestFocus && (enabled || widget.focusableWhenDisabled);
     final fluidControlled = CcFluidHover.controlsTappable(context);
     // Both read the item scope, which notifies only when THIS item's active
     // state changes — the pointer entering or leaving the group arrives
@@ -233,7 +330,7 @@ class _CcTappableState extends State<CcTappable> {
 
     child = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: enabled ? _activate : null,
+      onTap: enabled ? _handleTap : null,
       onTapDown: enabled ? (_) => _setPressed(true) : null,
       onTapUp: enabled ? (_) => _setPressed(false) : null,
       onTapCancel: enabled ? () => _setPressed(false) : null,
@@ -246,15 +343,14 @@ class _CcTappableState extends State<CcTappable> {
     child = Focus(
       focusNode: _focusNode,
       autofocus: widget.autofocus,
-      canRequestFocus: enabled && widget.canRequestFocus,
+      canRequestFocus: focusable,
+      onKeyEvent: _swallowActivationRepeat,
       onFocusChange: (focused) => _states.update(WidgetState.focused, focused),
       child: child,
     );
     child = Actions(actions: _actions, child: child);
     child = Shortcuts(
-      shortcuts: widget.shortcuts == null
-          ? _defaultShortcuts
-          : {..._defaultShortcuts, ...widget.shortcuts!},
+      shortcuts: _mergedShortcuts(widget.shortcuts),
       child: child,
     );
 
@@ -264,7 +360,7 @@ class _CcTappableState extends State<CcTappable> {
         borderRadius: widget.borderRadius,
         color: widget.focusRingColor,
         offset: widget.focusRingOffset,
-        enabled: enabled,
+        enabled: focusable,
         child: child,
       );
     }
@@ -290,9 +386,36 @@ class _CcTappableState extends State<CcTappable> {
       button: widget.semanticButton,
       enabled: enabled,
       label: widget.semanticLabel,
+      value: widget.semanticValue,
+      hint: widget.semanticHint,
+      selected: widget.semanticSelected,
+      checked: widget.semanticChecked,
+      mixed: widget.semanticMixed,
+      toggled: widget.semanticToggled,
+      expanded: widget.semanticExpanded,
+      inMutuallyExclusiveGroup: widget.semanticInMutuallyExclusiveGroup,
       container: true,
       child: child,
     );
+  }
+}
+
+/// Enter/Space on the tappable. Claims the key only while the tappable can
+/// act, or is busy and holding focus on purpose; a plainly disabled one lets
+/// the key go on to whoever else wants it.
+class _ActivateAction extends Action<ActivateIntent> {
+  _ActivateAction(this._state);
+
+  final _CcTappableState _state;
+
+  @override
+  bool isEnabled(ActivateIntent intent) =>
+      _state.widget.enabled || _state.widget.focusableWhenDisabled;
+
+  @override
+  Object? invoke(ActivateIntent intent) {
+    _state._activate();
+    return null;
   }
 }
 

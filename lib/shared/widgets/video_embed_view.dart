@@ -158,10 +158,10 @@ class _VideoEmbedFallbackCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: InkWell(
-        onTap: () => openExternalUrl(sourceUrl.toString()),
+      child: CcTappable(
+        onPressed: () => openExternalUrl(sourceUrl.toString()),
         borderRadius: BorderRadius.circular(8),
-        child: Container(
+        builder: (context, _) => Container(
           height: 140,
           width: double.infinity,
           decoration: BoxDecoration(

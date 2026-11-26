@@ -162,7 +162,7 @@ class _CopyValueChipState extends State<_CopyValueChip> {
                     child: Text(
                       widget.value,
                       style: CcFonts.code(
-                        textStyle: CcTypography.monoNum.copyWith(
+                        textStyle: CcTypography.numeric.copyWith(
                           color: t.textPrimary,
                         ),
                       ),

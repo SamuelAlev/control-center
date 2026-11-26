@@ -60,7 +60,7 @@ void main() {
             ReviewNodeKind.bug,
             ReviewNodePriority.p0,
           );
-          expect(decor.label, 'BUG');
+          expect(decor.label, 'Bug');
           return const SizedBox.shrink();
         }),
       );
@@ -74,7 +74,7 @@ void main() {
             ReviewNodeKind.suggestion,
             ReviewNodePriority.p2,
           );
-          expect(decor.label, 'SUGGEST');
+          expect(decor.label, 'Suggest');
           return const SizedBox.shrink();
         }),
       );
@@ -90,7 +90,7 @@ void main() {
             ReviewNodeKind.recommendation,
             ReviewNodePriority.p3,
           );
-          expect(decor.label, 'RECOMMEND');
+          expect(decor.label, 'Recommend');
           return const SizedBox.shrink();
         }),
       );
@@ -104,7 +104,7 @@ void main() {
             ReviewNodeKind.question,
             ReviewNodePriority.p3,
           );
-          expect(decor.label, 'QUESTION');
+          expect(decor.label, 'Question');
           return const SizedBox.shrink();
         }),
       );
@@ -118,7 +118,7 @@ void main() {
             ReviewNodeKind.ticket,
             ReviewNodePriority.p2,
           );
-          expect(decor.label, 'TICKET');
+          expect(decor.label, 'Ticket');
           return const SizedBox.shrink();
         }),
       );

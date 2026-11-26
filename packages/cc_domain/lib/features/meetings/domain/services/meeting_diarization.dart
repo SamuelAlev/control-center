@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
+import 'package:cc_domain/features/meetings/domain/services/meeting_outcome.dart';
 
 /// A speaker-labeled time span produced by diarization.
 class DiarizedSpan {
@@ -336,4 +337,68 @@ String _joinTurnText(String a, String b) {
     return left;
   }
   return '$left $right';
+}
+
+final RegExp _asciiAlnum = RegExp(r'[A-Za-z0-9]');
+
+/// Applies targeted ASR term [corrections] across [segments], preserving all
+/// segment metadata (`id`, timestamps, `speaker`, `speakerLabel`,
+/// `speakerNameOverride`, `createdAt`).
+///
+/// Matching is case-insensitive and guards ASCII word boundaries at the start
+/// and end of each `find` phrase when that edge is alphanumeric, so short
+/// corrections cannot corrupt substrings inside unrelated words.
+List<MeetingSegment> applyTranscriptCorrections(
+  List<MeetingSegment> segments,
+  List<TranscriptCorrection> corrections,
+) {
+  if (segments.isEmpty || corrections.isEmpty) {
+    return segments;
+  }
+  final rules = <({RegExp pattern, String replace})>[];
+  for (final c in corrections) {
+    final find = c.find.trim();
+    final replace = c.replace.trim();
+    if (find.length < 3 || replace.isEmpty || find == replace) {
+      continue;
+    }
+    final prefix = _asciiAlnum.hasMatch(find[0]) ? r'(?<![A-Za-z0-9])' : '';
+    final suffix = _asciiAlnum.hasMatch(find[find.length - 1])
+        ? r'(?![A-Za-z0-9])'
+        : '';
+    rules.add((
+      pattern: RegExp(
+        '$prefix${RegExp.escape(find)}$suffix',
+        caseSensitive: false,
+      ),
+      replace: replace,
+    ));
+  }
+  if (rules.isEmpty) {
+    return segments;
+  }
+  return [
+    for (final seg in segments)
+      () {
+        var updated = seg.text;
+        for (final r in rules) {
+          updated = updated.replaceAll(r.pattern, r.replace);
+        }
+        if (updated == seg.text) {
+          return seg;
+        }
+        return MeetingSegment(
+          id: seg.id,
+          meetingId: seg.meetingId,
+          workspaceId: seg.workspaceId,
+          speaker: seg.speaker,
+          speakerLabel: seg.speakerLabel,
+          speakerNameOverride: seg.speakerNameOverride,
+          text: updated,
+          startMs: seg.startMs,
+          endMs: seg.endMs,
+          createdAt: seg.createdAt,
+        );
+      }(),
+  ];
 }

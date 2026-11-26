@@ -10,6 +10,7 @@ import 'package:cc_domain/features/meetings/domain/entities/voice_profile.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/voice_profile_repository.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_diarization.dart';
+import 'package:cc_domain/features/meetings/domain/services/meeting_outcome.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
@@ -779,5 +780,108 @@ void main() {
         expect(repo.renames, isEmpty);
       },
     );
+  });
+
+  group('applyTranscriptCorrections & meeting.saveNotes corrections', () {
+    test('replaces terms case-insensitively with word boundaries and preserves metadata', () {
+      final seg = MeetingSegment(
+        id: 's1',
+        meetingId: 'm1',
+        workspaceId: 'w1',
+        speaker: MeetingSpeaker.them,
+        speakerLabel: 'Person 2',
+        speakerNameOverride: 'Sam',
+        text: 'We tried Cold Rabbit and M C P, not scold rabbitry.',
+        startMs: 1000,
+        endMs: 4500,
+        createdAt: DateTime(2026),
+      );
+      final out = applyTranscriptCorrections(
+        [seg],
+        const [
+          TranscriptCorrection(find: 'cold rabbit', replace: 'CodeRabbit'),
+          TranscriptCorrection(find: 'M C P', replace: 'MCP'),
+        ],
+      );
+      expect(out, hasLength(1));
+      expect(
+        out.single.text,
+        'We tried CodeRabbit and MCP, not scold rabbitry.',
+      );
+      expect(out.single.speakerLabel, 'Person 2');
+      expect(out.single.speakerNameOverride, 'Sam');
+      expect(out.single.startMs, 1000);
+      expect(out.single.endMs, 4500);
+    });
+
+    test('meeting.saveNotes applies transcriptCorrections when segments change', () async {
+      repo.seed(_processing('m1', 'w1'));
+      repo.segments = [
+        MeetingSegment(
+          id: 's1',
+          meetingId: 'm1',
+          workspaceId: 'w1',
+          speaker: MeetingSpeaker.them,
+          speakerLabel: 'Person 1',
+          text: 'Anthropy and Depend about shipped evil cases.',
+          startMs: 500,
+          endMs: 3000,
+          createdAt: DateTime(2026),
+        ),
+      ];
+
+      await registry.body(BuiltInBodyKeys.meetingSaveNotes)(
+        _ctx(
+          workspaceId: 'w1',
+          meetingId: 'm1',
+          outcome: const {
+            'enhancedNotes': '# Notes',
+            'transcriptCorrections': [
+              {'find': 'Anthropy', 'replace': 'Anthropic'},
+              {'find': 'Depend about', 'replace': 'Dependabot'},
+              {'find': 'evil cases', 'replace': 'eval cases'},
+            ],
+          },
+        ),
+      );
+
+      expect(repo.lastSegments, isNotNull);
+      expect(
+        repo.lastSegments!.single.text,
+        'Anthropic and Dependabot shipped eval cases.',
+      );
+      expect(repo.lastSegments!.single.speakerLabel, 'Person 1');
+    });
+
+    test('meeting.saveNotes skips replaceSegments when nothing matches', () async {
+      repo.seed(_processing('m1', 'w1'));
+      repo.segments = [
+        MeetingSegment(
+          id: 's1',
+          meetingId: 'm1',
+          workspaceId: 'w1',
+          speaker: MeetingSpeaker.me,
+          text: 'Everything looks good.',
+          startMs: 0,
+          endMs: 1000,
+          createdAt: DateTime(2026),
+        ),
+      ];
+
+      await registry.body(BuiltInBodyKeys.meetingSaveNotes)(
+        _ctx(
+          workspaceId: 'w1',
+          meetingId: 'm1',
+          outcome: const {
+            'enhancedNotes': '# Notes',
+            'transcriptCorrections': [
+              {'find': 'Cold Rabbit', 'replace': 'CodeRabbit'},
+            ],
+          },
+        ),
+      );
+
+      expect(repo.lastSegments, isNull);
+    });
   });
 }

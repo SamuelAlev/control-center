@@ -1085,13 +1085,13 @@ class AppLocalizationsMs extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Tiada acara dalam julat ini';
 
   @override
-  String get calendarStartRecording => 'Mula rakaman';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Mula rakaman & pautkan';
-
-  @override
   String get calendarJoinMeet => 'Sertai mesyuarat';
+
+  @override
+  String get calendarJoinAndRecord => 'Sertai dan rakam';
+
+  @override
+  String get calendarRecordFailed => 'Tidak dapat memulakan rakaman';
 
   @override
   String get calendarFromCalendar => 'Dari kalendar';
@@ -1931,9 +1931,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get activity => 'Aktiviti';
-
-  @override
-  String get activityLabel => 'AKTIVITI';
 
   @override
   String get activitySearchHint => 'Cari aktiviti';
@@ -2883,7 +2880,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get briefDescription => 'Perihalan ringkas';
 
   @override
-  String get bugLabel => 'PEPIJAT';
+  String get bugLabel => 'Pepijat';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4467,7 +4464,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get pullRequests => 'Pull request';
 
   @override
-  String get questionLabel => 'SOALAN';
+  String get questionLabel => 'Soalan';
 
   @override
   String get queued => 'Dalam barisan';
@@ -4482,7 +4479,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get reasoningEffort => 'Usaha penaakulan';
 
   @override
-  String get recommendLabel => 'SYORKAN';
+  String get recommendLabel => 'Syorkan';
 
   @override
   String recordingFromDevice(String device) {
@@ -5149,7 +5146,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get suggestion => 'Cadangan';
 
   @override
-  String get suggestLabel => 'CADANGKAN';
+  String get suggestLabel => 'Cadangkan';
 
   @override
   String get superseded => 'Diganti';
@@ -5194,7 +5191,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get thisCannotBeUndone => 'Ini tidak boleh dibuat asal.';
 
   @override
-  String get ticketLabel => 'TIKET';
+  String get ticketLabel => 'Tiket';
 
   @override
   String get titleLabel => 'Tajuk';
@@ -7497,6 +7494,14 @@ class AppLocalizationsMs extends AppLocalizations {
   String get addReviewers => 'Tambah penyemak';
 
   @override
+  String get reRequestReview => 'Minta semakan semula';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Minta semakan semula daripada $label';
+  }
+
+  @override
   String get addAssignees => 'Tambah penerima tugasan';
 
   @override
@@ -7664,6 +7669,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get meetingStatusRecording => 'Merakam';
 
   @override
+  String get meetingStatusPaused => 'Dijeda';
+
+  @override
   String get meetingStatusProcessing => 'Memproses';
 
   @override
@@ -7691,34 +7699,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count mesyuarat',
-      one: '1 mesyuarat',
-      zero: 'Tiada mesyuarat',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Tindakan terbuka';
-
-  @override
-  String get meetingsLedgerDecisions => 'Keputusan';
-
-  @override
   String get meetingsLiveOpen => 'Buka rakaman';
 
   @override
   String get meetingTemplateShort => 'Templat';
-
-  @override
-  String get meetingsStatThisWeek => 'Minggu ini';
-
-  @override
-  String get meetingsStatRecorded => 'Dirakam';
 
   @override
   String get meetingsFilterAll => 'Semua';
@@ -7762,9 +7746,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total item tindakan';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'diperkaya';
 
   @override
   String get meetingsTranscribing => 'mentranskrip & meringkaskan…';
@@ -8002,9 +7983,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Nampaknya mesyuarat sedang berlangsung. Rakamnya?';
-
-  @override
-  String get meetingDetectedRecord => 'Rakam';
 
   @override
   String get meetingDetectedDismiss => 'Tolak';
@@ -9538,6 +9516,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get deviceNeverSeen => 'Tidak pernah disambungkan';
 
   @override
+  String get deviceAwaitingApproval => 'Menunggu kelulusan';
+
+  @override
   String get profileSectionLabel => 'Profil';
 
   @override
@@ -10367,12 +10348,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Gagal';
-
-  @override
-  String get bannerMeetingJoin => 'Sertai';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Rakam & pautkan';
 
   @override
   String get bannerCalendarReconnect => 'Sambung semula';
@@ -13695,6 +13670,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Tidak dapat menyiarkan komen: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Baris $line';
   }
@@ -15178,16 +15158,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Tutup $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count komen',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21455,10 +21425,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get dispatchSettingsTitle => 'Jadual';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Had untuk jadual dan pantauan, dan apa yang berlaku kepada permintaan yang tiada sesiapa jawab.';
-
-  @override
   String get dispatchLimitsLabel => 'Had jadual';
 
   @override
@@ -21537,9 +21503,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Matlamat';
-
-  @override
-  String get scheduleRecordCrumb => 'Jadual';
 
   @override
   String get improvementRecordCrumb => 'Cadangan';
@@ -21941,5 +21904,38 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent daripada $cap, termasuk setiap jadual dalam rantaiannya';
+  }
+
+  @override
+  String get ccLoading => 'Memuatkan';
+
+  @override
+  String get ccProgress => 'Kemajuan';
+
+  @override
+  String get ccBreadcrumb => 'Jejak navigasi';
+
+  @override
+  String get ccDialog => 'Dialog';
+
+  @override
+  String get ccResize => 'Ubah saiz';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (tidak disahkan)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Pilih $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Pilih semua pull request';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Kembali ke versi $version';
   }
 }

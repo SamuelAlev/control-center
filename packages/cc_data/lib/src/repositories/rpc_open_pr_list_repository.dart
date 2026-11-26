@@ -163,23 +163,27 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
   @override
   Future<GitHubProfileActivity> profileActivityForUser(
     String workspaceId,
-    String login,
-  ) => _profileActivity({
+    String login, {
+    bool force = false,
+  }) => _profileActivity({
     'workspace_id': workspaceId,
     'kind': 'user',
     'login': login,
+    if (force) 'force': true,
   });
 
   @override
   Future<GitHubProfileActivity> profileActivityForTeam(
     String workspaceId,
     String organization,
-    String slug,
-  ) => _profileActivity({
+    String slug, {
+    bool force = false,
+  }) => _profileActivity({
     'workspace_id': workspaceId,
     'kind': 'team',
     'organization': organization,
     'slug': slug,
+    if (force) 'force': true,
   });
 
   Future<GitHubProfileActivity> _profileActivity(

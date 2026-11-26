@@ -34,20 +34,14 @@ void main() {
       expect(style.fontFamily, CcFonts.uiFamily);
     });
 
-    test('a named family resolves to its per-weight variant', () {
+    test('a named family resolves to the unified family name', () {
       final style = CcFonts.ui(family: 'Custom-Host-Font');
-      expect(
-        style.fontFamily,
-        'Custom-Host-Font 400',
-        reason: 'each weight is registered under its own family name',
-      );
+      expect(style.fontFamily, 'Custom-Host-Font');
     });
 
-    test('the raw family remains reachable as a fallback', () {
-      // This is what keeps an OS-installed font working: it is registered under
-      // its real name, so the variant name misses and the fallback hits.
+    test('the bundled fallback remains reachable while loading', () {
       final style = CcFonts.code(family: 'MyMono');
-      expect(style.fontFamilyFallback, contains('MyMono'));
+      expect(style.fontFamily, 'MyMono');
       expect(
         style.fontFamilyFallback,
         contains(CcFonts.codeFamily),
@@ -164,7 +158,7 @@ void main() {
       );
     });
 
-    test('the requested weight and slant pick the variant', () {
+    test('the requested weight and slant survive on the unified family', () {
       final style = CcFonts.ui(
         family: 'Inter',
         textStyle: const TextStyle(
@@ -172,7 +166,26 @@ void main() {
           fontStyle: FontStyle.italic,
         ),
       );
-      expect(style.fontFamily, 'Inter 700 italic');
+      expect(style.fontFamily, 'Inter');
+      expect(style.fontWeight, FontWeight.w700);
+      expect(style.fontStyle, FontStyle.italic);
+    });
+
+    test('bundled display-name aliases resolve to the bundled families', () {
+      final requested = <String>[];
+      CcFontRegistry.instance.install(
+        loader: ({required family, required weight, required italic}) async {
+          requested.add(family);
+          return null;
+        },
+      );
+
+      final ui = CcFonts.ui(family: 'Manrope');
+      final code = CcFonts.code(family: 'Fira Code');
+
+      expect(ui.fontFamily, CcFonts.uiFamily);
+      expect(code.fontFamily, CcFonts.codeFamily);
+      expect(requested, isEmpty);
     });
   });
 }

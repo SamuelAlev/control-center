@@ -413,7 +413,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem!;
     return Text(
-      text.toUpperCase(),
+      text,
       style: CcTypography.label.copyWith(color: tokens.textTertiary),
     );
   }

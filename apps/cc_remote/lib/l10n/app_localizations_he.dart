@@ -313,9 +313,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get joinMeeting => 'הצטרפות לפגישה';
 
   @override
-  String get join => 'הצטרפות';
-
-  @override
   String attendeesCount(int count) {
     return 'משתתפים ($count)';
   }

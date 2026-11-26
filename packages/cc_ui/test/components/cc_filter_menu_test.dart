@@ -1,3 +1,5 @@
+import 'dart:ui' show CheckedState, Tristate;
+
 import 'package:cc_ui/src/components/cc_filter_menu.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -17,36 +19,39 @@ void main() {
     var selected = initial;
     await tester.pumpWidget(
       ccTestApp(
-        Align(
-          alignment: Alignment.topLeft,
-          child: StatefulBuilder(
-            builder: (context, setState) => CcFilterMenu(
-              target: const Text('Filters'),
-              searchHint: 'Add filter…',
-              optionSearchHint: 'Filter…',
-              emptySearchLabel: 'No matches',
-              categories: [
-                CcFilterCategory(
-                  id: 'author',
-                  label: 'Author',
-                  selected: selected,
-                  hiddenCountLabel: (hidden) => '$hidden hidden',
-                  onChanged: (next) {
-                    changes?.add(next);
-                    setState(() => selected = next);
-                  },
-                  options: options,
-                ),
-                CcFilterCategory(
-                  id: 'repository',
-                  label: 'Repository',
-                  selected: const {},
-                  onChanged: (_) {},
-                  options: const [
-                    CcFilterOption(value: 'r1', label: 'acme/web', count: 2),
-                  ],
-                ),
-              ],
+        // A WidgetsApp's caret keys, so ← and → can move through the search.
+        DefaultTextEditingShortcuts(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: StatefulBuilder(
+              builder: (context, setState) => CcFilterMenu(
+                target: const Text('Filters'),
+                searchHint: 'Add filter…',
+                optionSearchHint: 'Filter…',
+                emptySearchLabel: 'No matches',
+                categories: [
+                  CcFilterCategory(
+                    id: 'author',
+                    label: 'Author',
+                    selected: selected,
+                    hiddenCountLabel: (hidden) => '$hidden hidden',
+                    onChanged: (next) {
+                      changes?.add(next);
+                      setState(() => selected = next);
+                    },
+                    options: options,
+                  ),
+                  CcFilterCategory(
+                    id: 'repository',
+                    label: 'Repository',
+                    selected: const {},
+                    onChanged: (_) {},
+                    options: const [
+                      CcFilterOption(value: 'r1', label: 'acme/web', count: 2),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -209,6 +214,146 @@ void main() {
       await tester.tapAt(const Offset(780, 580));
       await tester.pumpAndSettle();
       expect(find.text('Author'), findsNothing);
+    });
+  });
+
+  group('CcFilterMenu keyboard and focus', () {
+    FocusNode trigger(WidgetTester tester) =>
+        Focus.of(tester.element(find.text('Filters')));
+
+    Future<void> key(WidgetTester tester, LogicalKeyboardKey k) async {
+      await tester.sendKeyEvent(k);
+      await tester.pump();
+    }
+
+    Future<void> open(WidgetTester tester) async {
+      trigger(tester).requestFocus();
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.enter);
+      await tester.pump();
+    }
+
+    EditableText field(WidgetTester tester, {bool flyout = false}) {
+      final fields = find.byType(EditableText);
+      return tester.widget<EditableText>(flyout ? fields.last : fields.first);
+    }
+
+    testWidgets('opening focuses the search; Tab stays in; Escape returns '
+        'focus to the trigger', (tester) async {
+      await pumpMenu(tester, options: authors);
+      await open(tester);
+      expect(find.text('Author'), findsOneWidget);
+      expect(field(tester).focusNode.hasPrimaryFocus, isTrue);
+      await key(tester, LogicalKeyboardKey.tab);
+      await key(tester, LogicalKeyboardKey.tab);
+      expect(find.text('Author'), findsOneWidget);
+      expect(trigger(tester).hasFocus, isFalse);
+      await key(tester, LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(find.text('Author'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('an outside tap returns focus to the trigger', (tester) async {
+      await pumpMenu(tester, options: authors);
+      await open(tester);
+      await tester.tapAt(const Offset(780, 580));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Author'), findsNothing);
+      expect(trigger(tester).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('← and → move the caret and leave the text only at its edge', (
+      tester,
+    ) async {
+      await pumpMenu(tester, options: authors);
+      await open(tester);
+      await tester.enterText(find.byType(EditableText).first, 'Au');
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      expect(field(tester).controller.selection.baseOffset, 1);
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      expect(field(tester).controller.selection.baseOffset, 2);
+      expect(find.text('ada'), findsNothing);
+      // At the end of the text, → opens the flyout.
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(find.text('ada'), findsOneWidget);
+      expect(field(tester, flyout: true).focusNode.hasPrimaryFocus, isTrue);
+
+      await tester.enterText(find.byType(EditableText).last, 'ad');
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      expect(field(tester, flyout: true).controller.selection.baseOffset, 0);
+      expect(find.text('ada'), findsOneWidget);
+      // Up/Down and Enter still drive the list while typing.
+      await key(tester, LogicalKeyboardKey.arrowDown);
+      expect(
+        tester.getSemantics(find.text('ada')).flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
+      // At the start, ← closes the flyout.
+      await key(tester, LogicalKeyboardKey.arrowLeft);
+      await tester.pump();
+      expect(find.text('ada'), findsNothing);
+      expect(field(tester).focusNode.hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('Home, End and Space work the list while nothing is typed', (
+      tester,
+    ) async {
+      final changes = <Set<String>>[];
+      await pumpMenu(tester, options: authors, changes: changes);
+      await open(tester);
+      await key(tester, LogicalKeyboardKey.end);
+      expect(
+        tester.getSemantics(find.text('Repository')).flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
+      await key(tester, LogicalKeyboardKey.home);
+      await key(tester, LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(find.text('ada'), findsOneWidget);
+      // Visible: Current user (pinned), ada, grace.
+      await key(tester, LogicalKeyboardKey.end);
+      await key(tester, LogicalKeyboardKey.space);
+      await tester.pump();
+      expect(changes.last, {'grace'});
+      expect(find.text('ada'), findsOneWidget);
+    });
+
+    testWidgets('rows report checked and the trigger reports expanded', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMenu(tester, options: authors, initial: {'ada'});
+      expect(
+        tester.getSemantics(find.text('Filters')).flagsCollection.isExpanded,
+        Tristate.isFalse,
+      );
+      await open(tester);
+      expect(
+        tester.getSemantics(find.text('Filters')).flagsCollection.isExpanded,
+        Tristate.isTrue,
+      );
+      await tester.tap(find.text('Author'));
+      await tester.pumpAndSettle();
+      final ada = tester.getSemantics(find.text('ada'));
+      expect(ada.label, startsWith('ada'));
+      expect(ada.label, isNot(startsWith('ada\nada')));
+      expect(ada.flagsCollection.isChecked, CheckedState.isTrue);
+      expect(
+        tester.getSemantics(find.text('grace')).flagsCollection.isChecked,
+        CheckedState.isFalse,
+      );
+      expect(
+        tester.getSemantics(find.text('Author')).flagsCollection.isExpanded,
+        Tristate.isTrue,
+      );
+      semantics.dispose();
     });
   });
 }

@@ -192,5 +192,47 @@ void main() {
       expect(last!.lagMs, closeTo(80, 10));
       expect(est.hasRepeatedSupport, isTrue);
     });
+
+    test(
+      'ignores repeated low-confidence measurements on uncorrelated channels',
+      () {
+        final est = AecDelayEstimator(minNearStd: 0.5);
+        final far = whiteEnvelope(700, 31);
+        final near = whiteEnvelope(700, 99);
+        for (var bin = 0; bin < far.length; bin++) {
+          est.addFar(bin * 10, far[bin]);
+          est.addNear(bin * 10, near[bin]);
+        }
+        for (var i = 0; i < 5; i++) {
+          final e = est.estimateSmoothed();
+          expect(e, isNotNull);
+          expect(e!.confidence, lessThan(0.25));
+        }
+        expect(est.hasRepeatedSupport, isFalse);
+      },
+    );
+
+    test('triggers repeated support for agreeing moderate-confidence estimates', () {
+      final est = AecDelayEstimator(minNearStd: 0.5);
+      final far = whiteEnvelope(700, 41);
+      final rnd = math.Random(42);
+      const delayBins = 10;
+      for (var bin = 0; bin < far.length; bin++) {
+        final t = bin * 10;
+        est.addFar(t, far[bin]);
+        final src = bin - delayBins;
+        // Heavy uncorrelated noise yields moderate confidence (~0.3-0.5, below
+        // the 0.55 single-shot gate but above the 0.25 support floor).
+        final echo = src >= 0 ? far[src] * 0.25 : 0.0;
+        est.addNear(t, echo + rnd.nextDouble() * 1800);
+      }
+      AecDelayEstimate? last;
+      for (var i = 0; i < 5; i++) {
+        last = est.estimateSmoothed();
+        expect(last, isNotNull);
+      }
+      expect(last!.confidence, greaterThanOrEqualTo(0.25));
+      expect(est.hasRepeatedSupport, isTrue);
+    });
   });
 }

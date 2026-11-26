@@ -169,9 +169,8 @@ class _ColumnHeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_ColumnHeaderDelegate old) => old.child != child;
 }
 
-/// A presentational "select all" checkbox for the column header: filled accent
-/// box when every row is selected, an empty bordered box otherwise. The header
-/// row owns the tap.
+/// The "select all" checkbox for the column header: filled accent box when
+/// every row is selected, an empty bordered box otherwise.
 class _SelectAllBox extends StatelessWidget {
   const _SelectAllBox({
     required this.selected,
@@ -187,10 +186,12 @@ class _SelectAllBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final accent = tokens.accent;
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+    return CcTappable(
+      onPressed: enabled ? onTap : null,
+      borderRadius: AppRadii.brSm,
+      semanticLabel: AppLocalizations.of(context).prTableSelectAll,
+      semanticChecked: selected,
+      builder: (context, _) => Container(
         width: InboxRowMetrics.select,
         height: InboxRowMetrics.select,
         decoration: BoxDecoration(

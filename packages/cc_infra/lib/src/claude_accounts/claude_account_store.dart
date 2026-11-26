@@ -257,19 +257,21 @@ class ClaudeAccountStore {
   /// Best-effort: failure degrades the run, does not stop it.
   Future<void> prepareForRun({
     required String accountId,
-    required String workingDirectory,
+    String workingDirectory = '',
   }) async {
     final dir = configDirFor(accountId);
-    if (!Directory(dir).existsSync() || workingDirectory.isEmpty) {
+    if (!Directory(dir).existsSync()) {
       return;
     }
-    try {
-      _trustWorkspace(dir, workingDirectory);
-    } catch (e) {
-      CcInfraLog.warning(
-        'claude accounts: could not trust $workingDirectory '
-        'for $accountId: $e',
-      );
+    if (workingDirectory.isNotEmpty) {
+      try {
+        _trustWorkspace(dir, workingDirectory);
+      } catch (e) {
+        CcInfraLog.warning(
+          'claude accounts: could not trust $workingDirectory '
+          'for $accountId: $e',
+        );
+      }
     }
     try {
       _copyManagedSettingsConsent(dir);

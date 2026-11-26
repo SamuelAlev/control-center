@@ -62,12 +62,6 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
   codeExecutionsRoute(workspaceIdParam): _codeExecutionsCrumbs,
   codeExecutionRoute(workspaceIdParam, codeExecutionIdParam):
       _codeExecutionsCrumbs,
-  goalsRoute(workspaceIdParam): _goalCrumbs,
-  goalRoute(workspaceIdParam, ':recordId'): _goalCrumbs,
-  schedulesRoute(workspaceIdParam): _scheduleCrumbs,
-  scheduleRoute(workspaceIdParam, ':recordId'): _scheduleCrumbs,
-  improvementsRoute(workspaceIdParam): _improvementCrumbs,
-  improvementRoute(workspaceIdParam, ':recordId'): _improvementCrumbs,
   // Settings breadcrumbs are DERIVED from `kSettingsNav`, so a page cannot
   // move between scopes and leave a stale trail. Each is three deep —
   // Settings › <scope> › <page> — which is what makes the scope legible from
@@ -319,42 +313,6 @@ List<CcBreadcrumbItem> _codeExecutionsCrumbs(
       CcBreadcrumbItem(current: true, child: Text(l10n.codeExecutionRecord)),
   ];
 }
-
-final _goalCrumbs = _workRecordCrumbs(
-  goalsRoute,
-  (l10n) => l10n.goalsTitle,
-  (l10n) => l10n.goalRecordCrumb,
-);
-final _scheduleCrumbs = _workRecordCrumbs(
-  schedulesRoute,
-  (l10n) => l10n.schedulesTitle,
-  (l10n) => l10n.scheduleRecordCrumb,
-);
-final _improvementCrumbs = _workRecordCrumbs(
-  improvementsRoute,
-  (l10n) => l10n.improvementsTitle,
-  (l10n) => l10n.improvementRecordCrumb,
-);
-
-/// Goals, Schedules or Improvements, and › a fixed word on an open record
-/// (its id is a machine value, not a title).
-BreadcrumbBuilder _workRecordCrumbs(
-  String Function(String workspaceId) listRoute,
-  String Function(AppLocalizations l10n) listLabel,
-  String Function(AppLocalizations l10n) recordLabel,
-) => (ref, context, state, l10n) {
-  final workspaceId = state.pathParameters['workspaceId']!;
-  final record = state.pathParameters['recordId'] != null;
-  return [
-    CcBreadcrumbItem(
-      current: !record,
-      onPress: record ? () => context.go(listRoute(workspaceId)) : null,
-      child: Text(listLabel(l10n)),
-    ),
-    if (record)
-      CcBreadcrumbItem(current: true, child: Text(recordLabel(l10n))),
-  ];
-};
 
 List<CcBreadcrumbItem> _manageWorkspacesCrumbs(
   WidgetRef ref,

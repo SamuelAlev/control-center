@@ -209,8 +209,11 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
           }
         },
       },
+      // Only a home for Escape on arrival: the nodes and controls are the
+      // Tab stops, and a stop spanning the canvas would come before them.
       child: Focus(
         autofocus: true,
+        skipTraversal: true,
         child: !panelOpen
             ? graph
             : LayoutBuilder(

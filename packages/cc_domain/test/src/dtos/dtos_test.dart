@@ -1410,7 +1410,9 @@ void main() {
       expect(d.side, 'RIGHT');
       expect(d.diffHunk, '');
       expect(d.isFileLevel, isFalse);
+      expect(d.isOutdated, isFalse);
       expect(d.toJson(), isNot(contains('file_level')));
+      expect(d.toJson(), isNot(contains('is_outdated')));
     });
 
     test('a file-level comment carries its subject over the wire', () {
@@ -1422,6 +1424,17 @@ void main() {
       });
       expect(dto.isFileLevel, isTrue);
       expect(dto.toJson()['file_level'], isTrue);
+    });
+
+    test('an outdated comment round-trips is_outdated over the wire', () {
+      final dto = PrCodeReviewCommentDto.fromJson({
+        'id': 2,
+        'body': 'old',
+        'path': 'p',
+        'is_outdated': true,
+      });
+      expect(dto.isOutdated, isTrue);
+      expect(dto.toJson()['is_outdated'], isTrue);
     });
   });
 

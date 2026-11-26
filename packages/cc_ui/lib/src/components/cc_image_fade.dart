@@ -18,6 +18,7 @@ class CcImageFade extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.alignment = Alignment.center,
     this.duration = CcMotion.slow,
+    this.semanticLabel,
   });
 
   /// The full-resolution image to display; cross-fades in over [placeholder]
@@ -51,6 +52,10 @@ class CcImageFade extends StatelessWidget {
   /// so the image still appears, just without a long wash.
   final Duration duration;
 
+  /// What the image shows, for assistive technology. An image without one is
+  /// decoration and stays out of the semantics tree.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
@@ -74,6 +79,8 @@ class CcImageFade extends StatelessWidget {
             duration: effectiveDuration,
             // Already cached / tiny images should appear instantly, not animate.
             syncDuration: Duration.zero,
+            // The full image below carries the description.
+            excludeFromSemantics: true,
           )
         : basePlaceholder;
 
@@ -86,6 +93,8 @@ class CcImageFade extends StatelessWidget {
       syncDuration: Duration.zero,
       errorBuilder: errorBuilder,
       errorHidesPlaceholder: preview != null,
+      semanticLabel: semanticLabel,
+      excludeFromSemantics: semanticLabel == null,
     );
   }
 }

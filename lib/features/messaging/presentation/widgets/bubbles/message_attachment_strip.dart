@@ -104,57 +104,54 @@ class _Thumbnail extends ConsumerWidget {
       return _Unavailable(count: 1, tokens: tokens);
     }
     const radius = BorderRadius.all(Radius.circular(6));
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        // The same gesture as the composer's chip and its inline reference:
-        // one thing to click, one place it opens.
-        onTap: () => unawaited(
-          openAttachmentPreview(
-            context,
-            ref,
-            sentAttachmentAsComposerAttachment(attachment, url: resolved),
-          ),
+    return CcTappable(
+      // The same gesture as the composer's chip and its inline reference:
+      // one thing to click, one place it opens.
+      onPressed: () => unawaited(
+        openAttachmentPreview(
+          context,
+          ref,
+          sentAttachmentAsComposerAttachment(attachment, url: resolved),
         ),
-        child: Semantics(
-          label: attachment.name,
-          image: true,
-          button: true,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              border: Border.all(color: tokens.borderSecondary),
-              color: tokens.bgSecondary,
-            ),
-            child: ClipRRect(
-              borderRadius: radius,
-              child: Image(
-                // Decoded at the size it is drawn: a photo or screenshot held
-                // at its own size is tens of megabytes of pixels for a strip
-                // this tall. The preview a click opens loads the whole
-                // picture. Only ever scaled down: a small or very wide image
-                // is left as it is.
-                image: ResizeImage(
-                  NetworkImage(resolved),
-                  height: (height * MediaQuery.devicePixelRatioOf(context))
-                      .round(),
-                  policy: ResizeImagePolicy.fit,
-                ),
-                height: height,
-                fit: BoxFit.contain,
-                errorBuilder: (context, _, _) =>
-                    _Unavailable(count: 1, tokens: tokens),
-                loadingBuilder: (context, child, progress) => progress == null
-                    ? child
-                    : SizedBox(
-                        height: height,
-                        // Landscape placeholder: a screenshot is wider than it
-                        // is tall far more often than not, so a square box
-                        // would make every load visibly reflow.
-                        width: height * 1.6,
-                        child: const Center(child: CcSpinner(size: 14)),
-                      ),
+      ),
+      semanticLabel: attachment.name,
+      borderRadius: radius,
+      builder: (context, _) => Semantics(
+        image: true,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: tokens.borderSecondary),
+            color: tokens.bgSecondary,
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Image(
+              // Decoded at the size it is drawn: a photo or screenshot held
+              // at its own size is tens of megabytes of pixels for a strip
+              // this tall. The preview a click opens loads the whole
+              // picture. Only ever scaled down: a small or very wide image
+              // is left as it is.
+              image: ResizeImage(
+                NetworkImage(resolved),
+                height: (height * MediaQuery.devicePixelRatioOf(context))
+                    .round(),
+                policy: ResizeImagePolicy.fit,
               ),
+              height: height,
+              fit: BoxFit.contain,
+              errorBuilder: (context, _, _) =>
+                  _Unavailable(count: 1, tokens: tokens),
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : SizedBox(
+                      height: height,
+                      // Landscape placeholder: a screenshot is wider than it
+                      // is tall far more often than not, so a square box
+                      // would make every load visibly reflow.
+                      width: height * 1.6,
+                      child: const Center(child: CcSpinner(size: 14)),
+                    ),
             ),
           ),
         ),
@@ -179,55 +176,49 @@ class _FileChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final replay = sentAttachmentAsComposerAttachment(attachment, url: url);
     final size = formatAttachmentSize(attachment.size);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => unawaited(openAttachmentPreview(context, ref, replay)),
-        child: Semantics(
-          button: true,
-          label: attachment.name,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: AppRadii.brSm,
-              border: Border.all(color: tokens.borderSecondary),
-              color: tokens.bgSecondary,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    attachmentIcon(replay),
-                    size: 14,
-                    color: tokens.textTertiary,
-                  ),
-                  const SizedBox(width: 6),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Text(
-                      attachment.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textPrimary,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ),
-                  if (size != null) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      size,
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                  ],
-                ],
+    return CcTappable(
+      onPressed: () => unawaited(openAttachmentPreview(context, ref, replay)),
+      borderRadius: AppRadii.brSm,
+      builder: (context, _) => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: AppRadii.brSm,
+          border: Border.all(color: tokens.borderSecondary),
+          color: tokens.bgSecondary,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                attachmentIcon(replay),
+                size: 14,
+                color: tokens.textTertiary,
               ),
-            ),
+              const SizedBox(width: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: Text(
+                  attachment.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CcTypography.caption.copyWith(
+                    color: tokens.textPrimary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ),
+              if (size != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  size,
+                  style: CcTypography.caption.copyWith(
+                    color: tokens.textTertiary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/foundation/cc_motion.dart';
+import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:flutter/foundation.dart';
@@ -200,6 +201,15 @@ class _CcFluidHoverState extends State<CcFluidHover> {
   List<Widget>? _builtItems;
 
   @override
+  void initState() {
+    super.initState();
+    // Registers the global key/pointer handlers before the first key, so
+    // the layout re-pick below can tell a keyboard-driven move.
+    // ignore: unnecessary_statements
+    FocusModality.instance;
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _builtItems = null;
@@ -353,6 +363,15 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _postFramePickScheduled = false;
       if (!mounted || !_pointerInside) {
+        return;
+      }
+      // The pointer did not move: the rows moved under it. While the keyboard
+      // is driving (an arrow key scrolled the list, typing filtered it) the
+      // row that happens to land under a resting pointer must not take the
+      // highlight from the keyboard. Drop the wash instead; the next real
+      // pointer move picks again.
+      if (FocusModality.instance.lastInputWasKeyboard) {
+        _setActive(null, null);
         return;
       }
       final local = _localFromGlobal() ?? _lastPosition;

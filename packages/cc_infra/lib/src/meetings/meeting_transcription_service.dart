@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:cc_domain/features/meetings/domain/services/meeting_transcription_port.dart';
@@ -9,10 +10,12 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 
 /// Rolling-window transcription over continuous 16 kHz mono PCM16.
 ///
-/// Cut on trailing silence ≥ [silenceFlushMs] (window ≥ [minWindowMs]) or at
-/// [maxWindowMs]. Skip windows below [silenceRmsThreshold] (Whisper hallucinates
-/// on silence; quiet channels would decode every [minWindowMs]). Decode is
-/// off-thread in [SpeechTranscriber]; audio buffers, never drops.
+/// Incoming chunks are evaluated in ~32 ms sub-frames so speech onset and
+/// natural pauses are detected cleanly even when upstream batches arrive at
+/// 250 ms. Leading silence before speech onset is trimmed to [preRollMs].
+/// Windows cut on trailing silence ≥ [silenceFlushMs] (when ≥ [minWindowMs]),
+/// at [softMaxWindowMs] on a shorter [softSilenceFlushMs] pause, or at
+/// [maxWindowMs] using a low-energy valley cut in the trailing audio.
 class MeetingTranscriptionService implements MeetingTranscriptionPort {
   /// Creates a [MeetingTranscriptionService].
   ///
@@ -25,8 +28,12 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
     this._transcriber, {
     this.sampleRate = 16000,
     this.minWindowMs = 1500,
-    this.maxWindowMs = 5000,
-    this.silenceFlushMs = 650,
+    this.maxWindowMs = 12000,
+    this.softMaxWindowMs = 8000,
+    this.silenceFlushMs = 500,
+    this.softSilenceFlushMs = 250,
+    this.preRollMs = 250,
+    this.minSpeechMs = 128,
     this.silenceRmsThreshold = 0.012,
     SpeechActivityDetector Function()? detectorFactory,
   }) : _detectorFactory =
@@ -44,14 +51,34 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
   /// Minimum audio (ms) before a silence-triggered cut is allowed.
   final int minWindowMs;
 
-  /// Hard cap (ms) that forces a cut even without silence.
+  /// Hard cap (ms) that forces a valley-cut flush even without a full pause.
   final int maxWindowMs;
+
+  /// Soft cap (ms) after which a shorter pause ([softSilenceFlushMs]) triggers
+  /// a clean sentence/clause boundary flush.
+  final int softMaxWindowMs;
 
   /// Trailing silence (ms) that triggers a cut once past [minWindowMs].
   final int silenceFlushMs;
 
+  /// Shorter trailing silence (ms) that triggers a cut once past
+  /// [softMaxWindowMs].
+  final int softSilenceFlushMs;
+
+  /// Pre-speech audio (ms) retained before speech onset when trimming idle
+  /// leading silence.
+  final int preRollMs;
+
+  /// Minimum cumulative speech (ms) required in a window before sending it to
+  /// the ASR decoder (caps to [minWindowMs] for short-window configurations).
+  final int minSpeechMs;
+
   /// RMS below this (normalized 0–1) counts as silence.
   final double silenceRmsThreshold;
+
+  static const int _subFrameMs = 32;
+  static const int _valleySearchMaxMs = 2000;
+  static const int _valleyStepMs = 64;
 
   int get _bytesPerMs => (sampleRate * 2) ~/ 1000; // 16-bit mono
 
@@ -61,10 +88,12 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
   Stream<TranscribedWindow> transcribe(Stream<Uint8List> pcm) {
     final controller = StreamController<TranscribedWindow>();
     final window = BytesBuilder(copy: false);
+    final sliceLog = <({int bytes, bool speech})>[];
     var consumedBytes = 0; // total bytes seen — drives the clock
     var windowStartByte = 0; // byte offset where the current window began
     var trailingSilenceMs = 0;
-    var windowHadSpeech = false; // any chunk the detector flagged as speech
+    var windowSpeechMs = 0;
+    var inSpeech = false;
     final detector = _detectorFactory()..reset();
     // Per-stream generation guard. A window decodes asynchronously (off-isolate)
     // while the stream may be stopped/cancelled (a stop, or a stop→restart that
@@ -74,22 +103,61 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
     // per-`transcribe`-call, never service-wide.
     var streamLive = true;
 
-    int msFromBytes(int bytes) => bytes ~/ _bytesPerMs;
+    final bytesPerMs = _bytesPerMs;
+    final subFrameBytes = math.max(2, (_subFrameMs * bytesPerMs) & ~1);
+    final preRollBytes = math.max(0, (preRollMs * bytesPerMs) & ~1);
+    final effectiveMinSpeechMs = math.min(minSpeechMs, minWindowMs);
 
-    Future<void> flush() async {
-      final bytes = window.takeBytes();
-      final hadSpeech = windowHadSpeech;
-      windowHadSpeech = false;
-      if (bytes.isEmpty) {
+    int msFromBytes(int bytes) => bytes ~/ bytesPerMs;
+
+    void trimLeadingSilence() {
+      if (window.length <= preRollBytes) {
         return;
       }
-      final startMs = msFromBytes(windowStartByte);
-      final endMs = msFromBytes(windowStartByte + bytes.length);
-      windowStartByte += bytes.length;
-      if (!hadSpeech) {
-        // Pure-silence window — never send it to Whisper (it would hallucinate a
-        // non-speech token and burn a decode for nothing).
-        CcInfraLog.info('skipped silent window ($startMs–${endMs}ms)');
+      final all = window.takeBytes();
+      var drop = (all.length - preRollBytes) & ~1;
+      if (drop <= 0) {
+        window.add(all);
+        return;
+      }
+      if (drop >= all.length) {
+        drop = all.length & ~1;
+      }
+      windowStartByte += drop;
+      if (drop < all.length) {
+        window.add(Uint8List.sublistView(all, drop));
+      }
+      var remainingDrop = drop;
+      while (remainingDrop > 0 && sliceLog.isNotEmpty) {
+        final first = sliceLog.first;
+        if (first.bytes <= remainingDrop) {
+          remainingDrop -= first.bytes;
+          sliceLog.removeAt(0);
+        } else {
+          sliceLog[0] = (
+            bytes: first.bytes - remainingDrop,
+            speech: first.speech,
+          );
+          remainingDrop = 0;
+        }
+      }
+    }
+
+    Future<void> decodeAndEmit(
+      Uint8List bytes,
+      int startMs,
+      int endMs,
+      int speechMs, {
+      required bool allowShortFinal,
+    }) async {
+      final durationMs = endMs - startMs;
+      final minRequired = allowShortFinal && durationMs < effectiveMinSpeechMs
+          ? 1
+          : effectiveMinSpeechMs;
+      if (speechMs <= 0 || speechMs < minRequired) {
+        CcInfraLog.info(
+          'skipped silent/brief window ($startMs–${endMs}ms, speech=${speechMs}ms)',
+        );
         return;
       }
       try {
@@ -123,35 +191,181 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
       }
     }
 
+    Future<void> flushWhole({bool allowShortFinal = false}) async {
+      final bytes = window.takeBytes();
+      final speechMs = windowSpeechMs;
+      sliceLog.clear();
+      windowSpeechMs = 0;
+      trailingSilenceMs = 0;
+      inSpeech = false;
+      if (bytes.isEmpty) {
+        return;
+      }
+      final startMs = msFromBytes(windowStartByte);
+      final endMs = msFromBytes(windowStartByte + bytes.length);
+      windowStartByte += bytes.length;
+      await decodeAndEmit(
+        bytes,
+        startMs,
+        endMs,
+        speechMs,
+        allowShortFinal: allowShortFinal,
+      );
+    }
+
+    Future<void> flushAtValley() async {
+      final bytes = window.takeBytes();
+      if (bytes.isEmpty) {
+        sliceLog.clear();
+        windowSpeechMs = 0;
+        trailingSilenceMs = 0;
+        inSpeech = false;
+        return;
+      }
+      final minKeepBytes = math.min(
+        bytes.length,
+        math.max(2, (minWindowMs * bytesPerMs) & ~1),
+      );
+      final searchTailBytes = math.min(
+        bytes.length - minKeepBytes,
+        (_valleySearchMaxMs * bytesPerMs) & ~1,
+      );
+      final cutByte = searchTailBytes > 0
+          ? _findValleyCutByte(
+              bytes,
+              minKeepBytes: minKeepBytes,
+              searchTailBytes: searchTailBytes,
+              stepBytes: math.max(2, (_valleyStepMs * bytesPerMs) & ~1),
+            )
+          : bytes.length;
+
+      final flushBytes = cutByte < bytes.length
+          ? Uint8List.sublistView(bytes, 0, cutByte)
+          : bytes;
+      final remainder = cutByte < bytes.length
+          ? Uint8List.sublistView(bytes, cutByte)
+          : Uint8List(0);
+
+      // Partition sliceLog at cutByte to preserve exact speechMs for both parts.
+      var flushedSpeechBytes = 0;
+      var remaining = cutByte;
+      while (remaining > 0 && sliceLog.isNotEmpty) {
+        final head = sliceLog.first;
+        if (head.bytes <= remaining) {
+          if (head.speech) {
+            flushedSpeechBytes += head.bytes;
+          }
+          remaining -= head.bytes;
+          sliceLog.removeAt(0);
+        } else {
+          if (head.speech) {
+            flushedSpeechBytes += remaining;
+          }
+          sliceLog[0] = (bytes: head.bytes - remaining, speech: head.speech);
+          remaining = 0;
+        }
+      }
+
+      // Recompute speech / trailing silence state for the carried remainder.
+      var remSpeechBytes = 0;
+      var remTrailingSilenceBytes = 0;
+      for (final entry in sliceLog) {
+        if (entry.speech) {
+          remSpeechBytes += entry.bytes;
+          remTrailingSilenceBytes = 0;
+        } else {
+          remTrailingSilenceBytes += entry.bytes;
+        }
+      }
+      windowSpeechMs = msFromBytes(remSpeechBytes);
+      trailingSilenceMs = msFromBytes(remTrailingSilenceBytes);
+      inSpeech = remSpeechBytes > 0;
+      if (remainder.isNotEmpty) {
+        window.add(remainder);
+      }
+
+      final startMs = msFromBytes(windowStartByte);
+      final endMs = msFromBytes(windowStartByte + flushBytes.length);
+      windowStartByte += flushBytes.length;
+
+      await decodeAndEmit(
+        flushBytes,
+        startMs,
+        endMs,
+        msFromBytes(flushedSpeechBytes),
+        allowShortFinal: false,
+      );
+    }
+
     late StreamSubscription<Uint8List> sub;
     sub = pcm.listen(
       (chunk) async {
-        window.add(chunk);
-        consumedBytes += chunk.length;
-        final windowMs = msFromBytes(consumedBytes - windowStartByte);
+        var off = 0;
+        while (off < chunk.length) {
+          if (!streamLive) {
+            return;
+          }
+          final end = math.min(off + subFrameBytes, chunk.length);
+          final slice = Uint8List.sublistView(chunk, off, end);
+          off = end;
 
-        final chunkMs = msFromBytes(chunk.length);
-        if (detector.isSpeech(chunk)) {
-          trailingSilenceMs = 0;
-          windowHadSpeech = true;
-        } else {
-          trailingSilenceMs += chunkMs;
-        }
+          window.add(slice);
+          consumedBytes += slice.length;
+          final sliceMs = msFromBytes(slice.length);
+          final speech = detector.isSpeech(slice);
+          sliceLog.add((bytes: slice.length, speech: speech));
 
-        final hitSilence =
-            trailingSilenceMs >= silenceFlushMs && windowMs >= minWindowMs;
-        final hitMax = windowMs >= maxWindowMs;
-        if (hitSilence || hitMax) {
-          trailingSilenceMs = 0;
-          // Suspend delivery while decoding so windows are emitted in order.
-          sub.pause();
-          await flush();
-          sub.resume();
+          if (!inSpeech) {
+            if (speech) {
+              inSpeech = true;
+              trailingSilenceMs = 0;
+              windowSpeechMs += sliceMs;
+            } else {
+              trimLeadingSilence();
+              continue;
+            }
+          } else {
+            if (speech) {
+              trailingSilenceMs = 0;
+              windowSpeechMs += sliceMs;
+            } else {
+              trailingSilenceMs += sliceMs;
+              // Discard isolated sub-threshold clicks/pops once silence
+              // returns so they don't anchor windowStartByte seconds early.
+              if (windowSpeechMs < effectiveMinSpeechMs &&
+                  trailingSilenceMs >= silenceFlushMs) {
+                windowSpeechMs = 0;
+                trailingSilenceMs = 0;
+                inSpeech = false;
+                trimLeadingSilence();
+                continue;
+              }
+            }
+          }
+
+          final windowMs = msFromBytes(consumedBytes - windowStartByte);
+          final hitSilence =
+              trailingSilenceMs >= silenceFlushMs && windowMs >= minWindowMs;
+          final hitSoftMax =
+              windowMs >= softMaxWindowMs &&
+              trailingSilenceMs >= softSilenceFlushMs;
+          final hitMax = windowMs >= maxWindowMs;
+
+          if (hitSilence || hitSoftMax) {
+            // Suspend delivery while decoding so windows are emitted in order.
+            sub.pause();
+            await flushWhole();
+            sub.resume();
+          } else if (hitMax) {
+            sub.pause();
+            await flushAtValley();
+            sub.resume();
+          }
         }
       },
       onError: controller.addError,
       onDone: () async {
-        await flush();
+        await flushWhole(allowShortFinal: true);
         detector.dispose();
         await controller.close();
       },
@@ -164,6 +378,32 @@ class MeetingTranscriptionService implements MeetingTranscriptionPort {
       await sub.cancel();
     };
     return controller.stream;
+  }
+
+  /// Scans `[bytes.length - searchTailBytes, bytes.length)` (never earlier than
+  /// [minKeepBytes]) in [stepBytes] windows and returns the 2-byte-aligned
+  /// midpoint of the quietest step so forced `maxWindowMs` cuts land in natural
+  /// inter-word pauses instead of slicing mid-syllable.
+  static int _findValleyCutByte(
+    Uint8List bytes, {
+    required int minKeepBytes,
+    required int searchTailBytes,
+    required int stepBytes,
+  }) {
+    final searchStart = math.max(minKeepBytes, bytes.length - searchTailBytes);
+    if (searchStart + stepBytes > bytes.length) {
+      return bytes.length;
+    }
+    var bestOffset = bytes.length;
+    var bestRms = double.infinity;
+    for (var pos = searchStart; pos + stepBytes <= bytes.length; pos += stepBytes) {
+      final r = rmsOfPcm16(Uint8List.sublistView(bytes, pos, pos + stepBytes));
+      if (r <= bestRms) {
+        bestRms = r;
+        bestOffset = (pos + stepBytes ~/ 2) & ~1;
+      }
+    }
+    return bestOffset.clamp(minKeepBytes, bytes.length);
   }
 
   // Bracketed / parenthesised / musical markup Whisper emits for non-speech.

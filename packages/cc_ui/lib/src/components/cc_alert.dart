@@ -103,7 +103,7 @@ class CcAlert extends StatelessWidget {
             ),
             if (closeInTitle) ...[
               const SizedBox(width: AppSpacing.sm),
-              _AlertCloseButton(onClose: onClose!, color: t.textTertiary),
+              const SizedBox.square(dimension: _kCloseBox),
             ],
           ],
         ),
@@ -124,6 +124,32 @@ class CcAlert extends StatelessWidget {
       ],
     );
 
+    final Widget content = Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(statusIcon, size: 16, color: colors.fg),
+          const SizedBox(width: AppSpacing.sm),
+          // Expanded (not Flexible) once something trails the body, so the
+          // free space lands between them and the control sits on the
+          // banner's edge rather than hugging the text.
+          if (trailing == null)
+            Flexible(child: body)
+          else ...[
+            Expanded(child: body),
+            const SizedBox(width: AppSpacing.md),
+            trailing!,
+          ],
+          if (onClose != null && !closeInTitle) ...[
+            const SizedBox(width: AppSpacing.sm),
+            const SizedBox.square(dimension: _kCloseBox),
+          ],
+        ],
+      ),
+    );
+
     return Semantics(
       container: true,
       liveRegion: true,
@@ -134,31 +160,25 @@ class CcAlert extends StatelessWidget {
           borderRadius: AppRadii.brSm,
           border: Border.all(color: colors.border),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(statusIcon, size: 16, color: colors.fg),
-              const SizedBox(width: AppSpacing.sm),
-              // Expanded (not Flexible) once something trails the body, so the
-              // free space lands between them and the control sits on the
-              // banner's edge rather than hugging the text.
-              if (trailing == null)
-                Flexible(child: body)
-              else ...[
-                Expanded(child: body),
-                const SizedBox(width: AppSpacing.md),
-                trailing!,
-              ],
-              if (onClose != null && !closeInTitle) ...[
-                const SizedBox(width: AppSpacing.sm),
-                _AlertCloseButton(onClose: onClose!, color: t.textTertiary),
-              ],
-            ],
-          ),
-        ),
+        child: onClose == null
+            ? content
+            : Stack(
+                children: [
+                  content,
+                  // Either way the glyph's box sits in the content's top-end
+                  // corner; the control lies over that spot with a 24px
+                  // target that reaches into the padding, so the layout is
+                  // the same as with an 18px control in the row.
+                  PositionedDirectional(
+                    top: AppSpacing.md - _kCloseInset,
+                    end: AppSpacing.md - _kCloseInset,
+                    child: _AlertCloseButton(
+                      onClose: onClose!,
+                      color: t.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -202,6 +222,15 @@ class CcAlert extends StatelessWidget {
   }
 }
 
+/// The close glyph's visual box (14px glyph, 2px padding) that the rows
+/// reserve.
+const double _kCloseBox = 18;
+
+/// The close control's pointer target.
+const double _kCloseTarget = 24;
+
+const double _kCloseInset = (_kCloseTarget - _kCloseBox) / 2;
+
 class _AlertColors {
   const _AlertColors({
     required this.bg,
@@ -225,16 +254,18 @@ class _AlertCloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CcTappable(
       onPressed: onClose,
-      semanticLabel: 'Close',
+      semanticLabel: context.ccStrings.close,
       borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
-        return Padding(
-          padding: const EdgeInsets.all(2),
-          child: Icon(
-            CcIcons.x,
-            size: 14,
-            color: hovered ? color : color.withValues(alpha: 0.8),
+        return SizedBox.square(
+          dimension: _kCloseTarget,
+          child: Center(
+            child: Icon(
+              CcIcons.x,
+              size: 14,
+              color: hovered ? color : color.withValues(alpha: 0.8),
+            ),
           ),
         );
       },

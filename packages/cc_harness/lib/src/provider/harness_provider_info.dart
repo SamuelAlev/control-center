@@ -155,6 +155,13 @@ class HarnessProviderInfo {
   /// Whether the provider is usable right now.
   bool get connected => enabled != HarnessProviderEnabled.disabled;
 
+  /// Whether this connected provider has at least one expired credential.
+  ///
+  /// Matches the Claude Code adapter rule: any expired sign-in surfaces a
+  /// caution status until renewed or removed, while a disconnected provider
+  /// stays disconnected even if a stale credential row exists.
+  bool get hasExpiredSignIn => connected && credentials.any((c) => c.expired);
+
   /// Whether the provider offers a browser OAuth login.
   bool get supportsOAuth => authMethods.contains(HarnessAuthMethod.oauth);
 

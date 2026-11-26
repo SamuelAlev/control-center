@@ -4,7 +4,9 @@ import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icon_button.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_field.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -377,6 +379,122 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('CcTextField semantics', () {
+    testWidgets('label names the field, helper is its hint, once each', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          const CcTextField(
+            label: 'Email',
+            helperText: 'Work address',
+            hintText: 'name@example.com',
+          ),
+        ),
+      );
+      final node = tester.getSemantics(find.byType(EditableText));
+      expect(node.label, 'Email');
+      expect(node.hint, 'Work address');
+      expect(find.semantics.byLabel('Email'), findsOne);
+      expect(find.semantics.byLabel('Work address'), findsNothing);
+      expect(find.semantics.byLabel('name@example.com'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('the placeholder is the hint when there is no helper', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(const CcTextField(label: 'Email', hintText: 'name@x.com')),
+      );
+      expect(tester.getSemantics(find.byType(EditableText)).hint, 'name@x.com');
+      semantics.dispose();
+    });
+
+    testWidgets('the error is a live region', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(const CcTextField(label: 'Email', errorText: 'Required')),
+      );
+      expect(
+        tester.getSemantics(find.text('Required')).flagsCollection.isLiveRegion,
+        isTrue,
+      );
+      semantics.dispose();
+    });
+  });
+
+  group('CcTextField Enter', () {
+    Future<FocusNode> submit(
+      WidgetTester tester, {
+      TextInputAction? action,
+      required List<String> submitted,
+    }) async {
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          Column(
+            children: [
+              CcTextField(
+                focusNode: focus,
+                textInputAction: action,
+                onSubmitted: submitted.add,
+              ),
+              const CcTextField(),
+            ],
+          ),
+        ),
+      );
+      await tester.tap(find.byType(EditableText).first);
+      await tester.pump();
+      await tester.enterText(find.byType(EditableText).first, 'hi');
+      await tester.testTextInput.receiveAction(action ?? TextInputAction.done);
+      await tester.pump();
+      return focus;
+    }
+
+    testWidgets('keeps focus on desktop and still submits', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      try {
+        final submitted = <String>[];
+        final focus = await submit(tester, submitted: submitted);
+        expect(submitted, ['hi']);
+        expect(focus.hasPrimaryFocus, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('keeps the platform behaviour on Android', (tester) async {
+      final submitted = <String>[];
+      final focus = await submit(tester, submitted: submitted);
+      expect(submitted, ['hi']);
+      expect(focus.hasFocus, isFalse);
+    });
+
+    testWidgets('next still moves focus on desktop', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        final submitted = <String>[];
+        final focus = await submit(
+          tester,
+          action: TextInputAction.next,
+          submitted: submitted,
+        );
+        expect(focus.hasFocus, isFalse);
+        final second = tester.widget<EditableText>(
+          find.byType(EditableText).last,
+        );
+        expect(second.focusNode.hasPrimaryFocus, isTrue);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 }

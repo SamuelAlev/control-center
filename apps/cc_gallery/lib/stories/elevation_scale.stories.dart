@@ -84,7 +84,11 @@ class ElevationScale extends StatelessWidget {
                     width: 56,
                     child: Text(
                       '${layer.$2}',
-                      style: CcTypography.monoNum.copyWith(color: t.accent),
+                      style: CcFonts.numeric(
+                        textStyle: CcTypography.numeric.copyWith(
+                          color: t.accent,
+                        ),
+                      ),
                     ),
                   ),
                   Text(

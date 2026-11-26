@@ -356,7 +356,7 @@ class _StackIndexBadge extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: tokens.panel,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
+          borderRadius: AppRadii.brSm,
           border: Border.all(color: tokens.borderSoft),
         ),
         child: Row(

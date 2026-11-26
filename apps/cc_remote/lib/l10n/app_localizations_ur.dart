@@ -314,9 +314,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get joinMeeting => 'میٹنگ میں شامل ہوں';
 
   @override
-  String get join => 'شامل ہوں';
-
-  @override
   String attendeesCount(int count) {
     return 'حاضرین ($count)';
   }

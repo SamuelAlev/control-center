@@ -82,6 +82,7 @@ void main() {
       expect(comment.diffHunk, '');
       expect(comment.line, isNull);
       expect(comment.originalLine, isNull);
+      expect(comment.isOutdated, isFalse);
     });
 
     test('is const constructable', () {
@@ -103,9 +104,19 @@ void main() {
       expect(comment.anchorLine, 10);
     });
 
-    test('anchorLine returns originalLine when line is null', () {
+    test('anchorLine returns null when line is null even with originalLine', () {
       final comment = createComment(line: null, originalLine: 8);
-      expect(comment.anchorLine, 8);
+      expect(comment.anchorLine, isNull);
+      expect(comment.anchorStartLine, isNull);
+    });
+
+    test('anchorLine returns null when isOutdated is true even with line', () {
+      final comment = createComment(line: 10, originalLine: 8).copyWith(
+        isOutdated: true,
+      );
+      expect(comment.isOutdated, isTrue);
+      expect(comment.anchorLine, isNull);
+      expect(comment.anchorStartLine, isNull);
     });
 
     test('anchorLine returns null when both are null', () {

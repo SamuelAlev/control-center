@@ -9,7 +9,7 @@ class SettingsFact {
     required this.label,
     required this.value,
     this.tone,
-    this.mono = true,
+    this.code = false,
   });
 
   /// What the fact is about. Sentence case, two or three words.
@@ -22,10 +22,11 @@ class SettingsFact {
   /// the reader should act on; a fact that is merely a number has no tone.
   final CcStatusTone? tone;
 
-  /// Renders the value in the mono face. On by default: most facts here are
-  /// counts, versions and endpoints, and tabular figures stop a summary strip
-  /// from jittering when a count ticks.
-  final bool mono;
+  /// Renders the value in the code face. Off by default: most facts here are
+  /// counts and versions, which take the UI face with tabular figures so a
+  /// summary strip does not jitter when a count ticks. Turn it on only for a
+  /// machine string (a port, a model id).
+  final bool code;
 }
 
 /// The "where do I stand" strip that opens a settings surface.
@@ -139,9 +140,9 @@ class _Fact extends StatelessWidget {
             Flexible(
               child: Text(
                 fact.value,
-                style: fact.mono
+                style: fact.code
                     ? CcFonts.code(textStyle: valueStyle)
-                    : valueStyle,
+                    : CcFonts.numeric(textStyle: valueStyle),
               ),
             ),
           ],

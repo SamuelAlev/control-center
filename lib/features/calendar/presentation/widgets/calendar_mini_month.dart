@@ -2,11 +2,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
 import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart';
+import 'package:control_center/features/calendar/presentation/utils/month_grid_keys.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 /// The rail's 6-week navigator: a [CalendarMonthGrid] bound to the focused
 /// date. In week view the whole focused week is banded, mirroring what the
@@ -52,6 +53,12 @@ class CalendarMonthGrid extends StatefulWidget {
 class _MonthGridState extends State<CalendarMonthGrid> {
   late DateTime _displayMonth = startOfMonth(widget.selected);
 
+  /// One node per cell. The grid is a single Tab stop (the selected day, else
+  /// today, else the 1st); the arrow keys move between the days.
+  final List<FocusNode> _cells = [
+    for (var i = 0; i < 42; i++) FocusNode(debugLabel: 'mini month day $i'),
+  ];
+
   void _page(int delta) {
     setState(() {
       _displayMonth = DateTime(_displayMonth.year, _displayMonth.month + delta);
@@ -64,7 +71,52 @@ class _MonthGridState extends State<CalendarMonthGrid> {
     final month = startOfMonth(widget.selected);
     if (month != startOfMonth(oldWidget.selected)) {
       _displayMonth = month;
+      // The cells now show other days; keep focus on the selected one.
+      if (_cells.any((node) => node.hasFocus)) {
+        final index = _indexOf(widget.selected);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && index != null) {
+            _cells[index].requestFocus();
+          }
+        });
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    for (final node in _cells) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  int? _indexOf(DateTime day) {
+    final start = dayKey(startOfMonthGrid(_displayMonth));
+    // Rounded hours, so a DST shift inside the grid does not drop a day.
+    final index = (dayKey(day).difference(start).inHours / 24).round();
+    return index >= 0 && index < 42 ? index : null;
+  }
+
+  int _tabStop(DateTime today) =>
+      _indexOf(widget.selected) ??
+      (today.month == _displayMonth.month ? _indexOf(today) : null) ??
+      _indexOf(_displayMonth)!;
+
+  KeyEventResult _onGridKey(FocusNode _, KeyEvent event) {
+    final current = _cells.indexWhere((node) => node.hasPrimaryFocus);
+    final target = current < 0
+        ? null
+        : monthGridKeyTarget(
+            event,
+            current,
+            rtl: Directionality.of(context) == TextDirection.rtl,
+          );
+    if (target == null) {
+      return KeyEventResult.ignored;
+    }
+    _cells[target].requestFocus();
+    return KeyEventResult.handled;
   }
 
   @override
@@ -80,6 +132,7 @@ class _MonthGridState extends State<CalendarMonthGrid> {
     final days = [
       for (var i = 0; i < 42; i++) gridStart.add(Duration(days: i)),
     ];
+    final tabStop = _tabStop(today);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,29 +182,42 @@ class _MonthGridState extends State<CalendarMonthGrid> {
           ],
         ),
         const SizedBox(height: 2),
-        for (var week = 0; week < 6; week++)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: weekView && dayKey(days[week * 7]) == activeWeekStart
-                  ? t.bgQuaternary
-                  : const Color(0x00000000),
-            ),
-            child: Row(
-              children: [
-                for (var d = 0; d < 7; d++)
-                  Expanded(
-                    child: _MiniDayCell(
-                      day: days[week * 7 + d],
-                      inMonth: days[week * 7 + d].month == _displayMonth.month,
-                      isToday: dayKey(days[week * 7 + d]) == today,
-                      isSelected:
-                          dayKey(days[week * 7 + d]) == dayKey(selected),
-                      onTap: () => widget.onSelect(days[week * 7 + d]),
-                    ),
+        Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onKeyEvent: _onGridKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var week = 0; week < 6; week++)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: weekView && dayKey(days[week * 7]) == activeWeekStart
+                        ? t.bgQuaternary
+                        : const Color(0x00000000),
                   ),
-              ],
-            ),
+                  child: Row(
+                    children: [
+                      for (var d = 0; d < 7; d++)
+                        Expanded(
+                          child: _MiniDayCell(
+                            day: days[week * 7 + d],
+                            focusNode: _cells[week * 7 + d]
+                              ..skipTraversal = week * 7 + d != tabStop,
+                            inMonth:
+                                days[week * 7 + d].month == _displayMonth.month,
+                            isToday: dayKey(days[week * 7 + d]) == today,
+                            isSelected:
+                                dayKey(days[week * 7 + d]) == dayKey(selected),
+                            onTap: () => widget.onSelect(days[week * 7 + d]),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -169,6 +235,7 @@ class _MonthGridState extends State<CalendarMonthGrid> {
 class _MiniDayCell extends StatelessWidget {
   const _MiniDayCell({
     required this.day,
+    required this.focusNode,
     required this.inMonth,
     required this.isToday,
     required this.isSelected,
@@ -176,6 +243,7 @@ class _MiniDayCell extends StatelessWidget {
   });
 
   final DateTime day;
+  final FocusNode focusNode;
   final bool inMonth;
   final bool isToday;
   final bool isSelected;
@@ -198,9 +266,12 @@ class _MiniDayCell extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(1),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
+      child: CcTappable(
+        onPressed: onTap,
+        focusNode: focusNode,
+        semanticLabel: DateFormat.yMMMMEEEEd().format(day),
+        semanticSelected: isSelected,
+        builder: (context, _) => Container(
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -208,8 +279,10 @@ class _MiniDayCell extends StatelessWidget {
                 ? t.accent
                 : (isToday ? t.bgBrandPrimary : const Color(0x00000000)),
           ),
+          // The full date is the label; the bare number would repeat it.
           child: Text(
             '${day.day}',
+            semanticsLabel: '',
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected || isToday

@@ -167,15 +167,13 @@ class _FileRefChip extends ConsumerWidget {
         ),
       ),
     );
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        // The same gesture as the attachment card above it and as the
-        // composer's own pill: one thing to click, one place it opens.
-        onTap: () =>
-            unawaited(openAttachmentPreview(context, ref, attachment)),
-        child: Semantics(button: true, label: name, child: chip),
-      ),
+    return CcTappable(
+      // The same gesture as the attachment card above it and as the
+      // composer's own pill: one thing to click, one place it opens.
+      onPressed: () =>
+          unawaited(openAttachmentPreview(context, ref, attachment)),
+      borderRadius: BorderRadius.circular(kInlineCodeChipRadius),
+      builder: (context, _) => chip,
     );
   }
 }

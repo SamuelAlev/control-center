@@ -128,4 +128,47 @@ void main() {
       );
     });
   });
+
+  Future<void> checkClose(WidgetTester tester, Widget? trailing) async {
+    final handle = tester.ensureSemantics();
+    var closed = 0;
+    await tester.pumpWidget(
+      ccTestApp(
+        Center(
+          child: SizedBox(
+            width: 320,
+            child: CcAlert(
+              title: 'Saved',
+              trailing: trailing,
+              onClose: () => closed++,
+            ),
+          ),
+        ),
+      ),
+    );
+    final alert = tester.getRect(find.byType(CcAlert));
+    final close = find.byType(CcTappable);
+    expect(tester.getSize(close), const Size(24, 24));
+    // The glyph sits where an 18px control at the content's top-end corner
+    // would put it: 12px padding plus its 2px inset.
+    final glyph = tester.getRect(
+      find.descendant(of: close, matching: find.byType(Icon)),
+    );
+    expect(glyph.topRight, alert.topRight + const Offset(-14, 14));
+    expect(tester.getSemantics(close).label, 'Close');
+    // The target reaches past the glyph into the padding.
+    await tester.tapAt(glyph.topRight + const Offset(4, -4));
+    expect(closed, 1);
+    handle.dispose();
+  }
+
+  testWidgets(
+    'the close control has a 24px target and keeps its spot',
+    (tester) => checkClose(tester, null),
+  );
+
+  testWidgets(
+    'beside a trailing control the close keeps its spot too',
+    (tester) => checkClose(tester, const Text('Open')),
+  );
 }

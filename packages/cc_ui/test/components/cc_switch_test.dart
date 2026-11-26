@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/components/cc_switch.dart';
+import 'package:cc_ui/src/primitives/focus_ring.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../cc_test_app.dart';
@@ -35,6 +36,48 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('is announced as a labelled on/off switch', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          CcSwitch(value: true, semanticLabel: 'Wi-Fi', onChanged: (_) {}),
+        ),
+      );
+      expect(
+        tester.getSemantics(find.byType(CcSwitch)),
+        matchesSemantics(
+          label: 'Wi-Fi',
+          hasToggledState: true,
+          isToggled: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a disabled switch reports it', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(const CcSwitch(value: false, onChanged: null)),
+      );
+      expect(
+        tester.getSemantics(find.byType(CcSwitch)),
+        matchesSemantics(hasToggledState: true, hasEnabledState: true),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('rings 2px clear of the accent track', (tester) async {
+      await tester.pumpWidget(
+        ccTestApp(CcSwitch(value: true, onChanged: (_) {})),
+      );
+      expect(tester.widget<FocusRing>(find.byType(FocusRing)).offset, 2);
     });
   });
 }

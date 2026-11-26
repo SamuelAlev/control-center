@@ -190,25 +190,24 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     DesignSystemTokens t,
   ) {
     final l10n = AppLocalizations.of(context);
-    final base = AppFonts.codeDynamic(
-      widget.codeFont,
-      textStyle: CcTypography.caption.copyWith(color: tokens.textTertiary),
-    );
-    final mono = AppFonts.codeDynamic(
-      widget.codeFont,
-      textStyle: CcTypography.caption.copyWith(color: tokens.textPrimary),
-    );
+    // Words (the verb, prose first lines) in the UI font; the tool's target
+    // (a path, a command, a query) and raw error text in the code font.
+    final plain = CcTypography.caption.copyWith(color: tokens.textTertiary);
+    final base = AppFonts.codeDynamic(widget.codeFont, textStyle: plain);
     switch (seg) {
       case ToolSegment():
         final p = resolveToolPresentation(seg);
         return TextSpan(
-          // Base style on the root so the unstyled '  ' spacer below shares
+          // Plain style on the root so the unstyled '  ' spacer below shares
           // the summary's metrics instead of the ambient DefaultTextStyle.
-          style: base,
+          style: plain,
           children: [
             TextSpan(
               text: p.verb,
-              style: mono.copyWith(fontWeight: FontWeight.w600),
+              style: plain.copyWith(
+                color: tokens.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (p.subtitle != null) ...[
               const TextSpan(text: '  '),
@@ -219,7 +218,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
       case ReasoningSegment(:final text):
         return TextSpan(
           text: _firstLine(text) ?? l10n.transcriptThinking,
-          style: base,
+          style: plain,
         );
       case ErrorSegment(:final message):
         return TextSpan(
@@ -232,7 +231,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
           style: base.copyWith(color: tokens.fgWarningPrimary),
         );
       case TextSegment(:final text):
-        return TextSpan(text: _firstLine(text) ?? '', style: base);
+        return TextSpan(text: _firstLine(text) ?? '', style: plain);
     }
   }
 

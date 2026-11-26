@@ -254,7 +254,7 @@ class _EventRow extends StatelessWidget {
       ),
       subtitle: AppTimestamp(
         dateTime: startTime,
-        child: Text(subtitle, style: meetingMono(context, fontSize: 11)),
+        child: Text(subtitle, style: meetingMeta(context, fontSize: 11)),
       ),
       trailing: selected
           ? Icon(AppIcons.check, size: 16, color: ds.accent)

@@ -121,6 +121,24 @@ void main() {
       expect(reply.threadId, comments.firstWhere((c) => c.id == parent['id']).threadId);
     });
 
+    test('postIssueComment writes to issueComments and emits on watch stream', () async {
+      final repo = build();
+      await repo.postIssueComment(
+        prNumber: 412,
+        body: 'Top-level conversation comment.',
+      );
+
+      final comments = await repo.watchIssueComments(412).first;
+      expect(
+        comments.any(
+          (c) =>
+              c.body == 'Top-level conversation comment.' &&
+              c.user?.login == 'you',
+        ),
+        isTrue,
+      );
+    });
+
     test('submitting a review materializes its pending inline comments',
         () async {
       final repo = build();

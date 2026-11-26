@@ -358,37 +358,34 @@ class _ThreadParentLink extends ConsumerWidget {
         : (anchor.content.length > 60
               ? '${anchor.content.substring(0, 60)}…'
               : anchor.content);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: workspaceId == null
-            ? null
-            : () => GoRouter.of(
-                context,
-              ).go(spaceRoute(workspaceId, spaceId, messageId: anchorId)),
-        child: Container(
-          width: double.infinity,
-          color: ds.bgSecondary,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xxs,
-          ),
-          child: Row(
-            children: [
-              Icon(AppIcons.gitBranch, size: 12, color: ds.fgTertiary),
-              const SizedBox(width: AppSpacing.xxs),
-              Expanded(
-                child: Text(
-                  parent == null
-                      ? excerpt
-                      : '${conversationDisplayName(parent, AppLocalizations.of(context))} — $excerpt',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, color: ds.fgTertiary),
-                ),
+    return CcTappable(
+      onPressed: workspaceId == null
+          ? null
+          : () => GoRouter.of(
+              context,
+            ).go(spaceRoute(workspaceId, spaceId, messageId: anchorId)),
+      builder: (context, _) => Container(
+        width: double.infinity,
+        color: ds.bgSecondary,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xxs,
+        ),
+        child: Row(
+          children: [
+            Icon(AppIcons.gitBranch, size: 12, color: ds.fgTertiary),
+            const SizedBox(width: AppSpacing.xxs),
+            Expanded(
+              child: Text(
+                parent == null
+                    ? excerpt
+                    : '${conversationDisplayName(parent, AppLocalizations.of(context))} — $excerpt',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: ds.fgTertiary),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

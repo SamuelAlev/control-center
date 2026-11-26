@@ -79,6 +79,16 @@ class _PrDetailScreenState extends ConsumerState<PrDetailScreen> {
     final repository = ref.read(prReviewRepositoryProvider(_coords));
     if (repository == null) return;
     final body = _comment.text.trim();
+    if (event == 'COMMENT') {
+      if (body.isEmpty) {
+        return;
+      }
+      await _run(success, () async {
+        await repository.postIssueComment(prNumber: widget.number, body: body);
+        _comment.clear();
+      });
+      return;
+    }
     if (event == 'REQUEST_CHANGES' && body.isEmpty) {
       setState(
         () => _error = AppLocalizations.of(context).requestChangesNeedsComment,

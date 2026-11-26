@@ -4,7 +4,6 @@ import 'package:cc_domain/core/domain/services/transcript_status.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/question_bubble.dart';

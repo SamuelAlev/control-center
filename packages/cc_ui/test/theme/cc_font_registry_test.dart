@@ -12,33 +12,19 @@ void main() {
   setUp(registry.resetForTests);
   tearDown(registry.resetForTests);
 
-  group('variantFamily', () {
-    test('names one family per weight and slant', () {
-      // Skia synthesises a bold when the requested weight is not a registered
-      // face, so each cut has to be its own family.
-      expect(
-        CcFontRegistry.variantFamily('Inter', weight: 400, italic: false),
-        'Inter 400',
-      );
-      expect(
-        CcFontRegistry.variantFamily('Inter', weight: 700, italic: true),
-        'Inter 700 italic',
-      );
-    });
-  });
-
   group('apply', () {
     test('an empty family is a no-op', () {
       const base = TextStyle(fontSize: 12);
       expect(registry.apply('', base), base);
     });
 
-    test('derives the variant from the base style', () {
+    test('applies the unified family and preserves weight and size', () {
       final style = registry.apply(
         'Inter',
         const TextStyle(fontWeight: FontWeight.w300, fontSize: 11),
       );
-      expect(style.fontFamily, 'Inter 300');
+      expect(style.fontFamily, 'Inter');
+      expect(style.fontWeight, FontWeight.w300);
       expect(style.fontSize, 11, reason: 'other fields survive');
     });
 
@@ -48,11 +34,8 @@ void main() {
         const TextStyle(fontFamilyFallback: ['Apple Color Emoji']),
         fallbackFamily: 'Manrope',
       );
-      expect(style.fontFamilyFallback, [
-        'Inter',
-        'Manrope',
-        'Apple Color Emoji',
-      ]);
+      expect(style.fontFamily, 'Inter');
+      expect(style.fontFamilyFallback, ['Manrope', 'Apple Color Emoji']);
     });
 
     test('extraFallbacks slot in ahead of the caller list', () {
@@ -62,8 +45,8 @@ void main() {
         fallbackFamily: 'Manrope',
         extraFallbacks: const ['PingFang SC', 'Noto Sans CJK SC'],
       );
+      expect(style.fontFamily, 'Inter');
       expect(style.fontFamilyFallback, [
-        'Inter',
         'Manrope',
         'PingFang SC',
         'Noto Sans CJK SC',
@@ -73,7 +56,7 @@ void main() {
   });
 
   group('loading', () {
-    test('fetches a variant once, however many times it is applied', () async {
+    test('fetches a cut once, however many times it is applied', () async {
       final requested = <String>[];
       registry.install(
         loader: ({required family, required weight, required italic}) async {
@@ -95,7 +78,7 @@ void main() {
       // families work, downloadable ones simply fall back.
       final style = registry.apply('Inter', null);
       await pumpEventQueue();
-      expect(style.fontFamily, 'Inter 400');
+      expect(style.fontFamily, 'Inter');
     });
 
     test('skips families the host does not catalogue', () async {
@@ -179,6 +162,68 @@ void main() {
       await pumpEventQueue();
 
       expect(calls, 2);
+    });
+  });
+
+  group('preloadFamily', () {
+    test('requests all standard cuts under the unified family', () async {
+      final requested = <(int, bool)>[];
+      registry.install(
+        loader: ({required family, required weight, required italic}) async {
+          requested.add((weight, italic));
+          return null;
+        },
+      );
+
+      registry.preloadFamily('Inter');
+      await pumpEventQueue();
+
+      expect(requested, CcFontRegistry.standardCuts);
+    });
+
+    test('retries after install when called before loader is ready', () async {
+      final requested = <(int, bool)>[];
+      registry.preloadFamily('Inter');
+      await pumpEventQueue();
+      expect(requested, isEmpty);
+
+      registry.install(
+        loader: ({required family, required weight, required italic}) async {
+          requested.add((weight, italic));
+          return null;
+        },
+      );
+      await pumpEventQueue();
+
+      expect(requested, CcFontRegistry.standardCuts);
+    });
+
+    test('skips families the host does not catalogue', () async {
+      final requested = <String>[];
+      registry
+        ..install(
+          loader: ({required family, required weight, required italic}) async {
+            requested.add(family);
+            return null;
+          },
+        )
+        ..setCatalogue(['Inter']);
+
+      registry.preloadFamily('Menlo');
+      await pumpEventQueue();
+
+      expect(requested, isEmpty);
+    });
+
+    test('deduplicates identical byte payloads without throwing', () async {
+      final sameBytes = Uint8List.fromList([1, 2, 3, 4]);
+      registry.install(
+        loader: ({required family, required weight, required italic}) async =>
+            sameBytes,
+      );
+
+      expect(() => registry.preloadFamily('Broken'), returnsNormally);
+      await pumpEventQueue();
     });
   });
 }

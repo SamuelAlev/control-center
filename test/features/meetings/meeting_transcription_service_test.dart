@@ -24,6 +24,7 @@ class _AlwaysSpeech implements SpeechActivityDetector {
 /// Records each decoded window and returns a numbered marker.
 class _FakeTranscriber implements SpeechTranscriber {
   int calls = 0;
+  final List<Uint8List> decodedChunks = [];
 
   @override
   bool get isReady => true;
@@ -44,6 +45,7 @@ class _FakeTranscriber implements SpeechTranscriber {
   @override
   Future<String> transcribeChunk(Uint8List pcm16) async {
     calls++;
+    decodedChunks.add(pcm16);
     return 'window$calls';
   }
 }
@@ -265,6 +267,138 @@ void main() {
       );
       await controller.close();
     });
+
+    test('trims long leading silence to preRollMs before speech onset', () async {
+      final fake = _FakeTranscriber();
+      final service = MeetingTranscriptionService(
+        fake,
+        minWindowMs: 500,
+        maxWindowMs: 12000,
+        silenceFlushMs: 300,
+        preRollMs: 250,
+      );
+      final controller = StreamController<Uint8List>();
+      final windows = <TranscribedWindow>[];
+      final sub = service.transcribe(controller.stream).listen(windows.add);
+
+      // 2 s of silence, then 600 ms of speech, then 350 ms of silence.
+      controller.add(_pcm(2000, 0));
+      controller.add(_pcm(600, 12000));
+      controller.add(_pcm(350, 0));
+      await controller.close();
+      await sub.asFuture<void>();
+      await sub.cancel();
+
+      expect(windows, hasLength(1));
+      // Speech starts at 2000 ms; with 250 ms pre-roll, startMs is ~1750 ms
+      // (sub-frame rounded), not 0 ms.
+      expect(windows.first.startMs, greaterThanOrEqualTo(1700));
+      expect(windows.first.startMs, lessThanOrEqualTo(1800));
+    });
+
+    test('skips an isolated brief noise blip below minSpeechMs', () async {
+      final fake = _FakeTranscriber();
+      final service = MeetingTranscriptionService(
+        fake,
+        minWindowMs: 1500,
+        maxWindowMs: 12000,
+        silenceFlushMs: 500,
+        minSpeechMs: 128,
+      );
+      final controller = StreamController<Uint8List>();
+      final windows = <TranscribedWindow>[];
+      final sub = service.transcribe(controller.stream).listen(windows.add);
+
+      // One 32 ms click followed by 2 s of silence.
+      controller.add(_pcm(32, 12000));
+      controller.add(_pcm(2000, 0));
+      await controller.close();
+      await sub.asFuture<void>();
+      await sub.cancel();
+
+      expect(windows, isEmpty);
+      expect(fake.calls, 0);
+    });
+
+    test(
+      'detects a natural pause inside a coarse 250 ms batch via sub-frame slicing',
+      () async {
+        final fake = _FakeTranscriber();
+        final service = MeetingTranscriptionService(
+          fake,
+          minWindowMs: 400,
+          maxWindowMs: 12000,
+          silenceFlushMs: 200,
+          preRollMs: 100,
+          minSpeechMs: 64,
+        );
+        final controller = StreamController<Uint8List>();
+        final windows = <TranscribedWindow>[];
+        final sub = service.transcribe(controller.stream).listen(windows.add);
+
+        // Coarse batch containing 500 ms speech + 250 ms silence + 500 ms speech:
+        // sub-frame slicing must catch the mid-batch pause and split into 2.
+        final combined = Uint8List.fromList([
+          ..._pcm(500, 12000),
+          ..._pcm(250, 0),
+          ..._pcm(500, 12000),
+        ]);
+        controller.add(combined);
+        await controller.close();
+        await sub.asFuture<void>();
+        await sub.cancel();
+
+        expect(windows, hasLength(2));
+        expect(fake.calls, 2);
+      },
+    );
+
+    test(
+      'splits at a quiet valley on maxWindowMs with contiguous timestamps and no dropped audio',
+      () async {
+        final fake = _FakeTranscriber();
+        final service = MeetingTranscriptionService(
+          fake,
+          minWindowMs: 1500,
+          softMaxWindowMs: 8000,
+          maxWindowMs: 4000,
+          silenceFlushMs: 500,
+          softSilenceFlushMs: 250,
+          minSpeechMs: 128,
+        );
+        final controller = StreamController<Uint8List>();
+        final windows = <TranscribedWindow>[];
+        final sub = service.transcribe(controller.stream).listen(windows.add);
+
+        // 3000 ms loud speech, then a 160 ms quiet valley (above softSilence? No,
+        // shorter than softSilenceFlushMs=250), then 1200 ms loud speech.
+        final loud1 = _pcm(3000, 12000);
+        final valley = _pcm(160, 100);
+        final loud2 = _pcm(1200, 12000);
+        final totalBytes = loud1.length + valley.length + loud2.length;
+
+        controller.add(loud1);
+        controller.add(valley);
+        controller.add(loud2);
+        await controller.close();
+        await sub.asFuture<void>();
+        await sub.cancel();
+
+        expect(windows, hasLength(2));
+        // Cut landed inside the valley [3000..3160] ms, not at hard 4000 ms.
+        expect(windows[0].startMs, 0);
+        expect(windows[0].endMs, greaterThanOrEqualTo(3000));
+        expect(windows[0].endMs, lessThanOrEqualTo(3200));
+        expect(windows[1].startMs, windows[0].endMs);
+        expect(windows[1].endMs, totalBytes ~/ 32);
+
+        final decodedTotal = fake.decodedChunks.fold<int>(
+          0,
+          (sum, b) => sum + b.length,
+        );
+        expect(decodedTotal, totalBytes);
+      },
+    );
   });
 
   group('MeetingTranscriptionService.isNonSpeechArtifact', () {

@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -295,5 +296,99 @@ void main() {
     expect(tester.takeException(), isNull);
     // Dispose so the ticker is torn down cleanly.
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a button that turns busy keeps focus and does not activate', (
+    tester,
+  ) async {
+    final loading = ValueNotifier(false);
+    final node = FocusNode();
+    addTearDown(loading.dispose);
+    addTearDown(node.dispose);
+    var presses = 0;
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<bool>(
+          valueListenable: loading,
+          builder: (context, busy, _) => CcButton(
+            focusNode: node,
+            loading: busy,
+            onPressed: () => presses++,
+            child: const Text('Save'),
+          ),
+        ),
+      ),
+    );
+    node.requestFocus();
+    await tester.pump();
+    expect(node.hasPrimaryFocus, isTrue);
+
+    loading.value = true;
+    await tester.pump();
+    expect(node.hasPrimaryFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.tap(find.byType(CcButton));
+    await tester.pump();
+    expect(presses, 0);
+  });
+
+  testWidgets('every variant rings 2px clear of its fill', (tester) async {
+    await tester.pumpWidget(
+      ccTestApp(
+        Column(
+          children: [
+            for (final variant in CcButtonVariant.values)
+              CcButton(
+                variant: variant,
+                onPressed: () {},
+                child: Text(variant.name),
+              ),
+          ],
+        ),
+      ),
+    );
+    final t = CcThemeData.light().tokens;
+    final rings = tester.widgetList<FocusRing>(find.byType(FocusRing));
+    expect(rings, hasLength(CcButtonVariant.values.length));
+    for (final ring in rings) {
+      // At offset 0 the ring would sit on the fill, which for the accent
+      // variant is the ring's own colour.
+      expect(ring.offset, 2);
+      expect(ring.color, t.focusRing);
+    }
+  });
+
+  testWidgets('the label grows the button at a larger text size', (
+    tester,
+  ) async {
+    final scale = ValueNotifier<double>(1);
+    addTearDown(scale.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        ValueListenableBuilder<double>(
+          valueListenable: scale,
+          builder: (context, factor, _) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(factor)),
+            child: Center(
+              child: CcButton(onPressed: () {}, child: const Text('Save')),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(CcButton)).height, 40);
+
+    scale.value = 2;
+    await tester.pumpAndSettle();
+    final button = tester.getRect(find.byType(CcButton));
+    final label = tester.getRect(find.text('Save'));
+    expect(button.height, greaterThan(40));
+    expect(button.top, lessThanOrEqualTo(label.top));
+    expect(button.bottom, greaterThanOrEqualTo(label.bottom));
+    expect(tester.takeException(), isNull);
   });
 }

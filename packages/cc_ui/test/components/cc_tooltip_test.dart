@@ -314,4 +314,41 @@ void main() {
       },
     );
   });
+
+  group('CcTooltip semantics', () {
+    testWidgets('a message is the trigger tooltip; no Tab stop is added', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          const Center(
+            child: CcTooltip(message: 'Copy link', child: Text('Copy')),
+          ),
+        ),
+      );
+      expect(tester.getSemantics(find.text('Copy')).tooltip, 'Copy link');
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(FocusManager.instance.primaryFocus?.context, isNull);
+      semantics.dispose();
+    });
+
+    testWidgets('a rich tip is read through its semanticLabel', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        ccTestApp(
+          const Center(
+            child: CcTooltip(
+              tip: Text('Merged by ada'),
+              semanticLabel: 'Merged by ada',
+              child: Text('Merged'),
+            ),
+          ),
+        ),
+      );
+      expect(tester.getSemantics(find.text('Merged')).tooltip, 'Merged by ada');
+      semantics.dispose();
+    });
+  });
 }

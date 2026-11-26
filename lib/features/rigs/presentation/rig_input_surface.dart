@@ -365,72 +365,76 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
         // `!textInputFocus` app binding stays active over the canvas and
         // macOS's unmatched-key silencer consumes printable keys before
         // anything else sees them — a machine you cannot type into.
-        return TextInputSurface(
-          child: _wrapWithFileTransfer(
-            canvas: canvas,
-            child: Focus(
-              focusNode: _focus,
-              onKeyEvent: _onKey,
-              onFocusChange: (has) {
-                // The run of text ends when the keyboard goes elsewhere.
-                if (!has) {
-                  _keystrokes.flush();
-                }
-                // Losing focus while the pointer is still over the canvas is
-                // never what the user meant — something else in the app
-                // grabbed it (a rebuilt composer, a pane-activation handler).
-                // Take it back: within the canvas the machine is the sole
-                // recipient of input. Leaving the canvas is the release.
-                if (!has && _pointerInside && widget.enabled) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _pointerInside && widget.enabled) {
-                      _focus.requestFocus();
-                    }
-                  });
-                }
-              },
-              child: Listener(
-                behavior: HitTestBehavior.opaque,
-                onPointerDown: (e) => _onPointerDown(e, canvas),
-                onPointerMove: (e) => _onPointerMove(e, canvas),
-                onPointerHover: (e) => _onPointerHover(e, canvas),
-                onPointerUp: (e) => _onPointerUp(e, canvas),
-                onPointerCancel: (e) => _onPointerCancel(e, canvas),
-                onPointerSignal: (e) => _onPointerSignal(e, canvas),
-                child: MouseRegion(
-                  // Hover-to-type: entering the canvas hands the machine the
-                  // keyboard, leaving hands it back — no click required, the
-                  // way a remote desktop behaves.
-                  onEnter: (_) {
-                    _pointerInside = true;
-                    if (widget.enabled) {
-                      _focus.requestFocus();
-                    }
-                  },
-                  onExit: (_) {
-                    _pointerInside = false;
-                    // Leaving the canvas hands the keyboard back, so whatever
-                    // was typed goes now rather than 200 ms into whatever the
-                    // user does next.
+        // The keeper: a click on the rig toolbar around the canvas leaves the
+        // keyboard with the machine.
+        return CcFocusKeeper(
+          child: TextInputSurface(
+            child: _wrapWithFileTransfer(
+              canvas: canvas,
+              child: Focus(
+                focusNode: _focus,
+                onKeyEvent: _onKey,
+                onFocusChange: (has) {
+                  // The run of text ends when the keyboard goes elsewhere.
+                  if (!has) {
                     _keystrokes.flush();
-                    if (_focus.hasFocus) {
-                      _focus.unfocus();
-                    }
-                  },
-                  // The GUEST's rendered cursor is the cursor: hover streaming
-                  // keeps it under the local pointer (the tablet is absolute,
-                  // so there is no drift), and hiding the local one is what
-                  // makes the two machines read as one screen instead of two
-                  // arrows chasing each other. The browser surface renders no
-                  // cursor of its own, so there the local pointer stays.
-                  cursor: _isComputer
-                      ? SystemMouseCursors.none
-                      : SystemMouseCursors.basic,
-                  // Nothing around the canvas: the whole surface IS the
-                  // machine (the guest's own cursor is the pointer), so an
-                  // accent ring announcing focus would sit on top of the
-                  // illusion the hover-to-type behavior is building.
-                  child: widget.child,
+                  }
+                  // Losing focus while the pointer is still over the canvas is
+                  // never what the user meant — something else in the app
+                  // grabbed it (a rebuilt composer, a pane-activation handler).
+                  // Take it back: within the canvas the machine is the sole
+                  // recipient of input. Leaving the canvas is the release.
+                  if (!has && _pointerInside && widget.enabled) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && _pointerInside && widget.enabled) {
+                        _focus.requestFocus();
+                      }
+                    });
+                  }
+                },
+                child: Listener(
+                  behavior: HitTestBehavior.opaque,
+                  onPointerDown: (e) => _onPointerDown(e, canvas),
+                  onPointerMove: (e) => _onPointerMove(e, canvas),
+                  onPointerHover: (e) => _onPointerHover(e, canvas),
+                  onPointerUp: (e) => _onPointerUp(e, canvas),
+                  onPointerCancel: (e) => _onPointerCancel(e, canvas),
+                  onPointerSignal: (e) => _onPointerSignal(e, canvas),
+                  child: MouseRegion(
+                    // Hover-to-type: entering the canvas hands the machine the
+                    // keyboard, leaving hands it back — no click required, the
+                    // way a remote desktop behaves.
+                    onEnter: (_) {
+                      _pointerInside = true;
+                      if (widget.enabled) {
+                        _focus.requestFocus();
+                      }
+                    },
+                    onExit: (_) {
+                      _pointerInside = false;
+                      // Leaving the canvas hands the keyboard back, so whatever
+                      // was typed goes now rather than 200 ms into whatever the
+                      // user does next.
+                      _keystrokes.flush();
+                      if (_focus.hasFocus) {
+                        _focus.unfocus();
+                      }
+                    },
+                    // The GUEST's rendered cursor is the cursor: hover streaming
+                    // keeps it under the local pointer (the tablet is absolute,
+                    // so there is no drift), and hiding the local one is what
+                    // makes the two machines read as one screen instead of two
+                    // arrows chasing each other. The browser surface renders no
+                    // cursor of its own, so there the local pointer stays.
+                    cursor: _isComputer
+                        ? SystemMouseCursors.none
+                        : SystemMouseCursors.basic,
+                    // Nothing around the canvas: the whole surface IS the
+                    // machine (the guest's own cursor is the pointer), so an
+                    // accent ring announcing focus would sit on top of the
+                    // illusion the hover-to-type behavior is building.
+                    child: widget.child,
+                  ),
                 ),
               ),
             ),

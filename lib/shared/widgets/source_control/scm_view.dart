@@ -48,7 +48,7 @@ class ScmGroup extends StatelessWidget {
     this.subtitleWidget,
     this.syncLabel,
     this.headerTrailing,
-    this.uppercaseTitle = true,
+    this.sectionTitle = true,
     this.actions = const [],
   });
 
@@ -56,12 +56,12 @@ class ScmGroup extends StatelessWidget {
   final String title;
 
   /// An optional dimmed second line under the title — the checked-out branch
-  /// when the group is a repository. Rendered verbatim (never upper-cased).
+  /// when the group is a repository. Rendered verbatim.
   /// Ignored when [subtitleWidget] is set.
   final String? subtitle;
 
   /// Replaces [subtitle] when the second line is itself a control, such as
-  /// the branch picker. The header does not upper-case it.
+  /// the branch picker.
   final Widget? subtitleWidget;
 
   /// Ahead/behind counts drawn after [subtitle] (`36↓ 0↑`). A git status
@@ -72,9 +72,9 @@ class ScmGroup extends StatelessWidget {
   /// The branch picker and the sync counts sit here.
   final Widget? headerTrailing;
 
-  /// Section headers ("Changes") are small caps. A repository name is not —
-  /// VS Code leaves that row in the repo's own casing.
-  final bool uppercaseTitle;
+  /// Section headers ("Changes") are small, tracked and dimmed. A repository
+  /// name is not: that row reads as a title.
+  final bool sectionTitle;
 
   /// File count shown as a badge after the title. Omitted on a repository
   /// header, which already has the count on its Changes and Staged groups.
@@ -106,7 +106,7 @@ class ScmGroup extends StatelessWidget {
           subtitleWidget: subtitleWidget,
           syncLabel: syncLabel,
           headerTrailing: headerTrailing,
-          uppercaseTitle: uppercaseTitle,
+          sectionTitle: sectionTitle,
           count: count,
           collapsed: collapsed,
           onToggleCollapse: onToggleCollapse,
@@ -133,7 +133,7 @@ class _ScmGroupHeader extends StatefulWidget {
     required this.subtitleWidget,
     required this.syncLabel,
     required this.headerTrailing,
-    required this.uppercaseTitle,
+    required this.sectionTitle,
     required this.count,
     required this.collapsed,
     required this.onToggleCollapse,
@@ -146,7 +146,7 @@ class _ScmGroupHeader extends StatefulWidget {
   final Widget? subtitleWidget;
   final String? syncLabel;
   final Widget? headerTrailing;
-  final bool uppercaseTitle;
+  final bool sectionTitle;
   final int? count;
   final bool collapsed;
   final VoidCallback onToggleCollapse;
@@ -158,19 +158,15 @@ class _ScmGroupHeader extends StatefulWidget {
 }
 
 class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
-  bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final t = widget.tokens;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onToggleCollapse,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
+    return CcTappable(
+      onPressed: widget.onToggleCollapse,
+      semanticExpanded: !widget.collapsed,
+      builder: (context, states) {
+        final revealed = _revealActions(states);
+        return Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: 5,
@@ -189,18 +185,16 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      widget.uppercaseTitle
-                          ? widget.title.toUpperCase()
-                          : widget.title,
+                      widget.title,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: TextStyle(
-                        fontSize: widget.uppercaseTitle ? 11 : 13,
-                        fontWeight: widget.uppercaseTitle
+                        fontSize: widget.sectionTitle ? 11 : 13,
+                        fontWeight: widget.sectionTitle
                             ? FontWeight.w700
                             : FontWeight.w600,
-                        letterSpacing: widget.uppercaseTitle ? 0.3 : 0,
-                        color: widget.uppercaseTitle
+                        letterSpacing: widget.sectionTitle ? 0.2 : 0,
+                        color: widget.sectionTitle
                             ? t.textSecondary
                             : t.textPrimary,
                       ),
@@ -257,9 +251,9 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
               // them never shifts the title or the count badge.
               if (widget.actions.isNotEmpty)
                 IgnorePointer(
-                  ignoring: !_hovered,
+                  ignoring: !revealed,
                   child: Opacity(
-                    opacity: _hovered ? 1 : 0,
+                    opacity: revealed ? 1 : 0,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -275,11 +269,18 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
               ],
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
+
+/// Hover-revealed row actions also show while keyboard focus is on the row
+/// or inside it (the tappable's focused state covers its descendants), so
+/// Tab never lands on an invisible button and the actions stay reachable.
+bool _revealActions(Set<WidgetState> states) =>
+    states.contains(WidgetState.hovered) ||
+    (states.contains(WidgetState.focused) && FocusModality.instance.isKeyboard);
 
 class _CountBadge extends StatelessWidget {
   const _CountBadge({required this.count, required this.tokens});
@@ -339,8 +340,6 @@ class ScmFileRow extends StatefulWidget {
 }
 
 class _ScmFileRowState extends State<ScmFileRow> {
-  bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
@@ -350,79 +349,73 @@ class _ScmFileRowState extends State<ScmFileRow> {
     final basename = slash >= 0 ? name.substring(slash + 1) : name;
     final dirname = slash >= 0 ? name.substring(0, slash) : '';
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: ColoredBox(
-          color: widget.selected
-              ? t.hover
-              : (_hovered ? t.hoverStrong : const Color(0x00000000)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              4,
-              AppSpacing.xs,
-              4,
-            ),
-            // A single-line row is shorter than the hover actions, so floor it
-            // at their extent; revealing them then never changes its height.
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: _kScmActionExtent),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+    return CcTappable(
+      onPressed: widget.onTap,
+      semanticSelected: widget.selected,
+      builder: (context, states) => ColoredBox(
+        color: widget.selected
+            ? t.hover
+            : (states.contains(WidgetState.hovered)
+                  ? t.hoverStrong
+                  : const Color(0x00000000)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            4,
+            AppSpacing.xs,
+            4,
+          ),
+          // A single-line row is shorter than the hover actions, so floor it
+          // at their extent; revealing them then never changes its height.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _kScmActionExtent),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        basename,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: widget.selected
+                              ? FontWeight.w600
+                              : CcTypography.regularWeight,
+                          color: t.textSecondary,
+                        ),
+                      ),
+                      if (dirname.isNotEmpty)
                         Text(
-                          basename,
+                          dirname,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: widget.selected
-                                ? FontWeight.w600
-                                : CcTypography.regularWeight,
-                            color: t.textSecondary,
-                          ),
+                          style: TextStyle(fontSize: 10, color: t.textTertiary),
                         ),
-                        if (dirname.isNotEmpty)
-                          Text(
-                            dirname,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: t.textTertiary,
-                            ),
-                          ),
-                      ],
+                    ],
+                  ),
+                ),
+                // Actions on hover; the status letter always trails on the
+                // right (VS Code layout).
+                if (_revealActions(states))
+                  for (final a in widget.actions) ScmIconAction(action: a),
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 14,
+                  child: Text(
+                    letter,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: color,
                     ),
                   ),
-                  // Actions on hover; the status letter always trails on the
-                  // right (VS Code layout).
-                  if (_hovered)
-                    for (final a in widget.actions) ScmIconAction(action: a),
-                  const SizedBox(width: 4),
-                  SizedBox(
-                    width: 14,
-                    child: Text(
-                      letter,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

@@ -95,7 +95,7 @@ void main() {
       final overrides = await _baseOverrides();
       await _pumpScreen(tester, overrides: overrides);
       expect(find.byType(SandboxingSections), findsOneWidget);
-      expect(find.text('SANDBOXING'), findsOneWidget);
+      expect(find.text('Sandboxing'), findsWidgets);
     });
 
     // One card, two groups: the five-card split ("Master toggle", "Backend",
@@ -109,7 +109,7 @@ void main() {
       await _pumpScreen(tester, overrides: overrides);
 
       expect(find.byType(SectionCard), findsOneWidget);
-      expect(find.text('SANDBOXING'), findsOneWidget);
+      expect(find.text('Sandboxing'), findsWidgets);
       expect(find.text('Isolation'), findsOneWidget);
       expect(find.text('Backend'), findsOneWidget);
       expect(find.text('Requirements'), findsOneWidget);

@@ -8,6 +8,7 @@ import 'package:control_center/features/shell/presentation/widgets/title_bar_wor
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -141,6 +142,59 @@ void main() {
         );
       });
     }
+
+    testWidgets('the chip is a named button that Tab reaches and Enter '
+        'opens', (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      final semantics = tester.ensureSemantics();
+      final workspace = Workspace(
+        id: 'ws-1',
+        name: 'My Project',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appPreferencesProvider.overrideWithValue(prefs),
+            workspacesProvider.overrideWith((ref) => Stream.value([workspace])),
+            activeWorkspaceProvider.overrideWith((ref) => workspace),
+            reposForWorkspaceProvider.overrideWith(
+              (ref, id) => const Stream<List<Repo>>.empty(),
+            ),
+          ],
+          child: _wrap(const TitleBarWorkspaceChip()),
+        ),
+      );
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('My Project')),
+        matchesSemantics(
+          label: 'My Project',
+          isButton: true,
+          isEnabled: true,
+          hasEnabledState: true,
+          isFocusable: true,
+          isFocused: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const ValueKey('ws-1')), findsOneWidget);
+      semantics.dispose();
+    });
 
     testWidgets('active tile is a neutral wash and rows sit flush', (
       tester,

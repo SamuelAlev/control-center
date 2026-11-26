@@ -95,7 +95,6 @@
   "eventNotFound": "予定が見つかりません",
   "eventNotFoundDescription": "予定表の期間外か、元のカレンダーで削除された可能性があります。",
   "joinMeeting": "会議に参加",
-  "join": "参加",
   "attendeesCount": "参加者（{count}）",
   "details": "詳細",
   "allDay": "終日",

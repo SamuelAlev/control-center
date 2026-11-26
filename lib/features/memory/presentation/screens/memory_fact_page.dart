@@ -1,7 +1,10 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
+import 'package:cc_domain/features/dispatch/domain/repositories/improvement_proposal_view.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/improvement_values.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/dispatch/providers/long_work_providers.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_actions.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_fact_details.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_record_links.dart';
@@ -171,6 +174,20 @@ class _MemoryFactPageState extends ConsumerState<MemoryFactPage> {
       (other) => other.id == fact.supersededBy,
     );
     final earlier = facts.where((other) => other.supersededBy == fact.id);
+    final improvements =
+        ref
+            .watch(workspaceImprovementsProvider(widget.workspaceId))
+            .asData
+            ?.value ??
+        const <ImprovementProposalView>[];
+    final sourceImprovements = [
+      for (final view in improvements)
+        if (view.proposal.status == ImprovementStatus.accepted &&
+            view.proposal.kind == ImprovementKind.memoryFact &&
+            (view.proposal.appliedRef == fact.id ||
+                view.proposal.targetRef == fact.id))
+          view,
+    ];
     return MemoryRecordPage(
       title: _editing && _topic.text.isNotEmpty ? _topic.text : fact.topic,
       editing: _editing,
@@ -189,6 +206,11 @@ class _MemoryFactPageState extends ConsumerState<MemoryFactPage> {
         if (fact.isSuperseded) MemoryReplacedNotice(replacement: replacement),
         if (earlier.isNotEmpty)
           MemoryFactLinks(label: l10n.superseded, facts: earlier.toList()),
+        if (sourceImprovements.isNotEmpty)
+          MemoryImprovementLinks(
+            label: l10n.improvementsTitle,
+            proposals: sourceImprovements,
+          ),
       ],
       saveBar: _editing
           ? SettingsSaveBar(

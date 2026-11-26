@@ -1062,13 +1062,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get calendarEmptyNoEvents => '이 범위에 일정이 없습니다';
 
   @override
-  String get calendarStartRecording => '녹음 시작';
-
-  @override
-  String get calendarStartRecordingAndLink => '녹음 시작 및 연결';
-
-  @override
   String get calendarJoinMeet => '회의 참가';
+
+  @override
+  String get calendarJoinAndRecord => '참가하고 녹음';
+
+  @override
+  String get calendarRecordFailed => '녹음을 시작할 수 없습니다';
 
   @override
   String get calendarFromCalendar => '캘린더에서';
@@ -1885,9 +1885,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get activity => '활동';
-
-  @override
-  String get activityLabel => '활동';
 
   @override
   String get activitySearchHint => '활동 검색';
@@ -7337,6 +7334,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get addReviewers => '리뷰어 추가';
 
   @override
+  String get reRequestReview => '리뷰 다시 요청';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return '$label에게 리뷰 다시 요청';
+  }
+
+  @override
   String get addAssignees => '담당자 추가';
 
   @override
@@ -7499,6 +7504,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get meetingStatusRecording => '녹음 중';
 
   @override
+  String get meetingStatusPaused => '일시 중지됨';
+
+  @override
   String get meetingStatusProcessing => '처리 중';
 
   @override
@@ -7525,34 +7533,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '회의 $count건',
-      one: '회의 1건',
-      zero: '회의 없음',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => '미완료 할 일';
-
-  @override
-  String get meetingsLedgerDecisions => '결정 사항';
-
-  @override
   String get meetingsLiveOpen => '녹음 열기';
 
   @override
   String get meetingTemplateShort => '템플릿';
-
-  @override
-  String get meetingsStatThisWeek => '이번 주';
-
-  @override
-  String get meetingsStatRecorded => '녹음됨';
 
   @override
   String get meetingsFilterAll => '전체';
@@ -7596,9 +7580,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total개 할 일';
   }
-
-  @override
-  String get meetingsEnhancedPill => '향상됨';
 
   @override
   String get meetingsTranscribing => '전사 및 요약 중…';
@@ -7824,9 +7805,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get meetingDetectedSubtitleGeneric => '미팅이 진행 중인 것 같습니다. 녹음할까요?';
-
-  @override
-  String get meetingDetectedRecord => '녹음';
 
   @override
   String get meetingDetectedDismiss => '닫기';
@@ -9319,6 +9297,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deviceNeverSeen => '한 번도 연결되지 않음';
 
   @override
+  String get deviceAwaitingApproval => '승인 대기 중';
+
+  @override
   String get profileSectionLabel => '프로필';
 
   @override
@@ -10137,12 +10118,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => '실패';
-
-  @override
-  String get bannerMeetingJoin => '참여';
-
-  @override
-  String get bannerMeetingRecordAndLink => '녹화 및 연결';
 
   @override
   String get bannerCalendarReconnect => '다시 연결';
@@ -13381,6 +13356,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return '댓글을 게시하지 못했습니다: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return '$line번 줄';
   }
@@ -14827,16 +14807,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return '$tab 닫기';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '댓글 $count개',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -20881,10 +20851,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dispatchSettingsTitle => '일정';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      '일정과 감시의 한도, 그리고 아무도 답하지 않는 요청의 처리 방식입니다.';
-
-  @override
   String get dispatchLimitsLabel => '일정 한도';
 
   @override
@@ -20961,9 +20927,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => '목표';
-
-  @override
-  String get scheduleRecordCrumb => '일정';
 
   @override
   String get improvementRecordCrumb => '제안';
@@ -21352,5 +21315,38 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent / $cap, 체인의 모든 일정을 합산';
+  }
+
+  @override
+  String get ccLoading => '로드 중';
+
+  @override
+  String get ccProgress => '진행률';
+
+  @override
+  String get ccBreadcrumb => '탐색 경로';
+
+  @override
+  String get ccDialog => '대화 상자';
+
+  @override
+  String get ccResize => '크기 조정';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (확인되지 않음)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return '$title 선택';
+  }
+
+  @override
+  String get prTableSelectAll => '모든 풀 리퀘스트 선택';
+
+  @override
+  String planVersionRewind(int version) {
+    return '$version 버전으로 되돌리기';
   }
 }

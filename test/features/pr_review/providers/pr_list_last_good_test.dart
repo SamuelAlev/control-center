@@ -560,15 +560,17 @@ class _FakeOpenPrListRepository implements OpenPrListRepository {
   @override
   Future<GitHubProfileActivity> profileActivityForUser(
     String workspaceId,
-    String login,
-  ) async => GitHubProfileActivity.empty;
+    String login, {
+    bool force = false,
+  }) async => GitHubProfileActivity.empty;
 
   @override
   Future<GitHubProfileActivity> profileActivityForTeam(
     String workspaceId,
     String organization,
-    String slug,
-  ) async => GitHubProfileActivity.empty;
+    String slug, {
+    bool force = false,
+  }) async => GitHubProfileActivity.empty;
 
   @override
   Future<WorkspaceOpenPrs> listOpenForWorkspace(String workspaceId) =>

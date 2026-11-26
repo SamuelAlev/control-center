@@ -455,11 +455,11 @@ class _MentionPopupState extends State<MentionPopup> {
           child: Align(
             alignment: AlignmentDirectional.centerStart,
             child: Text(
-              row.header!.toUpperCase(),
+              row.header!,
               style: CcTypography.caption.copyWith(
                 color: ds.textTertiary,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
+                letterSpacing: 0.2,
               ),
             ),
           ),

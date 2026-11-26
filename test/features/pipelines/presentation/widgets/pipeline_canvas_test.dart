@@ -148,6 +148,34 @@ void main() {
     expect(find.byType(PipelineStepDetailPanel), findsOneWidget);
   });
 
+  testWidgets('Tab moves between the canvas controls, never onto a stop '
+      'spanning the whole canvas', (tester) async {
+    final def = _definition([
+      _step(id: 'start', kind: StepKind.trigger, label: 'Start'),
+    ]);
+    await pumpCanvas(
+      tester,
+      def,
+      runId: 'run-1',
+      overrides: [
+        pipelineStepRunsForRunProvider(
+          'run-1',
+        ).overrideWith((_) => Stream.value(const <PipelineStepRun>[])),
+      ],
+    );
+    final canvas = tester.getRect(find.byType(PipelineCanvas));
+    for (var i = 0; i < 6; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final rect = FocusManager.instance.primaryFocus!.rect;
+      expect(
+        rect.width < canvas.width / 2,
+        isTrue,
+        reason: 'stop ${i + 1} is a control, not the canvas ($rect)',
+      );
+    }
+  });
+
   // -- Empty canvas ---------------------------------------------------------
 
   group('empty canvas', () {

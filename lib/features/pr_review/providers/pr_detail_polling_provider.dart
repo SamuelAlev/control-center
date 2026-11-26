@@ -7,6 +7,7 @@ class PrDetailRefreshState {
   const PrDetailRefreshState({
     this.hasDiffUpdate = false,
     this.refreshing = false,
+    this.refreshingDiff = false,
   });
 
   /// Whether new commits have been pushed since the diff was last loaded.
@@ -18,11 +19,19 @@ class PrDetailRefreshState {
   /// re-fetch has landed.
   final bool refreshing;
 
+  /// Whether a diff refresh ([PrDetailPollingNotifier.refreshDiff]) is in flight.
+  final bool refreshingDiff;
+
   /// Returns a copy with the given fields replaced.
-  PrDetailRefreshState copyWith({bool? hasDiffUpdate, bool? refreshing}) {
+  PrDetailRefreshState copyWith({
+    bool? hasDiffUpdate,
+    bool? refreshing,
+    bool? refreshingDiff,
+  }) {
     return PrDetailRefreshState(
       hasDiffUpdate: hasDiffUpdate ?? this.hasDiffUpdate,
       refreshing: refreshing ?? this.refreshing,
+      refreshingDiff: refreshingDiff ?? this.refreshingDiff,
     );
   }
 }
@@ -52,40 +61,82 @@ class PrDetailPollingNotifier extends Notifier<PrDetailRefreshState> {
   /// per view session; the attachment-card fallback covers the broken image.
   static const _maxAttachmentRefreshes = 1;
   int _attachmentRefreshes = 0;
+  bool _needsServerCacheBust = false;
 
   @override
   PrDetailRefreshState build() {
     return const PrDetailRefreshState();
   }
 
-  /// Called when a head SHA change is detected after a manual refresh —
-  /// marks the diff as stale so the toolbar can prompt for an explicit
-  /// "Refresh diff" rather than auto-rerendering the expensive diff.
-  void notifyDiffStale() {
+  /// Called when a head SHA change or local worktree push/sync is detected —
+  /// marks the diff as stale. When [bustServerCache] is true (e.g. a worktree
+  /// commit/push or sync), [refreshDiff] will explicitly delete the server's
+  /// cached diff/files rows before refetching and passive stream updates will
+  /// not clear the flag.
+  void notifyDiffStale({bool bustServerCache = false}) {
+    if (bustServerCache) {
+      _needsServerCacheBust = true;
+    }
     if (!state.hasDiffUpdate) {
       state = state.copyWith(hasDiffUpdate: true);
     }
   }
 
-  /// Drops the cached diff/files for the PR, then invalidates the diff and
-  /// files providers and clears the stale flag.
-  ///
-  /// Busting the cache first is what makes a user-initiated refresh
-  /// authoritative: the SWR freshness gate would otherwise short-circuit and
-  /// re-serve the stale diff (e.g. when only the base branch moved, leaving
-  /// the head SHA unchanged). With the cache rows gone, the re-subscribed
-  /// providers are forced to hit the network.
-  Future<void> refreshDiff() async {
-    final repository = ref.read(prRepositoryProvider(pr));
-    if (repository != null) {
-      await repository.invalidateDiff(pr.number);
+  /// Clears the stale flag when a fresh passive stream load has landed and no
+  /// explicit server-cache bust is pending.
+  void clearDiffStaleIfFresh() {
+    if (_needsServerCacheBust || !state.hasDiffUpdate) {
+      return;
     }
-    ref.invalidate(prDiffProvider(pr));
-    // Invalidate the source provider — prFilesProvider derives from it.
-    ref.invalidate(prFilesLoadProvider(pr));
-    ref.invalidate(prFilesProvider(pr));
-    ref.invalidate(prFileIndexProvider(pr));
     state = state.copyWith(hasDiffUpdate: false);
+  }
+
+  /// Refreshes the diff and files providers and clears the stale flag.
+  ///
+  /// When [bustServerCache] is true (the default for manual user refreshes, or
+  /// whenever [_needsServerCacheBust] was flagged), drops the server-side
+  /// cached diff/files rows first so the SWR freshness gate cannot
+  /// short-circuit. Automatic refreshes triggered by switching back to a stale
+  /// Diff tab pass `bustServerCache: false` unless a worktree mutation flagged
+  /// [_needsServerCacheBust].
+  Future<void> refreshDiff({bool? bustServerCache}) async {
+    if (state.refreshingDiff || state.refreshing) {
+      return;
+    }
+    final shouldBust = (bustServerCache ?? true) || _needsServerCacheBust;
+    _needsServerCacheBust = false;
+    state = state.copyWith(hasDiffUpdate: false, refreshingDiff: true);
+    try {
+      if (shouldBust) {
+        final repository = ref.read(prRepositoryProvider(pr));
+        if (repository != null) {
+          await repository.invalidateDiff(pr.number);
+        }
+      }
+      await Future.wait([
+        _refetch(prDiffProvider(pr)),
+        _refetch(prFileIndexProvider(pr)),
+        _refetch(prFilesLoadProvider(pr)),
+      ]);
+      // prFilesProvider bridges prFilesLoadProvider via ref.listen and only
+      // emits non-empty lists — invalidate without awaiting (it could hang on
+      // a PR with no files).
+      ref.invalidate(prFilesProvider(pr));
+    } catch (_) {
+      // Cache bust or refetch errors are surfaced by the diff providers.
+    } finally {
+      if (ref.mounted) {
+        state = state.copyWith(refreshingDiff: false);
+      }
+    }
+  }
+
+  /// Refreshes the diff only if it is currently marked stale.
+  Future<void> refreshDiffIfStale() async {
+    if (!state.hasDiffUpdate) {
+      return;
+    }
+    await refreshDiff(bustServerCache: false);
   }
 
   /// Full refresh — re-fetches all PR data including the diff. Invoked by
@@ -105,6 +156,7 @@ class PrDetailPollingNotifier extends Notifier<PrDetailRefreshState> {
       // body_html may now carry working URLs (network recovered, waited out a
       // hiccup).
       _attachmentRefreshes = 0;
+      _needsServerCacheBust = false;
       // Bust the server-side SWR rows first (detail, comments, reviews,
       // checks, diff, files, ...): a re-subscribed watch stream replays its
       // cached row as its first emission, so with the rows intact "await the

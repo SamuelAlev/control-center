@@ -2,6 +2,7 @@ import 'package:cc_data/cc_data.dart' show RigImageView;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/human_bytes.dart';
+import 'package:control_center/shared/widgets/focus_on_mount.dart';
 import 'package:flutter/widgets.dart';
 
 /// One base image: what it is, whether it is here, and how to get it.
@@ -166,30 +167,35 @@ class RigImageRow extends StatelessWidget {
             style: CcTypography.caption.copyWith(color: t.textTertiary),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Row(
-            children: [
-              Expanded(
-                child: CcTextField(
-                  controller: pathController,
-                  autofocus: true,
-                  hintText: '/path/to/disk.qcow2',
-                  onSubmitted: (_) => onConfirmImport(),
+          // Asked for outright: an autofocus yields to whatever on the page
+          // had focus before, which is where the Import button hands it as
+          // it goes.
+          FocusOnMount(
+            builder: (context, focusNode) => Row(
+              children: [
+                Expanded(
+                  child: CcTextField(
+                    controller: pathController,
+                    focusNode: focusNode,
+                    hintText: '/path/to/disk.qcow2',
+                    onSubmitted: (_) => onConfirmImport(),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              CcButton(
-                size: CcButtonSize.sm,
-                onPressed: onConfirmImport,
-                child: Text(l10n.rigImageImport),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              CcButton(
-                size: CcButtonSize.sm,
-                variant: CcButtonVariant.ghost,
-                onPressed: onCancelImport,
-                child: Text(l10n.cancel),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.xs),
+                CcButton(
+                  size: CcButtonSize.sm,
+                  onPressed: onConfirmImport,
+                  child: Text(l10n.rigImageImport),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                CcButton(
+                  size: CcButtonSize.sm,
+                  variant: CcButtonVariant.ghost,
+                  onPressed: onCancelImport,
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            ),
           ),
         ],
       ],

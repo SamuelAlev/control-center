@@ -227,11 +227,11 @@ class _PortsPopover extends ConsumerWidget {
               AppSpacing.xs,
             ),
             child: Text(
-              l10n.rigPortsTitle.toUpperCase(),
+              l10n.rigPortsTitle,
               style: CcTypography.caption.copyWith(
                 color: t.textTertiary,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: 0.2,
               ),
             ),
           ),

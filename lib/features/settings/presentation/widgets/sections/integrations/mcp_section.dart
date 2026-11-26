@@ -137,12 +137,11 @@ class _McpControlsState extends ConsumerState<_McpControls> {
               label: l10n.mcpServer,
               value: running ? l10n.running : l10n.stopped,
               tone: running ? CcStatusTone.positive : CcStatusTone.neutral,
-              mono: false,
             ),
             SettingsFact(
               label: l10n.portLabel,
               value: '${widget.status.port}',
-              mono: true,
+              code: true,
             ),
           ],
           trailing: owner

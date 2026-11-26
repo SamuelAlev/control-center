@@ -51,6 +51,15 @@ class EditorLayoutController extends ChangeNotifier {
   /// listener does not emit redundant notifications mid-operation.
   bool _mutating = false;
 
+  /// Transient origin metadata for the most recent split mutation, so the UI
+  /// can animate the newly created leaf sliding open from the split seam.
+  ({String leafId, Axis axis, bool before})? _lastSplitOrigin;
+
+  /// The most recent split creation origin, or null after a non-split
+  /// structural mutation.
+  ({String leafId, Axis axis, bool before})? get lastSplitOrigin =>
+      _lastSplitOrigin;
+
   /// The current tree root.
   EditorNode get root => _root;
 
@@ -209,6 +218,7 @@ class EditorLayoutController extends ChangeNotifier {
       return;
     }
     _mutating = true;
+    _lastSplitOrigin = null;
     final tab = source.controller.removeAt(srcIndex);
     if (tab != null) {
       target.controller.insert(toIndex, tab);
@@ -240,6 +250,7 @@ class EditorLayoutController extends ChangeNotifier {
       return;
     }
     _mutating = true;
+    _lastSplitOrigin = null;
     final tab = source.controller.removeAt(srcIndex);
     if (tab == null) {
       _finishMutation();
@@ -252,6 +263,7 @@ class EditorLayoutController extends ChangeNotifier {
         : Axis.vertical;
     final before = edge == DropEdge.left || edge == DropEdge.top;
     _insertSibling(target, newLeaf, axis, before);
+    _lastSplitOrigin = (leafId: newLeaf.id, axis: axis, before: before);
     _activeLeafId = newLeaf.id;
     _finishMutation();
   }
@@ -291,6 +303,7 @@ class EditorLayoutController extends ChangeNotifier {
         : Axis.vertical;
     final before = edge == DropEdge.left || edge == DropEdge.top;
     _insertSibling(leaf, newLeaf, axis, before);
+    _lastSplitOrigin = (leafId: newLeaf.id, axis: axis, before: before);
     _activeLeafId = newLeaf.id;
     _finishMutation();
   }
@@ -318,6 +331,7 @@ class EditorLayoutController extends ChangeNotifier {
         : Axis.vertical;
     final before = edge == DropEdge.left || edge == DropEdge.top;
     _insertSibling(leaf, newLeaf, axis, before);
+    _lastSplitOrigin = (leafId: newLeaf.id, axis: axis, before: before);
     _activeLeafId = newLeaf.id;
     _finishMutation();
   }
@@ -339,6 +353,7 @@ class EditorLayoutController extends ChangeNotifier {
       return;
     }
     _mutating = true;
+    _lastSplitOrigin = null;
     leaf.controller.removeAt(index);
     _finishMutation();
   }
@@ -356,6 +371,7 @@ class EditorLayoutController extends ChangeNotifier {
       return;
     }
     _mutating = true;
+    _lastSplitOrigin = null;
     leaf.controller.removeAt(idx);
     _finishMutation();
   }
@@ -370,6 +386,7 @@ class EditorLayoutController extends ChangeNotifier {
       return;
     }
     _mutating = true;
+    _lastSplitOrigin = null;
     // Emptying the controller lets the shared prune pass remove the leaf and
     // collapse its parent.
     while (!leaf.controller.isEmpty) {
@@ -674,6 +691,7 @@ class EditorLayoutController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _lastSplitOrigin = null;
     for (final c in _leafControllers.values) {
       c.removeListener(_onLeafChanged);
       c.dispose();

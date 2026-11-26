@@ -64,10 +64,12 @@ class GitHubUserStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isBusy ? orange.withValues(alpha: 0.08) : tokens.bgSecondary,
-        border: isBusy
-            ? Border.all(color: orange.withValues(alpha: 0.6))
-            : null,
-        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isBusy
+              ? orange.withValues(alpha: 0.45)
+              : tokens.borderSecondary,
+        ),
+        borderRadius: AppRadii.brSm,
       ),
       child: Text(
         label,

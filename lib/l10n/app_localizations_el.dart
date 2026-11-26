@@ -1097,13 +1097,13 @@ class AppLocalizationsEl extends AppLocalizations {
   String get calendarEmptyNoEvents => 'Δεν υπάρχουν γεγονότα σε αυτό το εύρος';
 
   @override
-  String get calendarStartRecording => 'Έναρξη εγγραφής';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Έναρξη εγγραφής και σύνδεση';
-
-  @override
   String get calendarJoinMeet => 'Συμμετοχή στη σύσκεψη';
+
+  @override
+  String get calendarJoinAndRecord => 'Συμμετοχή και εγγραφή';
+
+  @override
+  String get calendarRecordFailed => 'Δεν ήταν δυνατή η έναρξη της εγγραφής';
 
   @override
   String get calendarFromCalendar => 'Από το ημερολόγιο';
@@ -1948,9 +1948,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get activity => 'Δραστηριότητα';
-
-  @override
-  String get activityLabel => 'ΔΡΑΣΤΗΡΙΟΤΗΤΑ';
 
   @override
   String get activitySearchHint => 'Αναζήτηση δραστηριότητας';
@@ -2910,7 +2907,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get briefDescription => 'Σύντομη περιγραφή';
 
   @override
-  String get bugLabel => 'ΣΦΑΛΜΑ';
+  String get bugLabel => 'Σφάλμα';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4505,7 +4502,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get pullRequests => 'Pull requests';
 
   @override
-  String get questionLabel => 'ΕΡΩΤΗΣΗ';
+  String get questionLabel => 'Ερώτηση';
 
   @override
   String get queued => 'Σε ουρά';
@@ -4520,7 +4517,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get reasoningEffort => 'Προσπάθεια συλλογισμού';
 
   @override
-  String get recommendLabel => 'ΠΡΟΤΑΣΗ';
+  String get recommendLabel => 'Πρόταση';
 
   @override
   String recordingFromDevice(String device) {
@@ -5193,7 +5190,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get suggestion => 'Πρόταση';
 
   @override
-  String get suggestLabel => 'ΠΡΟΤΑΣΗ';
+  String get suggestLabel => 'Πρόταση';
 
   @override
   String get superseded => 'Αντικαταστάθηκε';
@@ -5238,7 +5235,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get thisCannotBeUndone => 'Αυτή η ενέργεια δεν αναιρείται.';
 
   @override
-  String get ticketLabel => 'ΕΙΣΙΤΗΡΙΟ';
+  String get ticketLabel => 'Εισιτήριο';
 
   @override
   String get titleLabel => 'Τίτλος';
@@ -7562,6 +7559,14 @@ class AppLocalizationsEl extends AppLocalizations {
   String get addReviewers => 'Προσθήκη κριτών';
 
   @override
+  String get reRequestReview => 'Εκ νέου αίτημα ελέγχου';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Εκ νέου αίτημα ελέγχου από $label';
+  }
+
+  @override
   String get addAssignees => 'Προσθήκη ανατεθειμένων';
 
   @override
@@ -7729,6 +7734,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get meetingStatusRecording => 'Εγγραφή';
 
   @override
+  String get meetingStatusPaused => 'Σε παύση';
+
+  @override
   String get meetingStatusProcessing => 'Επεξεργασία';
 
   @override
@@ -7756,34 +7764,10 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count συσκέψεις',
-      one: '1 σύσκεψη',
-      zero: 'Καμία σύσκεψη',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Ανοιχτές ενέργειες';
-
-  @override
-  String get meetingsLedgerDecisions => 'Αποφάσεις';
-
-  @override
   String get meetingsLiveOpen => 'Άνοιγμα εγγραφής';
 
   @override
   String get meetingTemplateShort => 'Πρότυπο';
-
-  @override
-  String get meetingsStatThisWeek => 'Αυτή την εβδομάδα';
-
-  @override
-  String get meetingsStatRecorded => 'Εγγεγραμμένες';
 
   @override
   String get meetingsFilterAll => 'Όλες';
@@ -7827,9 +7811,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total στοιχεία ενέργειας';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'βελτιωμένο';
 
   @override
   String get meetingsTranscribing => 'μεταγραφή και σύνοψη…';
@@ -8068,9 +8049,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Φαίνεται ότι συμβαίνει σύσκεψη. Να εγγραφεί;';
-
-  @override
-  String get meetingDetectedRecord => 'Εγγραφή';
 
   @override
   String get meetingDetectedDismiss => 'Απόρριψη';
@@ -9613,6 +9591,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get deviceNeverSeen => 'Δεν συνδέθηκε ποτέ';
 
   @override
+  String get deviceAwaitingApproval => 'Αναμονή έγκρισης';
+
+  @override
   String get profileSectionLabel => 'Προφίλ';
 
   @override
@@ -10445,12 +10426,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Απέτυχε';
-
-  @override
-  String get bannerMeetingJoin => 'Συμμετοχή';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Εγγραφή και σύνδεση';
 
   @override
   String get bannerCalendarReconnect => 'Επανασύνδεση';
@@ -13800,6 +13775,11 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Δεν ήταν δυνατή η δημοσίευση του σχολίου: ⁨$error⁩';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Γραμμή $line';
   }
@@ -15299,17 +15279,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Κλείσιμο $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count σχόλια',
-      one: '1 σχόλιο',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21638,10 +21607,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get dispatchSettingsTitle => 'Χρονοδιαγράμματα';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Όρια για χρονοδιαγράμματα και παρακολουθήσεις, και τι γίνεται με τα αιτήματα που δεν απαντά κανείς.';
-
-  @override
   String get dispatchLimitsLabel => 'Όρια χρονοδιαγραμμάτων';
 
   @override
@@ -21720,9 +21685,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Στόχος';
-
-  @override
-  String get scheduleRecordCrumb => 'Χρονοδιάγραμμα';
 
   @override
   String get improvementRecordCrumb => 'Πρόταση';
@@ -22128,5 +22090,38 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent από $cap, υπολογίζοντας κάθε χρονοδιάγραμμα της αλυσίδας του';
+  }
+
+  @override
+  String get ccLoading => 'Φόρτωση';
+
+  @override
+  String get ccProgress => 'Πρόοδος';
+
+  @override
+  String get ccBreadcrumb => 'Διαδρομή πλοήγησης';
+
+  @override
+  String get ccDialog => 'Παράθυρο διαλόγου';
+
+  @override
+  String get ccResize => 'Αλλαγή μεγέθους';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (μη επαληθευμένο)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Επιλογή $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Επιλογή όλων των pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Επαναφορά στην έκδοση $version';
   }
 }

@@ -61,7 +61,7 @@ class PipelineEditorNodeTile extends StatefulWidget {
   /// valid targets).
   final bool awaitingConnect;
 
-  /// Optional uppercase eyebrow (`When this happens` / `Do this`).
+  /// Optional eyebrow (`When this happens` / `Do this`).
   final String? eyebrow;
 
   /// Tap / keyboard select.
@@ -183,7 +183,7 @@ class _PipelineEditorNodeTileState extends State<PipelineEditorNodeTile> {
                 width: kPipelineEditorNodeWidth,
                 top: -18,
                 child: Text(
-                  widget.eyebrow!.toUpperCase(),
+                  widget.eyebrow!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: pipelineNodeEyebrowStyle(tokens),
@@ -275,7 +275,7 @@ class PipelineEditorTriggerTile extends StatefulWidget {
   /// Whether this tile started the in-flight connect.
   final bool connectSource;
 
-  /// Optional uppercase eyebrow (first tile only).
+  /// Optional eyebrow (first tile only).
   final String? eyebrow;
 
   /// Tap selects this trigger.
@@ -420,7 +420,7 @@ class _PipelineEditorTriggerTileState extends State<PipelineEditorTriggerTile> {
                 width: kPipelineEditorNodeWidth,
                 top: -18,
                 child: Text(
-                  widget.eyebrow!.toUpperCase(),
+                  widget.eyebrow!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: pipelineNodeEyebrowStyle(tokens),

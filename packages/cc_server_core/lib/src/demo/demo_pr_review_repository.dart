@@ -346,6 +346,23 @@ class DemoPrReviewRepository extends EmptyPrReviewRepository {
   });
 
   @override
+  Future<void> postIssueComment({
+    required int prNumber,
+    required String body,
+  }) => _locked(() async {
+    final key = _key(prNumber);
+    final rows = await _readList(DemoPrCacheKind.issueComments, key);
+    rows.add({
+      'id': _nextId(rows),
+      'body': body,
+      'user': PrCacheCodec.userToCache(visitor),
+      'created_at': DateTime.now().toIso8601String(),
+      'reactions': <Map<String, dynamic>>[],
+    });
+    await _put(DemoPrCacheKind.issueComments, key, jsonEncode(rows));
+  });
+
+  @override
   Future<void> submitReview({
     required int prNumber,
     required String event,

@@ -104,7 +104,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('NEEDS YOUR ATTENTION'), findsOneWidget);
+      expect(find.text('Needs your attention'), findsOneWidget);
       expect(find.text('Payments'), findsOneWidget);
       expect(find.text('Read-only'), findsOneWidget);
       expect(find.textContaining('Since '), findsOneWidget);
@@ -153,7 +153,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('NEEDS YOUR ATTENTION'), findsNothing);
+      expect(find.text('Needs your attention'), findsNothing);
     });
 
     testWidgets('anyone but the server owner never asks', (tester) async {
@@ -236,7 +236,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('HELD BACK FROM RESTORED COPIES'), findsNothing);
+      expect(find.text('Held back from restored copies'), findsNothing);
     });
 
     testWidgets('each kind says what it would grant to whom', (tester) async {
@@ -250,7 +250,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('HELD BACK FROM RESTORED COPIES'), findsOneWidget);
+      expect(find.text('Held back from restored copies'), findsOneWidget);
       expect(find.text('Payments'), findsOneWidget);
       for (final sentence in [
         'Agents may do this without approval: Run commands starting with git push',
@@ -383,7 +383,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('HELD BACK FROM RESTORED COPIES'), findsNothing);
+      expect(find.text('Held back from restored copies'), findsNothing);
       expect(review.lists, 0);
     });
 

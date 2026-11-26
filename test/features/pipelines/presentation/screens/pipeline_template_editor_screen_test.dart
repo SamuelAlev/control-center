@@ -340,6 +340,32 @@ void main() {
       expect(find.text('Unsaved changes'), findsOneWidget);
     });
 
+    testWidgets('the pencil puts the cursor in the title while the canvas '
+        'keeps the keyboard, and Enter hands focus back to the pencil', (
+      tester,
+    ) async {
+      final repo = _FakeTemplateRepo(_draft());
+      await _pumpEditor(tester, repo);
+
+      await tester.tap(_iconButton('Rename'));
+      await tester.pumpAndSettle();
+
+      final focused = FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<CcTextField>();
+      expect(focused?.autofocus, isTrue, reason: 'the title field has focus');
+      tester.testTextInput.enterText('Deploy pipeline');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Deploy pipeline'), findsOneWidget);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<CcIconButton>()
+            ?.tooltip,
+        'Rename',
+      );
+    });
+
     testWidgets('opening a template with a shared entry is not an edit', (
       tester,
     ) async {
@@ -416,7 +442,15 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Triggers'), findsNothing);
+      // The node library's own "Triggers" eyebrow stays on screen; the panel
+      // itself carries no such heading.
+      expect(
+        find.descendant(
+          of: find.byType(TriggerNodePanel),
+          matching: find.text('Triggers'),
+        ),
+        findsNothing,
+      );
       expect(find.text('Add trigger'), findsNothing);
     });
 

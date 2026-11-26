@@ -5,14 +5,13 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/goal_contract.d
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verdict.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verification.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/goal_tab.dart';
 import 'package:control_center/features/messaging/presentation/widgets/work/work_text.dart';
 import 'package:control_center/features/messaging/providers/conversation_work_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 /// The expanded half of a goal card: what done means (each criterion with
 /// its last verdict), its checks with their last results, the last verdict
@@ -69,8 +68,13 @@ class GoalCardDetail extends ConsumerWidget {
               CcButton(
                 variant: CcButtonVariant.ghost,
                 size: CcButtonSize.sm,
-                onPressed: () => context.go(
-                  '${goalRoute(goal.workspaceId, goal.id)}?$goalContractEditQuery',
+                onPressed: () => openGoal(
+                  context,
+                  workspaceId: goal.workspaceId,
+                  spaceId: goal.spaceId,
+                  goalId: goal.id,
+                  title: goal.userText,
+                  openContractEditor: true,
                 ),
                 child: Text(l10n.goalCardAddCheck),
               ),

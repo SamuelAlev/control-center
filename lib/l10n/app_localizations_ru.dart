@@ -1093,13 +1093,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get calendarEmptyNoEvents => 'В этом диапазоне нет событий';
 
   @override
-  String get calendarStartRecording => 'Начать запись';
-
-  @override
-  String get calendarStartRecordingAndLink => 'Начать запись и привязать';
-
-  @override
   String get calendarJoinMeet => 'Присоединиться к встрече';
+
+  @override
+  String get calendarJoinAndRecord => 'Присоединиться и записать';
+
+  @override
+  String get calendarRecordFailed => 'Не удалось начать запись';
 
   @override
   String get calendarFromCalendar => 'Из календаря';
@@ -1944,9 +1944,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get activity => 'Активность';
-
-  @override
-  String get activityLabel => 'АКТИВНОСТЬ';
 
   @override
   String get activitySearchHint => 'Поиск по активности';
@@ -2906,7 +2903,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get briefDescription => 'Краткое описание';
 
   @override
-  String get bugLabel => 'БАГ';
+  String get bugLabel => 'Баг';
 
   @override
   String get bundledDefaultsNeverUpdated =>
@@ -4521,7 +4518,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reasoningEffort => 'Усилие рассуждения';
 
   @override
-  String get recommendLabel => 'РЕКОМЕНДУЕМ';
+  String get recommendLabel => 'Рекомендуем';
 
   @override
   String recordingFromDevice(String device) {
@@ -5194,7 +5191,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get suggestion => 'Предложение';
 
   @override
-  String get suggestLabel => 'ПРЕДЛОЖИТЬ';
+  String get suggestLabel => 'Предложить';
 
   @override
   String get superseded => 'Заменено';
@@ -5239,7 +5236,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get thisCannotBeUndone => 'Это действие нельзя отменить.';
 
   @override
-  String get ticketLabel => 'ТИКЕТ';
+  String get ticketLabel => 'Тикет';
 
   @override
   String get titleLabel => 'Название';
@@ -7573,6 +7570,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addReviewers => 'Добавить рецензентов';
 
   @override
+  String get reRequestReview => 'Повторно запросить проверку';
+
+  @override
+  String reRequestReviewFor(String label) {
+    return 'Повторно запросить проверку у $label';
+  }
+
+  @override
   String get addAssignees => 'Добавить исполнителей';
 
   @override
@@ -7739,6 +7744,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get meetingStatusRecording => 'Запись';
 
   @override
+  String get meetingStatusPaused => 'На паузе';
+
+  @override
   String get meetingStatusProcessing => 'Обработка';
 
   @override
@@ -7768,36 +7776,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String meetingsCountLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count встреч',
-      many: '$count встреч',
-      few: '$count встречи',
-      one: '$count встреча',
-      zero: 'Нет встреч',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get meetingsLedgerOpenActions => 'Открытые задачи';
-
-  @override
-  String get meetingsLedgerDecisions => 'Решения';
-
-  @override
   String get meetingsLiveOpen => 'Открыть запись';
 
   @override
   String get meetingTemplateShort => 'Шаблон';
-
-  @override
-  String get meetingsStatThisWeek => 'На этой неделе';
-
-  @override
-  String get meetingsStatRecorded => 'Записано';
 
   @override
   String get meetingsFilterAll => 'Все';
@@ -7843,9 +7825,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String meetingsActionItemsProgress(int done, int total) {
     return '$done / $total задач';
   }
-
-  @override
-  String get meetingsEnhancedPill => 'улучшено';
 
   @override
   String get meetingsTranscribing => 'транскрипция и саммари…';
@@ -8080,9 +8059,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get meetingDetectedSubtitleGeneric =>
       'Похоже, идёт встреча. Записать?';
-
-  @override
-  String get meetingDetectedRecord => 'Записать';
 
   @override
   String get meetingDetectedDismiss => 'Отклонить';
@@ -9622,6 +9598,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deviceNeverSeen => 'Никогда не подключалось';
 
   @override
+  String get deviceAwaitingApproval => 'Ждёт одобрения';
+
+  @override
   String get profileSectionLabel => 'Профиль';
 
   @override
@@ -10458,12 +10437,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get evalsStatusFailed => 'Ошибка';
-
-  @override
-  String get bannerMeetingJoin => 'Присоединиться';
-
-  @override
-  String get bannerMeetingRecordAndLink => 'Записать и привязать';
 
   @override
   String get bannerCalendarReconnect => 'Подключить снова';
@@ -13856,6 +13829,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String failedToPostComment(String error) {
+    return 'Не удалось отправить комментарий: $error';
+  }
+
+  @override
   String commentOnLine(int line) {
     return 'Строка $line';
   }
@@ -15360,19 +15338,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String closeTabNamed(String tab) {
     return 'Закрыть $tab';
-  }
-
-  @override
-  String threadCommentCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count комментария',
-      many: '$count комментариев',
-      few: '$count комментария',
-      one: '$count комментарий',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -21724,10 +21689,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get dispatchSettingsTitle => 'Расписания';
 
   @override
-  String get dispatchSettingsSubtitle =>
-      'Лимиты для расписаний и наблюдений, а также что происходит с запросами, на которые никто не ответил.';
-
-  @override
   String get dispatchLimitsLabel => 'Лимиты расписаний';
 
   @override
@@ -21806,9 +21767,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get goalRecordCrumb => 'Цель';
-
-  @override
-  String get scheduleRecordCrumb => 'Расписание';
 
   @override
   String get improvementRecordCrumb => 'Предложение';
@@ -22222,5 +22180,38 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String scheduleSpentWithChain(String spent, String cap) {
     return '$spent из $cap, с учётом каждого расписания в его цепочке';
+  }
+
+  @override
+  String get ccLoading => 'Загрузка';
+
+  @override
+  String get ccProgress => 'Ход выполнения';
+
+  @override
+  String get ccBreadcrumb => 'Путь навигации';
+
+  @override
+  String get ccDialog => 'Диалоговое окно';
+
+  @override
+  String get ccResize => 'Изменить размер';
+
+  @override
+  String ccUnverifiedLabel(String label) {
+    return '$label (не проверено)';
+  }
+
+  @override
+  String prRowSelect(String title) {
+    return 'Выбрать $title';
+  }
+
+  @override
+  String get prTableSelectAll => 'Выбрать все pull requests';
+
+  @override
+  String planVersionRewind(int version) {
+    return 'Откатить к версии $version';
   }
 }

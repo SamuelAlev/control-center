@@ -291,7 +291,7 @@ class _PrRow extends StatelessWidget {
                           ),
                           child: Text(
                             '$position',
-                            style: AppFonts.codeStyle(
+                            style: AppFonts.numericStyle(
                               fontSize: 10,
                               color: tokens.textSecondary,
                             ),
@@ -329,7 +329,7 @@ class _PrRow extends StatelessWidget {
                                 Text(
                                   '#${pr.number}',
                                   textDirection: TextDirection.ltr,
-                                  style: AppFonts.codeStyle(
+                                  style: AppFonts.numericStyle(
                                     fontSize: 11,
                                     color: tokens.textSecondary,
                                   ),

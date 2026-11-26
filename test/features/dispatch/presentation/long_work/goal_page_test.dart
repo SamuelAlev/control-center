@@ -6,7 +6,6 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verdict.da
 import 'package:cc_domain/features/dispatch/domain/value_objects/goal_verification.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/goals/goal_page.dart';
-import 'package:control_center/features/dispatch/presentation/widgets/goals/goals_list.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/work_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -220,7 +219,7 @@ void main() {
     expect(find.text('Keep the changelog current'), findsWidgets);
   });
 
-  testWidgets('a goal paused on usage limits says so, on the page and list', (
+  testWidgets('a goal paused on usage limits says so on the page', (
     tester,
   ) async {
     final parked = GoalRunView(
@@ -233,12 +232,6 @@ void main() {
     );
     await pump(tester, [parked]);
     final l = l10n(tester);
-    expect(find.text(l.goalHoldDetailLimitParks), findsOneWidget);
-    await pumpLongWork(
-      tester,
-      const GoalsList(workspaceId: kTestWorkspaceId),
-      overrides: longWorkOverrides(goalViews: [parked]),
-    );
     expect(find.text(l.goalHoldDetailLimitParks), findsOneWidget);
   });
 
@@ -253,37 +246,6 @@ void main() {
     await pump(tester, [waiting]);
     // The page's "next" line; the status line above it has its own words.
     expect(find.textContaining('or looks again at'), findsOneWidget);
-  });
-
-  testWidgets('the list groups goals and shows an empty state', (tester) async {
-    await pumpLongWork(
-      tester,
-      const GoalsList(workspaceId: kTestWorkspaceId),
-      overrides: longWorkOverrides(goalViews: const []),
-    );
-    final l = AppLocalizations.of(tester.element(find.byType(GoalsList)));
-    expect(find.text(l.goalsEmpty), findsOneWidget);
-    await pumpLongWork(
-      tester,
-      const GoalsList(workspaceId: kTestWorkspaceId),
-      overrides: longWorkOverrides(
-        goalViews: [
-          view(AgentGoalStatus.active),
-          GoalRunView(
-            goal: goalFixture(
-              id: 'goal-2',
-              status: AgentGoalStatus.completed,
-              userText: 'Ship 1.0',
-            ),
-            canResume: true,
-            canApprove: true,
-          ),
-        ],
-      ),
-    );
-    expect(find.textContaining(l.goalsGroupOpen), findsOneWidget);
-    expect(find.textContaining(l.goalsGroupEnded), findsOneWidget);
-    expect(find.text('Ship 1.0'), findsOneWidget);
   });
 
   String? tipOf(WidgetTester tester, String label) => tester

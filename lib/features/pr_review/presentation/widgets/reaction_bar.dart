@@ -173,7 +173,7 @@ class _ReactionPopoverChipState extends State<_ReactionPopoverChip> {
         message: AppLocalizations.of(context).reactionAddTooltip,
         child: CcTappable(
           onPressed: _controller.toggle,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: AppRadii.brSm,
           semanticLabel: AppLocalizations.of(context).reactionAddTooltip,
           builder: (context, states) => ListenableBuilder(
             listenable: _controller,
@@ -259,7 +259,7 @@ class _ReactionChip extends StatelessWidget {
           message: tooltip,
           child: CcTappable(
             onPressed: onTap,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppRadii.brSm,
             semanticLabel: '$tooltip, ${group.count}',
             builder: (context, states) {
               final hovered = states.contains(WidgetState.hovered);
@@ -298,7 +298,7 @@ class _ReactionChip extends StatelessWidget {
                 padding: _kChipPadding,
                 decoration: BoxDecoration(
                   color: bg,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: AppRadii.brSm,
                   border: Border.all(color: border),
                 ),
                 child: Row(
@@ -377,7 +377,7 @@ class _AddReactionChipBody extends StatelessWidget {
       padding: _kChipPadding,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppRadii.brSm,
         border: Border.all(color: border),
       ),
       // No alignment: a positioned child expands to the max constraint, and

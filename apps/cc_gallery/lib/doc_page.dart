@@ -47,10 +47,8 @@ class DocPage extends StatelessWidget {
             children: [
               if (eyebrow != null) ...[
                 Text(
-                  eyebrow!.toUpperCase(),
-                  style: CcFonts.code(
-                    textStyle: CcTypography.label,
-                  ).copyWith(color: t.accent),
+                  eyebrow!,
+                  style: CcTypography.label.copyWith(color: t.accent),
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],

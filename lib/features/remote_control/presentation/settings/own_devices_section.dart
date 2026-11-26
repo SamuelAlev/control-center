@@ -101,12 +101,15 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final active = _status.isEmpty || _status == 'active';
+    // A listed device is active unless it waits for approval (a fresh pairing,
+    // or one idle long enough to need approving again); a revoked one is gone.
+    // So only the exception gets a tag.
+    final pending = _status == 'pendingConfirm';
     return SettingsEntityRow(
       icon: _platformIcon,
       title: _label.isEmpty ? _id : _label,
-      tone: active ? CcStatusTone.positive : CcStatusTone.neutral,
-      statusLabel: _status.isEmpty ? null : _status,
+      tone: pending ? CcStatusTone.caution : CcStatusTone.positive,
+      statusLabel: pending ? l10n.deviceAwaitingApproval : null,
       subtitleWidget: _subtitleWidget(
         l10n,
         CcTypography.caption.copyWith(color: t.textTertiary),
@@ -126,14 +129,13 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
 
   /// The subtitle as widgets so the paired/last-seen instants each carry the
   /// shared accessibility timestamp hover card. Non-instant parts (platform,
-  /// status, "never seen") render as plain text; ' · ' separates them.
+  /// "never seen") render as plain text; ' · ' separates them.
   Widget _subtitleWidget(AppLocalizations l10n, TextStyle style) {
     final pairedAt = _time('paired_at');
     final lastSeen = _time('last_seen_at');
     final platform = _platformLabel(l10n);
     final segments = <Widget>[
       if (platform.isNotEmpty) Text(platform, style: style),
-      if (_status.isNotEmpty) Text(_status, style: style),
       if (pairedAt != null)
         AppTimestamp(
           dateTime: pairedAt,

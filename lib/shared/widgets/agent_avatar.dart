@@ -93,11 +93,14 @@ class _AgentAvatarState extends State<AgentAvatar> {
     return OverlayPortal(
       controller: _popupCtrl,
       overlayChildBuilder: _buildOverlay,
-      child: GestureDetector(
+      child: CcTappable(
         key: _avatarKey,
-        onTap: _toggle,
-        behavior: HitTestBehavior.opaque,
-        child: avatar,
+        onPressed: _toggle,
+        semanticLabel: name ?? initial,
+        borderRadius: BorderRadius.circular(widget.size / 2),
+        // The button carries the name; the avatar's own initials node would
+        // announce it a second time.
+        builder: (context, _) => ExcludeSemantics(child: avatar),
       ),
     );
   }

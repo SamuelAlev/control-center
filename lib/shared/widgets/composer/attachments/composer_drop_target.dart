@@ -279,7 +279,7 @@ class _DropAffordance extends StatelessWidget {
     final caption = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: over ? tokens.accent : tokens.bgPrimary,
+        color: over ? tokens.bgBrandSolid : tokens.bgPrimary,
         borderRadius: AppRadii.brSm,
         border: Border.all(color: tokens.accent),
         boxShadow: over ? null : AppShadows.soft,

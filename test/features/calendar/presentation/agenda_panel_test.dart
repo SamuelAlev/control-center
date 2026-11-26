@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:control_center/features/calendar/presentation/widgets/agenda_panel.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -25,7 +26,7 @@ CalendarEvent _event({
 
 void main() {
   group('AgendaPanel', () {
-    testWidgets('shows Start recording only for a starting-soon event', (
+    testWidgets('offers recording only for a starting-soon event', (
       tester,
     ) async {
       final now = DateTime.now();
@@ -58,7 +59,7 @@ void main() {
 
       expect(find.text('Soon meeting'), findsOneWidget);
       expect(find.text('Later meeting'), findsOneWidget);
-      expect(find.text('Start recording'), findsOneWidget);
+      expect(find.text('Record meeting'), findsOneWidget);
     });
 
     testWidgets('tapping a row invokes onOpenEvent', (tester) async {
@@ -89,6 +90,43 @@ void main() {
 
       expect(opened, hasLength(1));
       expect(opened.single.id, 'e1');
+    });
+
+    testWidgets('a row is a button that opens on Enter', (tester) async {
+      final handle = tester.ensureSemantics();
+      final now = DateTime.now();
+      final opened = <CalendarEvent>[];
+      final event = _event(
+        id: 'e1',
+        title: 'Keyboard meeting',
+        start: now.add(const Duration(hours: 1)),
+      );
+
+      await tester.pumpWidget(
+        testWrap(
+          Scaffold(
+            body: AgendaPanel(
+              events: [event],
+              now: now,
+              onOpenEvent: opened.add,
+              onStartRecording: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(find.text('Keyboard meeting')),
+        isSemantics(isButton: true, isFocusable: true),
+      );
+      Focus.of(tester.element(find.text('Keyboard meeting'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened.map((e) => e.id), ['e1']);
+      handle.dispose();
     });
 
     testWidgets('renders an empty state when there are no events', (

@@ -68,12 +68,11 @@ class PrStatusIcon extends StatelessWidget {
   }
 }
 
-/// The PR state as a plain tag ("Open", "Draft", "Merged", "Closed"): a
-/// tinted capsule carrying the label alone.
+/// The PR state as a tag ("Open", "Draft", "Merged", "Closed"): a tinted
+/// capsule carrying the lifecycle icon and label.
 ///
-/// No leading icon and no uppercasing — the tint reports the state and the
-/// label names it, so it reads as a tag beside its siblings rather than as a
-/// decorated badge. The icon form lives in [PrStatusIcon].
+/// Both the leading icon and the label come from [prStatusIconData] so the
+/// badge and [PrStatusIcon] stay in sync.
 class PrStatusBadge extends StatelessWidget {
   /// PrStatusBadge({super.key,.
   const PrStatusBadge({super.key, required this.pr});
@@ -85,12 +84,12 @@ class PrStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = prStatusIconData(pr, context);
     final variant = pr.isMerged || pr.mergedAt != null
-        ? CcBadgeVariant.brand
+        ? CcBadgeVariant.merged
         : !pr.isOpen
         ? CcBadgeVariant.danger
         : pr.isDraft
         ? CcBadgeVariant.neutral
         : CcBadgeVariant.success;
-    return CcBadge(label: data.label, variant: variant);
+    return CcBadge(label: data.label, variant: variant, icon: data.icon);
   }
 }

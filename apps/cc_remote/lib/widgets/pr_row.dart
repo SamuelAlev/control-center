@@ -201,7 +201,7 @@ IconData prLifecycleIcon(PullRequest pr) {
 /// [prLifecycleLabel] — colour is never the only carrier.
 Color prLifecycleColor(DesignSystemTokens t, PullRequest pr) {
   if (pr.isMerged) {
-    return t.accent;
+    return t.textMergedPrimary;
   }
   if (pr.isClosed) {
     return t.textErrorPrimary;

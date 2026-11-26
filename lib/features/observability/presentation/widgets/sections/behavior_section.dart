@@ -149,11 +149,13 @@ class _ConversationFrictionRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Text(
           l10n.obsBehaviorSignalsCount(fmtCount(signals)),
-          style: CcTypography.monoNum.copyWith(
-            color: tone == ObsTone.neutral
-                ? t.textSecondary
-                : obsToneColor(t, tone),
-            fontWeight: FontWeight.w600,
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric.copyWith(
+              color: tone == ObsTone.neutral
+                  ? t.textSecondary
+                  : obsToneColor(t, tone),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

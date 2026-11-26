@@ -463,6 +463,34 @@ void main() {
       expect(added, PipelineTrigger.manualEventType);
     });
 
+    testWidgets('the ghost tile picker opens from the keyboard', (
+      tester,
+    ) async {
+      String? added;
+      await pumpEditor(
+        tester,
+        definition: _graph(),
+        onAddTrigger: (type, [_]) => added = type,
+      );
+
+      Focus.of(
+        tester.element(
+          find.descendant(
+            of: find.byType(PipelineTriggerGhostPicker),
+            matching: find.text(l10n.pipelineAddTrigger),
+          ),
+        ),
+      ).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(l10n.triggerEventManual));
+      await tester.pump();
+      expect(added, PipelineTrigger.manualEventType);
+    });
+
     testWidgets('sidebar drag of a trigger entry fires onAddTrigger', (
       tester,
     ) async {
@@ -488,10 +516,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text(l10n.nodeCategoryTriggers.toUpperCase()),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.nodeCategoryTriggers), findsOneWidget);
       final from = tester.getCenter(find.text(l10n.triggerEventWebhook).first);
       final to = tester.getCenter(find.byType(PipelineEditorCanvas));
       final gesture = await tester.startGesture(from);
@@ -520,13 +545,10 @@ void main() {
           ],
         );
 
-        expect(
-          find.text(l10n.pipelineWhenThisHappens.toUpperCase()),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.pipelineWhenThisHappens), findsOneWidget);
         // Direct listeners of the trigger: Review and If approved. Later is a
         // grandchild and must not wear the same eyebrow.
-        expect(find.text(l10n.pipelineDoThis.toUpperCase()), findsNWidgets(2));
+        expect(find.text(l10n.pipelineDoThis), findsNWidgets(2));
       },
     );
   });
@@ -633,6 +655,37 @@ void main() {
       await tester.tap(_iconButton(l10n.pipelineTidyUp));
       await tester.pump();
       expect(tidied, isTrue);
+    });
+
+    testWidgets('a click on a canvas control leaves the keyboard with the '
+        'canvas', (tester) async {
+      final deleted = <String>[];
+      var tidied = 0;
+      await pumpEditor(
+        tester,
+        definition: _graph(),
+        selectedStepId: 'work',
+        onDeleteStep: deleted.add,
+        onTidy: () => tidied++,
+      );
+      await tester.tap(find.byType(PipelineEditorCanvas));
+      await tester.pump();
+
+      await tester.tap(_iconButton(l10n.pipelineTidyUp));
+      await tester.pump();
+      expect(tidied, 1);
+      // Had the button kept focus, Enter would press it a second time.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(tidied, 1);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<CcIconButton>(),
+        isNull,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+      await tester.pump();
+      expect(deleted, ['work']);
     });
   });
 

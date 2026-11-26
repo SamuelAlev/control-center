@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart' show RemoteRigRepository, RigView;
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/rigs/presentation/rig_input_surface.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:flutter/gestures.dart';
@@ -82,6 +83,51 @@ void main() {
     await tester.pump();
     return repository;
   }
+
+  testWidgets('a click on a control beside the canvas leaves the keyboard '
+      'with the machine', (tester) async {
+    final repository = _RecordingRepository();
+    var pressed = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [rigRepositoryProvider.overrideWithValue(repository)],
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: Column(
+              children: [
+                CcTappable(
+                  onPressed: () => pressed++,
+                  builder: (_, _) => const SizedBox(width: 40, height: 40),
+                ),
+                const SizedBox(
+                  width: 200,
+                  height: 400,
+                  child: RigInputSurface(
+                    workspaceId: 'ws-1',
+                    rig: rig,
+                    enabled: true,
+                    active: true,
+                    child: ColoredBox(color: Color(0xff000000)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    FocusNode surfaceNode() =>
+        Focus.of(tester.element(find.byType(ColoredBox).last));
+    expect(surfaceNode().hasPrimaryFocus, isTrue);
+
+    await tester.tap(find.byType(CcTappable));
+    await tester.pump();
+    expect(pressed, 1);
+    expect(surfaceNode().hasPrimaryFocus, isTrue);
+  });
 
   testWidgets('iOS sends one tap in simulator points and no mouse verbs', (
     tester,

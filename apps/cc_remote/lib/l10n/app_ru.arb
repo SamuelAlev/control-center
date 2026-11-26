@@ -95,7 +95,6 @@
   "eventNotFound": "Событие не найдено",
   "eventNotFoundDescription": "Возможно, оно вне окна расписания или удалено в источнике.",
   "joinMeeting": "Присоединиться к встрече",
-  "join": "Войти",
   "attendeesCount": "Участники ({count})",
   "details": "Подробности",
   "allDay": "Весь день",

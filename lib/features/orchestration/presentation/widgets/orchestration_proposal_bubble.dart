@@ -134,11 +134,11 @@ class _Card extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  _statusLabel(status, l10n).toUpperCase(),
+                  _statusLabel(status, l10n),
                   style: CcTypography.caption.copyWith(
                     color: tokens.accent,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),

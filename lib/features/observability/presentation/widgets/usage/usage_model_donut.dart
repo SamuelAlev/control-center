@@ -182,7 +182,9 @@ class _SliceRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Text(
           fmtPercent(slice.share),
-          style: CcTypography.monoNum.copyWith(color: t.textSecondary),
+          style: CcFonts.numeric(
+            textStyle: CcTypography.numeric.copyWith(color: t.textSecondary),
+          ),
         ),
       ],
     );

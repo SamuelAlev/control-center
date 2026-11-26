@@ -10,12 +10,14 @@ import 'package:control_center/app/native_window_handle.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
+import 'package:control_center/core/theme/cc_strings_l10n.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/theme_choice.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel_actions.dart';
 import 'package:control_center/l10n/app_locales.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
@@ -218,9 +220,10 @@ class _TrayPanelApp extends ConsumerWidget {
           ThemeChoice.system =>
             MediaQuery.platformBrightnessOf(context) == Brightness.dark,
         };
+        final strings = ccStringsFor(AppLocalizations.of(context));
         final theme = dark
-            ? CcThemeData.dark(fontFamily: fontFamily)
-            : CcThemeData.light(fontFamily: fontFamily);
+            ? CcThemeData.dark(fontFamily: fontFamily, strings: strings)
+            : CcThemeData.light(fontFamily: fontFamily, strings: strings);
         return CcTheme(
           data: theme,
           child: DefaultTextStyle(

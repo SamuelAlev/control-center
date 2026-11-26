@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math' show min;
 
 import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -869,37 +870,46 @@ class OpenPrPollingService {
         }
         toProbe.add(repo);
       }
-      for (var i = 0; i < toProbe.length; i += _probeConcurrency) {
-        final chunk = toProbe.skip(i).take(_probeConcurrency);
-        await Future.wait(
-          chunk.map((repo) async {
-            try {
-              final probe = await _port.probeRepo(
-                repo,
-                force ? null : st.etagByRepoId[repo.id],
-                workspaceId: workspaceId,
-              );
-              readableIds.add(repo.id);
-              final etag = probe.etag;
-              if (etag != null && etag.isNotEmpty) {
-                probedEtags[repo.id] = etag;
+      if (toProbe.isNotEmpty) {
+        var nextProbe = 0;
+        final workers = min(_probeConcurrency, toProbe.length);
+        await Future.wait([
+          for (var w = 0; w < workers; w++)
+            () async {
+              while (true) {
+                final i = nextProbe++;
+                if (i >= toProbe.length) {
+                  break;
+                }
+                final repo = toProbe[i];
+                try {
+                  final probe = await _port.probeRepo(
+                    repo,
+                    st.etagByRepoId[repo.id],
+                    workspaceId: workspaceId,
+                  );
+                  readableIds.add(repo.id);
+                  final etag = probe.etag;
+                  if (etag != null && etag.isNotEmpty) {
+                    probedEtags[repo.id] = etag;
+                  }
+                  if (probe.changed) {
+                    changedIds.add(repo.id);
+                  }
+                  if (await _noteRepoReachable(workspaceId, st, repo)) {
+                    // Its rows left the snapshot while it was blocked: read the
+                    // whole list again, as a baseline.
+                    blocked.remove(repo.id);
+                    changedIds.add(repo.id);
+                  }
+                } on Object catch (e) {
+                  if (await _noteProbeFailure(workspaceId, st, repo, e)) {
+                    blocked.add(repo.id);
+                  }
+                }
               }
-              if (probe.changed) {
-                changedIds.add(repo.id);
-              }
-              if (await _noteRepoReachable(workspaceId, st, repo)) {
-                // Its rows left the snapshot while it was blocked: read the
-                // whole list again, as a baseline.
-                blocked.remove(repo.id);
-                changedIds.add(repo.id);
-              }
-            } on Object catch (e) {
-              if (await _noteProbeFailure(workspaceId, st, repo, e)) {
-                blocked.add(repo.id);
-              }
-            }
-          }),
-        );
+            }(),
+        ]);
       }
 
       // A blocked repo's rows leave the snapshot: a list the server can no
@@ -945,6 +955,7 @@ class OpenPrPollingService {
       var persisted = false;
       final fetchedIds = <String>{};
       if (toFetch.isNotEmpty) {
+        final sweepStartedAt = _now();
         final result = await _port.fetchGroups(
           toFetch,
           workspaceId: workspaceId,
@@ -989,6 +1000,11 @@ class OpenPrPollingService {
             previous: st.snapshot,
             resolvedRepoIds: resolvedIds,
           );
+          _reconcileSurgicalUpdates(
+            st,
+            fresh,
+            sweepStartedAt: sweepStartedAt,
+          );
           if (resolved.length < toFetch.length) {
             CcHostLog.warning(
               'open_pr_poll: the forges resolved ${resolved.length} of '
@@ -996,16 +1012,21 @@ class OpenPrPollingService {
               'previous entries',
             );
           }
+          final pending = _PendingNotifications();
           await _diffAndPublish(
             workspaceId,
             resolved,
             st.snapshot,
             fresh,
             _SweepContext(),
+            pending,
           );
+          // Persist BEFORE publishing notifications so any subscriber jumping
+          // to the inbox immediately reads the up-to-date snapshot.
           st.snapshot = fresh;
           await _persistSnapshot(workspaceId, fresh);
           persisted = true;
+          pending.flush(workspaceId, _eventBus, _signals);
           await _reportOpenPrs(workspaceId, resolved, result.groups);
         }
       }
@@ -1216,8 +1237,437 @@ class OpenPrPollingService {
     return jsonEncode(copy);
   }
 
+  /// Surgically updates specific pull requests in [workspaceId]'s persisted
+  /// open-PR snapshot (e.g. from a viewer-activity notification) so the inbox
+  /// immediately reflects the PR without waiting for a full workspace sweep.
+  ///
+  /// Targets marked `merged: true` are removed from the open list without any
+  /// forge round trip; open/updated targets are fetched via
+  /// [OpenPrFetchPort.fetchPullRequests] (one lightweight aliased GraphQL
+  /// query per touched repo). Records each update in
+  /// [_WorkspacePollState.surgicalUpdates] so an in-flight full sweep cannot
+  /// overwrite fresher state when it lands.
+  Future<void> syncPullRequests(
+    String workspaceId,
+    List<({String repoFullName, int number, bool merged})> targets,
+  ) async {
+    if (_disposed || targets.isEmpty) {
+      return;
+    }
+    if (!await isLiveWorkspace(_workspaces, workspaceId)) {
+      return;
+    }
+    final linked = await _workspaces.watchReposForWorkspace(workspaceId).first;
+    final byFullName = <String, Repo>{
+      for (final r in linked)
+        if (r.hasForgeRemote) r.fullName.toLowerCase(): r,
+    };
+    final githubPaused =
+        rateBudget?.isBelow(workspaceId, forcedRefreshRateFloor) ?? false;
+
+    final mergedByRepo = <String, Set<int>>{};
+    final fetchByRepo = <String, Set<int>>{};
+    final reposById = <String, Repo>{};
+    for (final target in targets) {
+      if (target.number <= 0) {
+        continue;
+      }
+      final repo = byFullName[target.repoFullName.toLowerCase()];
+      if (repo == null) {
+        continue;
+      }
+      if (githubPaused && repo.forge == ForgeHost.github) {
+        continue;
+      }
+      if (await _isBlocked(workspaceId, repo)) {
+        continue;
+      }
+      reposById[repo.id] = repo;
+      if (target.merged) {
+        (mergedByRepo[repo.id] ??= <int>{}).add(target.number);
+        fetchByRepo[repo.id]?.remove(target.number);
+      } else if (!(mergedByRepo[repo.id]?.contains(target.number) ?? false)) {
+        (fetchByRepo[repo.id] ??= <int>{}).add(target.number);
+      }
+    }
+    if (reposById.isEmpty) {
+      return;
+    }
+
+    final fetchedByRepo = <String, Map<int, PullRequest>>{};
+    await Future.wait([
+      for (final entry in fetchByRepo.entries)
+        if (entry.value.isNotEmpty)
+          () async {
+            final repo = reposById[entry.key]!;
+            final prs = await _port.fetchPullRequests(
+              repo,
+              entry.value.toList(growable: false),
+              workspaceId: workspaceId,
+            );
+            if (prs != null) {
+              fetchedByRepo[repo.id] = prs;
+            }
+          }(),
+    ]);
+
+    final st = _stateFor(workspaceId);
+    if (!st.snapshotLoaded) {
+      st.snapshot = await _readPersistedSnapshot(workspaceId);
+      st.snapshotLoaded = true;
+    }
+    final base =
+        st.snapshot ??
+        <String, dynamic>{
+          'authenticated': true,
+          'repos': <Map<String, dynamic>>[],
+          'terminal_prs': <dynamic>[],
+          _baselinedKey: <String>[],
+        };
+    final reposList = <Map<String, dynamic>>[
+      for (final raw in (base['repos'] as List?) ?? const [])
+        if (raw is Map) raw.cast<String, dynamic>(),
+    ];
+    final terminal = <dynamic>[...(base['terminal_prs'] as List?) ?? const []];
+    final baselined = _baselinedIn(base);
+    final pending = _PendingNotifications();
+    final ctx = _SweepContext();
+    final now = _now();
+    var changed = false;
+
+    final touchedRepoIds = <String>{
+      ...mergedByRepo.keys,
+      ...fetchedByRepo.keys,
+    };
+    for (final repoId in touchedRepoIds) {
+      final repo = reposById[repoId]!;
+      st.etagByRepoId.remove(repo.id);
+      final isBaselined = baselined.contains(repo.id);
+
+      final existingIdx = reposList.indexWhere((r) => r['repo_id'] == repo.id);
+      final repoWire = existingIdx >= 0
+          ? Map<String, dynamic>.of(reposList[existingIdx])
+          : <String, dynamic>{
+              'repo_id': repo.id,
+              'repo_full_name': repo.fullName,
+              'has_more': false,
+              'prs': <Map<String, dynamic>>[],
+            };
+      final prsByNum = <int, Map<String, dynamic>>{
+        for (final pr in (repoWire['prs'] as List?) ?? const [])
+          if (pr is Map && pr['number'] is num)
+            (pr['number'] as num).toInt(): pr.cast<String, dynamic>(),
+      };
+
+      for (final number in mergedByRepo[repo.id] ?? const <int>{}) {
+        st.surgicalUpdates.putIfAbsent(repo.id, () => {})[number] = (
+          wire: null,
+          merged: true,
+          at: now,
+        );
+        final old = prsByNum.remove(number);
+        if (old == null) {
+          continue;
+        }
+        changed = true;
+        _recordSurgicalTerminal(
+          terminal,
+          repo: repo,
+          number: number,
+          wire: old,
+          merged: true,
+          now: now,
+        );
+        if (isBaselined) {
+          pending.addEvent(
+            PullRequestStatusChanged(
+              status: 'merged',
+              workspaceId: workspaceId,
+              repoFullName: repo.fullName,
+              prNumber: number,
+              occurredAt: now,
+            ),
+          );
+          pending.addEvent(
+            prWatchClosed(
+              workspaceId: workspaceId,
+              repoOwner: repo.remoteOwner,
+              repoName: repo.remoteName,
+              prNumber: number,
+              last: old,
+              merged: true,
+              now: now,
+            ),
+          );
+          pending.addSignal(repo.fullName, number);
+        }
+      }
+
+      final fetched = fetchedByRepo[repo.id] ?? const <int, PullRequest>{};
+      for (final entry in fetched.entries) {
+        final number = entry.key;
+        final pr = entry.value;
+        if (pr.isOpen) {
+          final old = prsByNum[number];
+          var wire = _carryEnrichmentForward(_prToWire(pr), old);
+          if (isBaselined) {
+            if (old == null) {
+              final author = (wire['author'] as Map?)?['login'] as String?;
+              pending.addEvent(
+                ExternalPrDetected(
+                  repoOwner: repo.remoteOwner,
+                  repoName: repo.remoteName,
+                  prNumber: number,
+                  prTitle: wire['title'] as String? ?? '',
+                  author: author ?? '',
+                  workspaceId: workspaceId,
+                  occurredAt: now,
+                ),
+              );
+              pending.addSignal(repo.fullName, number);
+            } else {
+              final checksMoved = old['checks_status'] != wire['checks_status'];
+              final restMoved =
+                  _nonChecksFingerprint(old) != _nonChecksFingerprint(wire);
+              if (restMoved) {
+                pending.addSignal(repo.fullName, number);
+                final wasSha = old['head_sha'];
+                final nowSha = wire['head_sha'];
+                if (wasSha is String &&
+                    nowSha is String &&
+                    wasSha.isNotEmpty &&
+                    nowSha.isNotEmpty &&
+                    wasSha != nowSha) {
+                  pending.addEvent(
+                    PrHeadChanged(
+                      workspaceId: workspaceId,
+                      repoOwner: splitRepoFullName(repo.fullName)?.owner ?? '',
+                      repoName: splitRepoFullName(repo.fullName)?.name ?? '',
+                      prNumber: number,
+                      prTitle: wire['title'] is String
+                          ? wire['title'] as String
+                          : '',
+                      previousHeadSha: wasSha,
+                      headSha: nowSha,
+                      occurredAt: now,
+                    ),
+                  );
+                }
+              } else if (checksMoved) {
+                pending.addSignal(repo.fullName, number, checksOnly: true);
+              }
+              final confirmed = await _publishTransitions(
+                workspaceId,
+                repo,
+                number,
+                old,
+                wire,
+                ctx,
+                pending,
+              );
+              if (confirmed != null) {
+                wire = {...wire, 'mergeable_state': confirmed};
+              }
+            }
+          }
+          prsByNum[number] = wire;
+          terminal.removeWhere(
+            (raw) =>
+                raw is Map &&
+                raw['repo_id'] == repo.id &&
+                raw['repo_full_name'] == repo.fullName &&
+                raw['number'] == number,
+          );
+          st.surgicalUpdates.putIfAbsent(repo.id, () => {})[number] = (
+            wire: wire,
+            merged: false,
+            at: now,
+          );
+          changed = true;
+        } else {
+          final merged = pr.isMerged;
+          final old = prsByNum.remove(number);
+          final wire = _prToWire(pr);
+          st.surgicalUpdates.putIfAbsent(repo.id, () => {})[number] = (
+            wire: null,
+            merged: merged,
+            at: now,
+          );
+          _recordSurgicalTerminal(
+            terminal,
+            repo: repo,
+            number: number,
+            wire: old ?? wire,
+            merged: merged,
+            now: now,
+          );
+          changed = true;
+          if (old != null && isBaselined) {
+            pending.addEvent(
+              PullRequestStatusChanged(
+                status: merged ? 'merged' : 'closed',
+                workspaceId: workspaceId,
+                repoFullName: repo.fullName,
+                prNumber: number,
+                occurredAt: now,
+              ),
+            );
+            pending.addEvent(
+              prWatchClosed(
+                workspaceId: workspaceId,
+                repoOwner: repo.remoteOwner,
+                repoName: repo.remoteName,
+                prNumber: number,
+                last: old,
+                merged: merged,
+                now: now,
+              ),
+            );
+            pending.addSignal(repo.fullName, number);
+          }
+        }
+      }
+
+      final nextPrs = prsByNum.values.toList();
+      if (nextPrs.isEmpty && repoWire['has_more'] != true) {
+        if (existingIdx >= 0) {
+          reposList.removeAt(existingIdx);
+        }
+      } else {
+        repoWire['prs'] = nextPrs;
+        if (existingIdx >= 0) {
+          reposList[existingIdx] = repoWire;
+        } else {
+          reposList.add(repoWire);
+        }
+      }
+    }
+
+    if (!changed) {
+      return;
+    }
+    _capTerminal(terminal);
+    final updated = <String, dynamic>{
+      ...base,
+      'authenticated': true,
+      'repos': reposList,
+      'terminal_prs': terminal,
+    };
+    st.snapshot = updated;
+    await _persistSnapshot(workspaceId, updated);
+    pending.flush(workspaceId, _eventBus, _signals);
+    if (!st.historyRefresh.isClosed) {
+      st.historyRefresh.add(null);
+    }
+  }
+
+  void _recordSurgicalTerminal(
+    List<dynamic> terminal, {
+    required Repo repo,
+    required int number,
+    required Map<String, dynamic> wire,
+    required bool merged,
+    required DateTime now,
+  }) {
+    terminal.removeWhere(
+      (raw) =>
+          raw is Map &&
+          raw['repo_id'] == repo.id &&
+          raw['repo_full_name'] == repo.fullName &&
+          raw['number'] == number,
+    );
+    terminal.add({
+      'repo_id': repo.id,
+      'repo_full_name': repo.fullName,
+      'number': number,
+      'recorded_at': now.toIso8601String(),
+      'pull_request': {...wire, 'state': merged ? 'merged' : 'closed'}
+        ..remove('status_unconfirmed'),
+    });
+  }
+
+  /// Reconciles any surgical PR updates recorded while a full sweep was in
+  /// flight (`record.at > sweepStartedAt`) onto [fresh], and prunes older ones.
+  void _reconcileSurgicalUpdates(
+    _WorkspacePollState st,
+    Map<String, dynamic> fresh, {
+    required DateTime sweepStartedAt,
+  }) {
+    if (st.surgicalUpdates.isEmpty) {
+      return;
+    }
+    final repos = (fresh['repos'] as List).cast<Map<String, dynamic>>();
+    final terminal = (fresh['terminal_prs'] as List).cast<dynamic>();
+
+    for (final repoId in st.surgicalUpdates.keys.toList()) {
+      final byNum = st.surgicalUpdates[repoId]!;
+      byNum.removeWhere((_, record) => !record.at.isAfter(sweepStartedAt));
+      if (byNum.isEmpty) {
+        st.surgicalUpdates.remove(repoId);
+        continue;
+      }
+
+      var repoIdx = repos.indexWhere((r) => r['repo_id'] == repoId);
+      for (final entry in byNum.entries) {
+        final number = entry.key;
+        final record = entry.value;
+        if (record.merged) {
+          if (repoIdx >= 0) {
+            final prs = (repos[repoIdx]['prs'] as List).cast<Map<String, dynamic>>();
+            prs.removeWhere((p) => p['number'] == number);
+          }
+          continue;
+        }
+        final wire = record.wire;
+        if (wire == null) {
+          continue;
+        }
+        if (repoIdx < 0) {
+          repos.add(<String, dynamic>{
+            'repo_id': repoId,
+            'repo_full_name': wire['repo_full_name'],
+            'has_more': false,
+            'prs': <Map<String, dynamic>>[wire],
+          });
+          repoIdx = repos.length - 1;
+        } else {
+          final prs = (repos[repoIdx]['prs'] as List).cast<Map<String, dynamic>>();
+          final prIdx = prs.indexWhere((p) => p['number'] == number);
+          if (prIdx < 0) {
+            prs.add(wire);
+          } else {
+            final existing = prs[prIdx];
+            final existingAt = DateTime.tryParse(
+              existing['updated_at'] as String? ?? '',
+            );
+            final surgicalAt = DateTime.tryParse(
+              wire['updated_at'] as String? ?? '',
+            );
+            if (existingAt == null ||
+                surgicalAt == null ||
+                !existingAt.isAfter(surgicalAt)) {
+              prs[prIdx] = _carryEnrichmentForward(wire, existing);
+            }
+          }
+        }
+        terminal.removeWhere(
+          (raw) =>
+              raw is Map &&
+              raw['repo_id'] == repoId &&
+              raw['number'] == number,
+        );
+      }
+
+      if (repoIdx >= 0 &&
+          (repos[repoIdx]['prs'] as List).isEmpty &&
+          repos[repoIdx]['has_more'] != true) {
+        repos.removeAt(repoIdx);
+      }
+    }
+  }
+
   /// Detects and publishes the author-facing transitions between two snapshots
-  /// of one pull request.
+  /// of one pull request into [pending] (flushed after persisting).
   ///
   /// Returns the forge-confirmed `mergeable_state` name when a readiness edge
   /// was confirmed, else null. The caller folds it into the wire map it is
@@ -1233,10 +1683,11 @@ class OpenPrPollingService {
     Map<String, dynamic> oldWire,
     Map<String, dynamic> newWire,
     _SweepContext ctx,
+    _PendingNotifications pending,
   ) async {
     // Wake rule watches hear every polled pull request, with no author gate.
     final watchFailing = await publishPrWatchEdges(
-      bus: _eventBus,
+      bus: pending.busFor(_eventBus),
       workspaceId: workspaceId,
       repoOwner: repo.remoteOwner,
       repoName: repo.remoteName,
@@ -1247,9 +1698,8 @@ class OpenPrPollingService {
       firstFailingCheck: () =>
           _firstFailingCheck(repo, number, workspaceId: workspaceId),
     );
-    final bus = _eventBus;
     final resolver = _memberLoginsFor;
-    if (bus == null || resolver == null) {
+    if (_eventBus == null || resolver == null) {
       return null;
     }
     final author = ((newWire['author'] as Map?)?['login'] as String?) ?? '';
@@ -1309,7 +1759,7 @@ class OpenPrPollingService {
       if (confirmedState != null &&
           after.readiness.readiness == PrMergeReadiness.ready) {
         _pendingReadyConfirm.remove(readyKey);
-        bus.publish(
+        pending.addEvent(
           PrMergeReadinessChanged(
             workspaceId: workspaceId,
             repoOwner: owner,
@@ -1342,7 +1792,7 @@ class OpenPrPollingService {
         case PrBecameReadyToMerge():
           break;
         case PrBecameBlocked(:final reason):
-          bus.publish(
+          pending.addEvent(
             PrMergeReadinessChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1371,7 +1821,7 @@ class OpenPrPollingService {
               workspaceId: workspaceId,
             );
           }
-          bus.publish(
+          pending.addEvent(
             PrReviewDecisionChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1386,7 +1836,7 @@ class OpenPrPollingService {
             ),
           );
         case PrChangesRequested():
-          bus.publish(
+          pending.addEvent(
             PrReviewDecisionChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1400,7 +1850,7 @@ class OpenPrPollingService {
             ),
           );
         case PrReviewDismissed():
-          bus.publish(
+          pending.addEvent(
             PrReviewDecisionChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1417,7 +1867,7 @@ class OpenPrPollingService {
           final failing =
               watchFailing ??
               await _firstFailingCheck(repo, number, workspaceId: workspaceId);
-          bus.publish(
+          pending.addEvent(
             PrChecksStatusChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1432,7 +1882,7 @@ class OpenPrPollingService {
             ),
           );
         case PrChecksRecovered():
-          bus.publish(
+          pending.addEvent(
             PrChecksStatusChanged(
               workspaceId: workspaceId,
               repoOwner: owner,
@@ -1476,6 +1926,7 @@ class OpenPrPollingService {
     Map<String, dynamic>? previous,
     Map<String, dynamic> fresh,
     _SweepContext ctx,
+    _PendingNotifications pending,
   ) async {
     // A repo's first read (the workspace's first sweep, or a repo linked
     // since) is a baseline — recorded without notifying, so neither a server
@@ -1504,7 +1955,7 @@ class OpenPrPollingService {
         if (old == null) {
           // New open PR.
           final author = (entry.value['author'] as Map?)?['login'] as String?;
-          _eventBus?.publish(
+          pending.addEvent(
             ExternalPrDetected(
               repoOwner: repo.remoteOwner,
               repoName: repo.remoteName,
@@ -1517,11 +1968,7 @@ class OpenPrPollingService {
               occurredAt: _now(),
             ),
           );
-          _signals.notify(
-            workspaceId: workspaceId,
-            repoFullName: repo.fullName,
-            prNumber: entry.key,
-          );
+          pending.addSignal(repo.fullName, entry.key);
           continue;
         }
         final checksMoved =
@@ -1529,11 +1976,7 @@ class OpenPrPollingService {
         final restMoved =
             _nonChecksFingerprint(old) != _nonChecksFingerprint(entry.value);
         if (restMoved) {
-          _signals.notify(
-            workspaceId: workspaceId,
-            repoFullName: repo.fullName,
-            prNumber: entry.key,
-          );
+          pending.addSignal(repo.fullName, entry.key);
           // The head moved: the author pushed. Published as its own event
           // because it is what makes an existing review stale, and the sweep
           // is the only place that holds both the old and the new commit.
@@ -1546,7 +1989,7 @@ class OpenPrPollingService {
               wasSha.isNotEmpty &&
               nowSha.isNotEmpty &&
               wasSha != nowSha) {
-            _eventBus?.publish(
+            pending.addEvent(
               PrHeadChanged(
                 workspaceId: workspaceId,
                 repoOwner: splitRepoFullName(repo.fullName)?.owner ?? '',
@@ -1562,12 +2005,7 @@ class OpenPrPollingService {
             );
           }
         } else if (checksMoved) {
-          _signals.notify(
-            workspaceId: workspaceId,
-            repoFullName: repo.fullName,
-            prNumber: entry.key,
-            checksOnly: true,
-          );
+          pending.addSignal(repo.fullName, entry.key, checksOnly: true);
         }
 
         // The author-facing lanes. Runs whether or not the cheap fingerprints
@@ -1581,6 +2019,7 @@ class OpenPrPollingService {
           old,
           entry.value,
           ctx,
+          pending,
         );
         // A forge-confirmed mergeable state is folded back into the snapshot
         // being persisted, so the next sweep compares against the confirmed
@@ -1640,7 +2079,7 @@ class OpenPrPollingService {
           },
         });
         if (merged != null) {
-          _eventBus?.publish(
+          pending.addEvent(
             PullRequestStatusChanged(
               status: merged ? 'merged' : 'closed',
               workspaceId: workspaceId,
@@ -1649,7 +2088,7 @@ class OpenPrPollingService {
               occurredAt: _now(),
             ),
           );
-          _eventBus?.publish(
+          pending.addEvent(
             prWatchClosed(
               workspaceId: workspaceId,
               repoOwner: repo.remoteOwner,
@@ -1661,11 +2100,7 @@ class OpenPrPollingService {
             ),
           );
         }
-        _signals.notify(
-          workspaceId: workspaceId,
-          repoFullName: repo.fullName,
-          prNumber: number,
-        );
+        pending.addSignal(repo.fullName, number);
       }
     }
     _capTerminal(terminal);
@@ -1714,7 +2149,7 @@ class OpenPrPollingService {
     var attempts = 0;
     var changed = false;
     final updated = <dynamic>[];
-    final confirmed = <({Repo repo, int number, bool merged})>[];
+    final pending = _PendingNotifications();
     for (final raw in terminal) {
       if (raw is! Map || raw['pull_request'] is! Map) {
         updated.add(raw);
@@ -1746,8 +2181,7 @@ class OpenPrPollingService {
         continue;
       }
       changed = true;
-      confirmed.add((repo: repo, number: number, merged: merged));
-      _eventBus?.publish(
+      pending.addEvent(
         prWatchClosed(
           workspaceId: workspaceId,
           repoOwner: repo.remoteOwner,
@@ -1758,6 +2192,16 @@ class OpenPrPollingService {
           now: _now(),
         ),
       );
+      pending.addEvent(
+        PullRequestStatusChanged(
+          status: merged ? 'merged' : 'closed',
+          workspaceId: workspaceId,
+          repoFullName: repo.fullName,
+          prNumber: number,
+          occurredAt: _now(),
+        ),
+      );
+      pending.addSignal(repo.fullName, number);
       updated.add({
         ...raw,
         'pull_request': {...pr, 'state': merged ? 'merged' : 'closed'}
@@ -1767,22 +2211,7 @@ class OpenPrPollingService {
     if (changed) {
       st.snapshot = {...snapshot, 'terminal_prs': updated};
       await _persistSnapshot(workspaceId, st.snapshot!);
-      for (final result in confirmed) {
-        _eventBus?.publish(
-          PullRequestStatusChanged(
-            status: result.merged ? 'merged' : 'closed',
-            workspaceId: workspaceId,
-            repoFullName: result.repo.fullName,
-            prNumber: result.number,
-            occurredAt: _now(),
-          ),
-        );
-        _signals.notify(
-          workspaceId: workspaceId,
-          repoFullName: result.repo.fullName,
-          prNumber: result.number,
-        );
-      }
+      pending.flush(workspaceId, _eventBus, _signals);
     }
   }
 
@@ -1797,19 +2226,64 @@ class OpenPrPollingService {
     _WorkspacePollState st,
     _SweepContext ctx,
   ) async {
+    final snapshot = st.snapshot;
+    final baselined = _baselinedIn(snapshot);
+    final reposById = {for (final r in repos) r.id: r};
+    final nodeIdsByRepoId = <String, List<String>>{};
+    final seenInSnapshot = <String>{};
+    if (snapshot != null) {
+      for (final raw in (snapshot['repos'] as List?) ?? const []) {
+        if (raw is! Map) {
+          continue;
+        }
+        final repoId = raw['repo_id'] as String?;
+        if (repoId == null || !reposById.containsKey(repoId)) {
+          continue;
+        }
+        seenInSnapshot.add(repoId);
+        if (!baselined.contains(repoId)) {
+          continue;
+        }
+        final ids = <String>[];
+        var allHaveIds = true;
+        for (final pr in (raw['prs'] as List?) ?? const []) {
+          if (pr is! Map) {
+            continue;
+          }
+          final extId = pr['external_id'] as String?;
+          if (extId == null || extId.isEmpty) {
+            allHaveIds = false;
+            break;
+          }
+          ids.add(extId);
+        }
+        if (allHaveIds) {
+          nodeIdsByRepoId[repoId] = ids;
+        }
+      }
+      for (final r in repos) {
+        if (baselined.contains(r.id) && !seenInSnapshot.contains(r.id)) {
+          nodeIdsByRepoId[r.id] = const [];
+        }
+      }
+    }
+
     final Map<String, Map<int, PrStatusOverlay>> byRepoId;
     try {
-      byRepoId = await _port.fetchChecks(repos, workspaceId: workspaceId);
+      byRepoId = await _port.fetchChecks(
+        repos,
+        workspaceId: workspaceId,
+        prNodeIdsByRepoId: nodeIdsByRepoId.isEmpty ? null : nodeIdsByRepoId,
+      );
     } on Object catch (e) {
       CcHostLog.warning('open_pr_poll: checks pass failed: $e');
       return;
     }
-    final snapshot = st.snapshot;
     if (snapshot == null) {
       return;
     }
-    final reposById = {for (final r in repos) r.id: r};
-    final changed = <({String repoFullName, int prNumber, bool checksOnly})>[];
+    final pending = _PendingNotifications();
+    var anyChanged = false;
     final updatedRepos = <Map<String, dynamic>>[];
     for (final raw in (snapshot['repos'] as List?) ?? const []) {
       if (raw is! Map) {
@@ -1850,11 +2324,12 @@ class OpenPrPollingService {
         final checksMoved = prWire['checks_status'] != nextChecks;
         final decisionMoved = prWire['review_decision'] != nextDecision;
         if (checksMoved || decisionMoved) {
-          changed.add((
-            repoFullName: repoWire['repo_full_name'] as String? ?? '',
-            prNumber: number,
+          anyChanged = true;
+          pending.addSignal(
+            repoWire['repo_full_name'] as String? ?? '',
+            number,
             checksOnly: !decisionMoved,
-          ));
+          );
           var next = overlaid;
           // The same author-facing detection the full sweep runs. This pass is
           // where "checks failed" and "approved" are usually first seen — it
@@ -1868,6 +2343,7 @@ class OpenPrPollingService {
               prWire,
               next,
               ctx,
+              pending,
             );
             if (confirmed != null) {
               next = {...next, 'mergeable_state': confirmed};
@@ -1880,19 +2356,71 @@ class OpenPrPollingService {
       }
       updatedRepos.add({...repoWire, 'prs': updatedPrs});
     }
-    if (changed.isEmpty) {
+    if (!anyChanged) {
       return;
     }
     final updated = {...snapshot, 'repos': updatedRepos};
     st.snapshot = updated;
     await _persistSnapshot(workspaceId, updated);
-    for (final c in changed) {
-      _signals.notify(
+    pending.flush(workspaceId, _eventBus, _signals);
+  }
+}
+
+/// Collects domain events and change signals for a pass so the snapshot is
+/// always persisted BEFORE any subscriber hears about the change.
+class _PendingNotifications {
+  final List<DomainEvent> events = [];
+  final List<({String repoFullName, int prNumber, bool checksOnly})> signals =
+      [];
+
+  late final DomainEventBus _bufferBus = _BufferedEventBus(events);
+
+  DomainEventBus? busFor(DomainEventBus? realBus) =>
+      realBus == null ? null : _bufferBus;
+
+  void addEvent(DomainEvent event) => events.add(event);
+
+  void addSignal(
+    String repoFullName,
+    int prNumber, {
+    bool checksOnly = false,
+  }) => signals.add((
+    repoFullName: repoFullName,
+    prNumber: prNumber,
+    checksOnly: checksOnly,
+  ));
+
+  void flush(
+    String workspaceId,
+    DomainEventBus? bus,
+    PrChangeSignals changeSignals,
+  ) {
+    if (bus != null) {
+      for (final event in events) {
+        bus.publish(event);
+      }
+    }
+    for (final s in signals) {
+      changeSignals.notify(
         workspaceId: workspaceId,
-        repoFullName: c.repoFullName,
-        prNumber: c.prNumber,
-        checksOnly: c.checksOnly,
+        repoFullName: s.repoFullName,
+        prNumber: s.prNumber,
+        checksOnly: s.checksOnly,
       );
     }
   }
+}
+
+class _BufferedEventBus implements DomainEventBus {
+  _BufferedEventBus(this._events);
+  final List<DomainEvent> _events;
+
+  @override
+  void publish(DomainEvent event) => _events.add(event);
+
+  @override
+  Stream<T> on<T extends DomainEvent>() => const Stream.empty();
+
+  @override
+  void dispose() {}
 }

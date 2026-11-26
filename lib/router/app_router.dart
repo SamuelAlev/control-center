@@ -3,9 +3,6 @@ import 'package:control_center/features/auth/presentation/screens/onboarding_scr
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:control_center/features/code_mode/presentation/screens/code_executions_screen.dart';
-import 'package:control_center/features/dispatch/presentation/screens/goals_screen.dart';
-import 'package:control_center/features/dispatch/presentation/screens/improvements_screen.dart';
-import 'package:control_center/features/dispatch/presentation/screens/schedules_screen.dart';
 import 'package:control_center/features/inbox/presentation/inbox_screen.dart';
 import 'package:control_center/features/meetings/presentation/screens/meeting_detail_screen.dart';
 import 'package:control_center/features/meetings/presentation/screens/meeting_record_screen.dart';
@@ -69,6 +66,7 @@ import 'package:control_center/features/workspaces/presentation/screens/workspac
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/router/guards.dart';
 import 'package:control_center/router/popup_route_tracker.dart';
+import 'package:control_center/router/route_background.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/router/splash_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -77,20 +75,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart' show MaterialRouteTransitionMixin;
 
-/// Wraps a route's child with an opaque [GestureDetector] so taps in
-/// transparent areas don't fall through to the route's underlying
-/// [ModalBarrier], which plays the macOS alert sound on every tap (Flutter's
-/// MaterialPageRoute defaults to barrierDismissible: false). The wrapper must
-/// live inside the inner navigator's modal scope to win the gesture arena
-/// against the barrier; wrapping at the shell level isn't sufficient because
-/// ShellRoute creates an inner Navigator whose barrier sits below this layer.
-/// Also drops focus from any active TextField, matching macOS click-outside
-/// behavior.
-Widget _absorb(Widget child) => GestureDetector(
-  behavior: HitTestBehavior.opaque,
-  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-  child: child,
-);
+/// Wraps a route's child in its [RouteBackground].
+Widget _absorb(Widget child) => RouteBackground(child: child);
 
 /// Whether the current platform should skip page transitions.
 ///
@@ -236,8 +222,15 @@ List<GoRoute> memoryRoutes() {
   return [
     GoRoute(
       path: memoryRoute(workspaceIdParam),
-      pageBuilder: (context, state) =>
-          buildPage(state, _absorb(const MemoryScreen()), key: pageKey),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(
+          MemoryScreen(
+            requestedTab: state.uri.queryParameters[memoryTabQueryParam],
+          ),
+        ),
+        key: pageKey,
+      ),
     ),
     GoRoute(
       path: memoryFactRoute(workspaceIdParam, ':factId'),
@@ -256,6 +249,18 @@ List<GoRoute> memoryRoutes() {
         _absorb(
           MemoryScreen(
             record: record(state, MemoryRecordKind.policy, 'policyId'),
+          ),
+        ),
+        key: pageKey,
+      ),
+    ),
+    GoRoute(
+      path: memoryImprovementRoute(workspaceIdParam, ':proposalId'),
+      pageBuilder: (context, state) => buildPage(
+        state,
+        _absorb(
+          MemoryScreen(
+            record: record(state, MemoryRecordKind.improvement, 'proposalId'),
           ),
         ),
         key: pageKey,
@@ -315,54 +320,22 @@ List<GoRoute> codeExecutionRoutes() {
   ];
 }
 
-/// Goals, Schedules and Improvements: each a list and one record, SIBLINGS
-/// sharing one page key per family (see [memoryRoutes]), so the list stays
-/// mounted under an open record and Back returns to it as it was.
-List<GoRoute> workRecordRoutes() {
-  GoRoute route(String path, String key, Widget Function(String? id) screen) =>
-      GoRoute(
-        path: path,
-        pageBuilder: (context, state) => buildPage(
-          state,
-          _absorb(screen(state.pathParameters['recordId'])),
-          key: ValueKey(key),
-        ),
-      );
-  GoRoute goal(String path) => GoRoute(
-    path: path,
-    pageBuilder: (context, state) => buildPage(
-      state,
-      _absorb(
-        GoalsScreen(
-          goalId: state.pathParameters['recordId'],
-          openContractEditor: state.uri.query == goalContractEditQuery,
-        ),
-      ),
-      key: const ValueKey('goals_screen'),
-    ),
+/// Settings → Schedules' page and one schedule, SIBLINGS sharing one page key
+/// (see [memoryRoutes]), so the list stays mounted under an open schedule and
+/// Back returns to it as it was. Route and nav entry only: the page is the
+/// `dispatch` feature's, and reads the id off the route.
+List<GoRoute> scheduleSettingsRoutes() {
+  const pageKey = ValueKey('schedules_settings_screen');
+  Page<void> page(BuildContext context, GoRouterState state) => buildPage(
+    state,
+    _absorb(const SettingsBodyHost(navItemId: 'workspace.schedules')),
+    key: pageKey,
   );
   return [
-    goal(goalsRoute(workspaceIdParam)),
-    goal(goalRoute(workspaceIdParam, ':recordId')),
-    route(
-      schedulesRoute(workspaceIdParam),
-      'schedules_screen',
-      (_) => const SchedulesScreen(),
-    ),
-    route(
-      scheduleRoute(workspaceIdParam, ':recordId'),
-      'schedules_screen',
-      (id) => SchedulesScreen(ruleId: id),
-    ),
-    route(
-      improvementsRoute(workspaceIdParam),
-      'improvements_screen',
-      (_) => const ImprovementsScreen(),
-    ),
-    route(
-      improvementRoute(workspaceIdParam, ':recordId'),
-      'improvements_screen',
-      (id) => ImprovementsScreen(proposalId: id),
+    GoRoute(path: settingsSchedulesRoute(workspaceIdParam), pageBuilder: page),
+    GoRoute(
+      path: scheduleRoute(workspaceIdParam, ':recordId'),
+      pageBuilder: page,
     ),
   ];
 }
@@ -714,14 +687,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-          // Route and nav entry only: the page is the `dispatch` feature's.
-          GoRoute(
-            path: settingsSchedulesRoute(workspaceIdParam),
-            pageBuilder: (context, state) => buildPage(
-              state,
-              _absorb(const SettingsBodyHost(navItemId: 'workspace.schedules')),
-            ),
-          ),
+          ...scheduleSettingsRoutes(),
           // Server — affects every workspace on this install.
           GoRoute(
             path: settingsServerConnectionRoute(workspaceIdParam),
@@ -791,7 +757,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 buildPage(state, _absorb(const ObservabilityScreen())),
           ),
           ...codeExecutionRoutes(),
-          ...workRecordRoutes(),
           GoRoute(
             path: inboxRoute(workspaceIdParam),
             pageBuilder: (context, state) =>

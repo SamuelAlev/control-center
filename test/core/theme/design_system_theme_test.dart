@@ -83,7 +83,7 @@ void main() {
       expect(tokens.fgPrimary, DesignSystemPalette.white);
       expect(tokens.fgSecondary, DesignSystemPalette.gray300);
       expect(tokens.fgTertiary, DesignSystemPalette.gray400);
-      expect(tokens.fgQuaternary, DesignSystemPalette.gray600);
+      expect(tokens.fgQuaternary, DesignSystemPalette.gray500);
       expect(tokens.fgBrandPrimary, DesignSystemPalette.brand500);
     });
 

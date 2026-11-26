@@ -350,91 +350,86 @@ class _InboxViewState extends ConsumerState<_InboxView> {
     PrInlineThread t,
   ) {
     final last = t.entries.last;
-    return GestureDetector(
-      onTap: widget.onJumpTo == null
-          ? null
-          : () {
-              widget.onClose();
-              widget.onJumpTo!(t);
-            },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GitHubUserAvatar(
-              login: last.author,
-              size: 22,
-              showHoverCard: false,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        last.author,
-                        style: CcTypography.caption.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tokens.textPrimary,
-                        ),
+    final onJumpTo = widget.onJumpTo;
+    final row = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GitHubUserAvatar(login: last.author, size: 22, showHoverCard: false),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      last.author,
+                      style: CcTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
                       ),
+                    ),
+                    const SizedBox(width: 6),
+                    AppTimestamp(
+                      dateTime: last.createdAt,
+                      child: Text(
+                        formatRelativeTime(context, last.createdAt),
+                        style: CcTypography.caption
+                            .copyWith(color: tokens.textTertiary)
+                            .copyWith(color: tokens.textTertiary),
+                      ),
+                    ),
+                    if (t.isSuggestion) ...[
                       const SizedBox(width: 6),
-                      AppTimestamp(
-                        dateTime: last.createdAt,
-                        child: Text(
-                          formatRelativeTime(context, last.createdAt),
-                          style: CcTypography.caption
-                              .copyWith(color: tokens.textTertiary)
-                              .copyWith(color: tokens.textTertiary),
-                        ),
-                      ),
-                      if (t.isSuggestion) ...[
-                        const SizedBox(width: 6),
-                        Icon(
-                          AppIcons.diff,
-                          size: 12,
-                          color: tokens.textTertiary,
-                        ),
-                      ],
+                      Icon(AppIcons.diff, size: 12, color: tokens.textTertiary),
                     ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  last.body,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: CcTypography.caption.copyWith(
+                    color: tokens.textTertiary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    last.body,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textTertiary,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${t.filePath} : line ${t.line}',
+                  style: AppFonts.codeStyleDynamic(
+                    ref.watch(codeFontFamilyProvider),
+                    fontSize: 12,
+                    height: 1.4,
+                    color: tokens.textTertiary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${t.filePath} : line ${t.line}',
-                    style: AppFonts.codeStyleDynamic(
-                      ref.watch(codeFontFamilyProvider),
-                      fontSize: 12,
-                      height: 1.4,
-                      color: tokens.textTertiary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            CcIconButton(
-              onPressed: () => widget.onToggleResolved(t.id),
-              icon: t.resolved ? AppIcons.checkCircle2 : AppIcons.check,
-              tooltip: t.resolved
-                  ? AppLocalizations.of(context).reopen
-                  : AppLocalizations.of(context).resolve,
-            ),
-          ],
-        ),
+          ),
+          CcIconButton(
+            onPressed: () => widget.onToggleResolved(t.id),
+            icon: t.resolved ? AppIcons.checkCircle2 : AppIcons.check,
+            tooltip: t.resolved
+                ? AppLocalizations.of(context).reopen
+                : AppLocalizations.of(context).resolve,
+          ),
+        ],
       ),
+    );
+    if (onJumpTo == null) {
+      return row;
+    }
+    return CcTappable(
+      onPressed: () {
+        widget.onClose();
+        onJumpTo(t);
+      },
+      builder: (context, _) => row,
     );
   }
 }

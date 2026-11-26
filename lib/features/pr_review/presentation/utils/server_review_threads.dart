@@ -57,7 +57,7 @@ class ServerReviewThread {
   /// only show it in a side panel — the timeline is where it can still be read
   /// in full. A file-level conversation has no line either, but is not
   /// outdated: the diff shows it at the top of the file.
-  bool get isOutdated => !isFileLevel && root.anchorLine == null;
+  bool get isOutdated => root.isOutdated || (!isFileLevel && root.anchorLine == null);
 
   /// Last line of the anchored range (where a forge shows the card), or null
   /// when outdated.
@@ -193,14 +193,17 @@ PrInlineThread inlineThreadFromServerThread(
 /// outdated conversation's suggestion can be rendered at all. Empty when the
 /// conversation has no anchor (nothing to diff against) or no hunk.
 String originalCodeForServerThread(ServerReviewThread thread) {
-  final end = thread.endLine;
+  final end = thread.endLine ?? thread.root.originalLine;
   if (end == null || thread.root.diffHunk.isEmpty) {
     return '';
   }
+  final start = thread.endLine != null
+      ? (thread.startLine ?? end)
+      : (thread.root.startLine ?? end);
   return originalCodeFromDiffHunk(
     thread.root.diffHunk,
     thread.root.side,
-    thread.startLine ?? end,
+    start,
     end,
   );
 }
@@ -277,4 +280,28 @@ int unresolvedConversationCount({
     }
   }
   return open;
+}
+
+/// [unresolvedConversationCount] for every file at once, keyed by path; a file
+/// with none open is absent. For the file tree, which badges many files from
+/// one pass over the comments.
+Map<String, int> unresolvedConversationsByPath({
+  required Iterable<PrCodeReviewComment> serverComments,
+  required Map<String, List<PrInlineThread>> localThreadsByPath,
+}) {
+  final serverByPath = <String, List<ServerReviewThread>>{};
+  for (final t in groupServerReviewThreads(serverComments)) {
+    (serverByPath[t.path] ??= []).add(t);
+  }
+  final out = <String, int>{};
+  for (final path in {...serverByPath.keys, ...localThreadsByPath.keys}) {
+    final open = unresolvedConversationCount(
+      serverThreads: serverByPath[path] ?? const [],
+      localThreads: localThreadsByPath[path] ?? const [],
+    );
+    if (open > 0) {
+      out[path] = open;
+    }
+  }
+  return out;
 }

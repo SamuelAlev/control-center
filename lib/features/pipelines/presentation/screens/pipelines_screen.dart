@@ -206,6 +206,7 @@ class _RunsPane extends StatefulWidget {
 class _RunsPaneState extends State<_RunsPane> {
   final ScrollController _scroll = ScrollController();
   final GlobalKey _focusedKey = GlobalKey();
+  final FocusNode _pane = FocusNode(debugLabel: 'pipeline runs');
 
   int _shown = kPipelineRunsPageSize;
 
@@ -251,6 +252,7 @@ class _RunsPaneState extends State<_RunsPane> {
   @override
   void dispose() {
     _scroll.dispose();
+    _pane.dispose();
     super.dispose();
   }
 
@@ -324,58 +326,71 @@ class _RunsPaneState extends State<_RunsPane> {
         ? widget.visible.length
         : _shown;
     final page = widget.visible.take(shown).toList(growable: false);
-    return Focus(
-      autofocus: true,
-      child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-              widget.onMoveFocus(1),
-          const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-              widget.onMoveFocus(-1),
-          const SingleActivator(LogicalKeyboardKey.keyJ): () =>
-              widget.onMoveFocus(1),
-          const SingleActivator(LogicalKeyboardKey.keyK): () =>
-              widget.onMoveFocus(-1),
-          const SingleActivator(LogicalKeyboardKey.enter): widget.onOpenFocused,
-        },
-        // Same scroll geometry as the PR queue and the inbox. The bottom
-        // spacing sits OUTSIDE the scroll view (as margin, not padding) so
-        // the viewport — and with it the scrollbar track — ends at the
-        // table's box instead of stretching to the window edge; the right
-        // inset sits INSIDE it so the table clears the overlaying scrollbar
-        // and the thumb rides in the gutter beside the card rather than on
-        // its border.
-        //
-        // The scroll hint fades the TRAILING edge only: the table's column
-        // header is a PINNED sliver, so a leading fade would dim a header
-        // that is not scrolling — the same false "there is more above"
-        // signal the hint exists to avoid. Content sliding under the pinned
-        // header already reads as scrolled.
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
-          child: CcScrollArea(
-            fadeStart: false,
-            child: NotificationListener<Notification>(
-              onNotification: _onScrollNotification,
-              child: CustomScrollView(
-                key: const PageStorageKey('pipeline-runs-table'),
-                controller: _scroll,
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsetsDirectional.only(
-                      end: AppSpacing.md,
+    // The shortcuts sit ABOVE the pane's node, so they answer both when the
+    // pane itself holds focus and when a row inside it does. The node is no
+    // Tab stop (the rows are); it only gives the keys a home on arrival and
+    // after a click on the pane's background.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
+            widget.onMoveFocus(1),
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
+            widget.onMoveFocus(-1),
+        const SingleActivator(LogicalKeyboardKey.keyJ): () =>
+            widget.onMoveFocus(1),
+        const SingleActivator(LogicalKeyboardKey.keyK): () =>
+            widget.onMoveFocus(-1),
+        const SingleActivator(LogicalKeyboardKey.enter): widget.onOpenFocused,
+      },
+      // Same scroll geometry as the PR queue and the inbox. The bottom
+      // spacing sits OUTSIDE the scroll view (as margin, not padding) so
+      // the viewport — and with it the scrollbar track — ends at the
+      // table's box instead of stretching to the window edge; the right
+      // inset sits INSIDE it so the table clears the overlaying scrollbar
+      // and the thumb rides in the gutter beside the card rather than on
+      // its border.
+      //
+      // The scroll hint fades the TRAILING edge only: the table's column
+      // header is a PINNED sliver, so a leading fade would dim a header
+      // that is not scrolling — the same false "there is more above"
+      // signal the hint exists to avoid. Content sliding under the pinned
+      // header already reads as scrolled.
+      child: Focus(
+        focusNode: _pane,
+        autofocus: true,
+        skipTraversal: true,
+        child: Listener(
+          onPointerDown: (_) {
+            if (!_pane.hasFocus) {
+              _pane.requestFocus();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+            child: CcScrollArea(
+              fadeStart: false,
+              child: NotificationListener<Notification>(
+                onNotification: _onScrollNotification,
+                child: CustomScrollView(
+                  key: const PageStorageKey('pipeline-runs-table'),
+                  controller: _scroll,
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsetsDirectional.only(
+                        end: AppSpacing.md,
+                      ),
+                      sliver: PipelineRunsTable(
+                        runs: page,
+                        queuePositions: widget.queuePositions,
+                        now: DateTime.now(),
+                        titleFor: (run) => widget.templateNames[run.templateId],
+                        focusedRunId: widget.focusedRunId,
+                        focusedRowKey: _focusedKey,
+                        onOpen: widget.onOpen,
+                      ),
                     ),
-                    sliver: PipelineRunsTable(
-                      runs: page,
-                      queuePositions: widget.queuePositions,
-                      now: DateTime.now(),
-                      titleFor: (run) => widget.templateNames[run.templateId],
-                      focusedRunId: widget.focusedRunId,
-                      focusedRowKey: _focusedKey,
-                      onOpen: widget.onOpen,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

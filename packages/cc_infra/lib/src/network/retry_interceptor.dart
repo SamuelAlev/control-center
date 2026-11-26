@@ -48,6 +48,9 @@ class RetryInterceptor extends Interceptor {
   /// intermediate attempt's failure is not the request's outcome.
   static const String retryCountKey = 'retryCount';
 
+  /// Per-request override for [maxRetries], stored in `additionalData`.
+  static const String maxRetriesKey = '__ccMaxRetries';
+
   /// The maximum number of retry attempts.
   final int maxRetries;
 
@@ -131,10 +134,15 @@ class RetryInterceptor extends Interceptor {
     if (!_shouldRetry(exception)) {
       return Interceptor.next();
     }
+    final override = request.additionalData[maxRetriesKey];
+    final limit = override is int ? override : maxRetries;
+    if (limit <= 0) {
+      return Interceptor.next();
+    }
 
     var error = exception;
     var attempt = 0;
-    while (attempt < maxRetries) {
+    while (attempt < limit) {
       final delay = _delayFor(attempt, error);
       if (delay == null) {
         // The hint was past [maxRetryAfter]: give up now, with the ORIGINAL

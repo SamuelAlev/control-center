@@ -64,7 +64,7 @@ void main() {
   ) async {
     await pump(tester, const []);
     expect(find.byType(GoalCard), findsNothing);
-    expect(find.text('GOALS'), findsNothing);
+    expect(find.text('Goals'), findsNothing);
   });
 
   testWidgets('one card per goal, the live count in the header', (

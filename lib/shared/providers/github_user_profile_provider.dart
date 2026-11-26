@@ -17,6 +17,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Every resolution seeds [cachedGitHubUserProfile], which is what lets a
 /// surface render the display name on its FIRST frame instead of swapping it in
 /// a round trip later — see [cachedGitHubUserProfile] for why that matters.
+final Set<String> _pendingForceUserProfiles = <String>{};
+
+/// Forces a fresh server fetch of [login]'s GitHub profile.
+Future<GitHubUserProfile?> refreshGitHubUserProfile(
+  WidgetRef ref,
+  String login,
+) {
+  final normalized = login.trim().toLowerCase();
+  if (normalized.isNotEmpty) {
+    _pendingForceUserProfiles.add(normalized);
+  }
+  return ref.refresh(githubUserProfileProvider(login).future);
+}
+
+/// Fetches a GitHub user's full profile (name, bio, contributions).
+///
+/// Resolved SERVER-SIDE over RPC (the thin client holds no GitHub token); a
+/// public profile is global data keyed only by login, so the op is not
+/// workspace-scoped. Auto-disposed when no widgets are listening.
+/// GitHub App bots (`login[bot]`) are skipped: they are `Bot` nodes, not
+/// `User`. App *slugs* (no `[bot]`) still go to the server, which resolves
+/// them via `GET /apps/{slug}` after GraphQL `repositoryOwner` misses.
+///
+/// Every resolution seeds [cachedGitHubUserProfile], which is what lets a
+/// surface render the display name on its FIRST frame instead of swapping it in
+/// a round trip later — see [cachedGitHubUserProfile] for why that matters.
 final githubUserProfileProvider = FutureProvider.autoDispose
     .family<GitHubUserProfile?, String>((ref, login) async {
       if (login.isEmpty || isGitHubBotLogin(login)) {
@@ -30,9 +56,12 @@ final githubUserProfileProvider = FutureProvider.autoDispose
       if (ref.watch(isDemoServerProvider)) {
         return null;
       }
+      final force = _pendingForceUserProfiles.remove(
+        login.trim().toLowerCase(),
+      );
       final data = await ref.watch(rpcClientProvider).call(
         'github.userProfile',
-        {'login': login},
+        {'login': login, if (force) 'force': true},
       );
       final profile = data['profile'];
       if (profile is! Map) {

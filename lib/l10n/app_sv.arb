@@ -474,9 +474,9 @@
   "calendarDisconnect": "Koppla från",
   "calendarReconnect": "Återanslut",
   "calendarEmptyNoEvents": "Inga händelser i det här intervallet",
-  "calendarStartRecording": "Starta inspelning",
-  "calendarStartRecordingAndLink": "Starta inspelning och länka",
   "calendarJoinMeet": "Anslut till mötet",
+  "calendarJoinAndRecord": "Anslut och spela in",
+  "calendarRecordFailed": "Kunde inte starta inspelningen",
   "calendarFromCalendar": "Från kalender",
   "calendarLinkedMeeting": "Länkat möte",
   "calendarToday": "Idag",
@@ -899,7 +899,6 @@
   "actions": "Åtgärder",
   "activate": "Aktivera",
   "activity": "Aktivitet",
-  "activityLabel": "AKTIVITET",
   "activitySearchHint": "Sök aktivitet",
   "activityNoMatches": "Ingen aktivitet matchar dina filter",
   "activityPageRange": "{start}–{end} av {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Blockerar",
   "bookmarkLabel": "Bokmärke",
   "briefDescription": "Kort beskrivning",
-  "bugLabel": "BUGG",
+  "bugLabel": "Bugg",
   "bundledDefaultsNeverUpdated": "Medföljande standardvärden – aldrig uppdaterade",
   "cancel": "Avbryt",
   "cancelEdit": "Avbryt redigering",
@@ -2612,12 +2611,12 @@
   "published": "Publicerad",
   "pullRequestApproved": "Pull request godkänd",
   "pullRequests": "Pull requests",
-  "questionLabel": "FRÅGA",
+  "questionLabel": "Fråga",
   "queued": "I kö",
   "react": "Reagera",
   "readerPreferences": "Läsarpreferenser",
   "reasoningEffort": "Resonemangsinsats",
-  "recommendLabel": "REKOMMENDERA",
+  "recommendLabel": "Rekommendera",
   "recordingFromDevice": "Spelar in från {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Lyckades",
   "successLabel": "Lyckades",
   "suggestion": "Förslag",
-  "suggestLabel": "FÖRESLÅ",
+  "suggestLabel": "Föreslå",
   "superseded": "Ersatt",
   "synced": "Synkad",
   "systemDefault": "Systemstandard",
@@ -3025,7 +3024,7 @@
   "themeLight": "Ljust",
   "themeSystem": "System",
   "thisCannotBeUndone": "Det går inte att ångra.",
-  "ticketLabel": "ÄRENDE",
+  "ticketLabel": "Ärende",
   "titleLabel": "Titel",
   "todayLabel": "Idag",
   "toggleTheme": "Växla tema",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Mall",
   "prTemplateDefault": "Standard",
   "addReviewers": "Lägg till granskare",
-  "addAssignees": "Lägg till tilldelade",
+
+  "reRequestReview": "Begär granskning igen",
+  "reRequestReviewFor": "Begär granskning igen från {label}",  "addAssignees": "Lägg till tilldelade",
   "addLabels": "Lägg till etiketter",
   "searchLabels": "Sök etiketter…",
   "noMatchingLabels": "Inga matchande etiketter",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Skriv korta anteckningar – agenten utökar dem efter mötet.",
   "meetingSpeakerMe": "Du",
   "meetingStatusRecording": "Spelar in",
+  "meetingStatusPaused": "Pausad",
   "meetingStatusProcessing": "Bearbetar",
   "meetingStatusDone": "Klar",
   "meetingStatusFailed": "Misslyckades",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Inga möten} one{1 möte} other{{count} möten}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Öppna åtgärder",
-  "meetingsLedgerDecisions": "Beslut",
   "meetingsLiveOpen": "Öppna inspelning",
   "meetingTemplateShort": "Mall",
-  "meetingsStatThisWeek": "Den här veckan",
-  "meetingsStatRecorded": "Inspelade",
   "meetingsFilterAll": "Alla",
   "meetingsFilterDone": "Klara",
   "meetingsFilterProcessing": "Bearbetas",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "förbättrad",
   "meetingsTranscribing": "transkriberar och sammanfattar…",
   "meetingsOpenAction": "Öppna",
   "meetingsStopProcessing": "Stoppa",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Det ser ut som att ett möte pågår. Spela in det?",
-  "meetingDetectedRecord": "Spela in",
   "meetingDetectedDismiss": "Avfärda",
   "meetingAutoStopTitle": "Det här mötet ser ut att vara över. Stoppa inspelningen?",
   "meetingAutoStopStop": "Stoppa",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Aldrig ansluten",
+  "deviceAwaitingApproval": "Väntar på godkännande",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Hur du syns för teamet och i git-commit-författarskap i det här arbetsområdet. Tomma fält ärver kontots namn och e-post.",
   "displayNameLabel": "Visningsnamn",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Körs",
   "evalsStatusPassed": "Godkänd",
   "evalsStatusFailed": "Misslyckades",
-  "bannerMeetingJoin": "Anslut",
-  "bannerMeetingRecordAndLink": "Spela in och länka",
   "bannerCalendarReconnect": "Återanslut",
   "bannerView": "Visa",
   "soundscapeTitle": "Ljudlandskap",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Kunde inte skicka kommentaren: {error}",
   "commentOnLine": "Rad {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Tillåt alltid kopiering från miljöer",
   "rigClipboardAlwaysCopyDescription": "Lägg urklippsinnehåll från valfri miljö på den här enheten utan att fråga.",
   "imageDiffBefore": "Före",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Efter",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Sida vid sida",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Svep",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Skillnad",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent} % ändrat",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Bilder",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Källa",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Borttaget",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} markerad som inte granskad",
   "prLineChangesSemantics": "Tillagda rader: {additions}, borttagna rader: {deletions}",
   "closeTabNamed": "Stäng {tab}",
-  "threadCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
   "notificationAgentAwaitingInput": "En agent behöver uppmärksamhet",
   "notifyAgentAwaitingInput": "När en agent behöver godkännande, ett svar eller giltiga inloggningsuppgifter, eller en regel blockerar en åtgärd",
   "notificationAgentNeedsApproval": "{agent} behöver ditt godkännande",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "En administratör beslutar",
   "improvementNotFound": "Förslaget finns inte, eller så ligger det i en yta du inte kan öppna.",
   "dispatchSettingsTitle": "Scheman",
-  "dispatchSettingsSubtitle": "Gränser för scheman och bevakningar, och vad som händer med förfrågningar som ingen besvarar.",
   "dispatchLimitsLabel": "Gränser för scheman",
   "dispatchLimitsSubtitle": "Tak för hur många scheman och bevakningar agenter får ha, och deras standardvärden.",
   "dispatchLimitRange": "1 till {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "I {zone}, tidszonen ovan.",
   "dispatchDigestHourRange": "0 till 23",
   "goalRecordCrumb": "Mål",
-  "scheduleRecordCrumb": "Schema",
   "improvementRecordCrumb": "Förslag",
   "goalNodeNeedsAgent": "Välj agenten som driver målet.",
   "goalNodeNeedsObjective": "Skriv målet.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Det är inte koden webbläsaren visade. {count, plural, one{1 försök kvar.} other{{count} försök kvar.}}",
   "mcpServerSignInEnded": "Det tog för lång tid, nekades eller så angavs för många felaktiga koder. Börja om för att få en ny inloggningssida.",
   "mcpServerSignInStartAgain": "Börja om",
-  "mcpServerSignedIn": "Inloggad på {name}."
+  "mcpServerSignedIn": "Inloggad på {name}.",
+  "ccLoading": "Läser in",
+  "ccProgress": "Förlopp",
+  "ccBreadcrumb": "Brödsmulor",
+  "ccDialog": "Dialogruta",
+  "ccResize": "Ändra storlek",
+  "ccUnverifiedLabel": "{label} (overifierad)",
+  "prRowSelect": "Välj {title}",
+  "prTableSelectAll": "Välj alla pull requests",
+  "planVersionRewind": "Återställ till version {version}"
 }

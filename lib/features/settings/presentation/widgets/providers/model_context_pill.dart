@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
-/// The context-window badge on a model row — a small mono capsule, the one
+/// The context-window badge on a model row — a small tabular-figure capsule, the one
 /// number that decides whether a model fits the job.
 class ModelContextPill extends StatelessWidget {
   /// Creates a [ModelContextPill].
@@ -26,7 +26,7 @@ class ModelContextPill extends StatelessWidget {
         ),
         child: Text(
           _compactTokens(tokens),
-          style: CcFonts.code(
+          style: CcFonts.numeric(
             textStyle: CcTypography.caption.copyWith(color: t.textSecondary),
           ),
         ),

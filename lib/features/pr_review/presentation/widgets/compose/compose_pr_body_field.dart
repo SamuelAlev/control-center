@@ -212,7 +212,7 @@ class _TemplatePicker extends StatelessWidget {
   }
 }
 
-class _TemplateChip extends StatefulWidget {
+class _TemplateChip extends StatelessWidget {
   const _TemplateChip({
     required this.label,
     required this.selected,
@@ -226,38 +226,30 @@ class _TemplateChip extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_TemplateChip> createState() => _TemplateChipState();
-}
-
-class _TemplateChipState extends State<_TemplateChip> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    final t = widget.tokens;
-    final Color background;
-    final Color border;
-    final Color foreground;
-    if (widget.selected) {
-      background = t.accentSoft;
-      border = t.borderBrand;
-      foreground = t.accent;
-    } else if (_hovered) {
-      background = t.bgPrimaryHover;
-      border = t.borderSecondary;
-      foreground = t.textSecondary;
-    } else {
-      background = const Color(0x00000000);
-      border = t.borderSecondary;
-      foreground = t.textTertiary;
-    }
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
+    final t = tokens;
+    return CcTappable(
+      onPressed: onTap,
+      borderRadius: AppRadii.brSm,
+      semanticSelected: selected,
+      builder: (context, states) {
+        final Color background;
+        final Color border;
+        final Color foreground;
+        if (selected) {
+          background = t.accentSoft;
+          border = t.borderBrand;
+          foreground = t.accent;
+        } else if (states.contains(WidgetState.hovered)) {
+          background = t.bgPrimaryHover;
+          border = t.borderSecondary;
+          foreground = t.textSecondary;
+        } else {
+          background = const Color(0x00000000);
+          border = t.borderSecondary;
+          foreground = t.textTertiary;
+        }
+        return AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
@@ -266,14 +258,14 @@ class _TemplateChipState extends State<_TemplateChip> {
             border: Border.all(color: border),
           ),
           child: Text(
-            widget.label,
+            label,
             style: CcTypography.caption.copyWith(
               fontWeight: FontWeight.w600,
               color: foreground,
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -2470,6 +2470,7 @@ class PrCodeReviewCommentDto {
     this.threadId,
     this.isResolved = false,
     this.isFileLevel = false,
+    this.isOutdated = false,
   });
 
   factory PrCodeReviewCommentDto.fromJson(Map<String, dynamic> json) =>
@@ -2492,6 +2493,7 @@ class PrCodeReviewCommentDto {
         threadId: json['thread_id'] as String?,
         isResolved: json['is_resolved'] as bool? ?? false,
         isFileLevel: json['file_level'] as bool? ?? false,
+        isOutdated: json['is_outdated'] as bool? ?? false,
         reactions: ((json['reactions'] as List?) ?? const [])
             .whereType<Map>()
             .map((r) => ReactionGroupDto.fromJson(r.cast<String, dynamic>()))
@@ -2521,6 +2523,9 @@ class PrCodeReviewCommentDto {
 
   /// Whether the comment is on the whole file rather than a diff line.
   final bool isFileLevel;
+
+  /// Whether the diff line this comment anchored to no longer exists.
+  final bool isOutdated;
   final List<ReactionGroupDto> reactions;
 
   Map<String, dynamic> toJson() => {
@@ -2540,6 +2545,7 @@ class PrCodeReviewCommentDto {
     'thread_id': ?threadId,
     if (isResolved) 'is_resolved': true,
     if (isFileLevel) 'file_level': true,
+    if (isOutdated) 'is_outdated': true,
     'reactions': reactions.map((r) => r.toJson()).toList(),
   };
 }

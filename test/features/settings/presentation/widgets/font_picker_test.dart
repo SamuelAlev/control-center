@@ -7,6 +7,7 @@ import 'package:control_center/features/settings/providers/font_list_provider.da
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -235,6 +236,79 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Popular'), findsOneWidget);
+  });
+
+  testWidgets('section headers and font rows answer the keyboard', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    tester.view.physicalSize = const Size(1000, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          googleFontsProvider.overrideWith((ref) => ['Inter', 'Roboto']),
+          systemFontsProvider.overrideWith(
+            (ref) => Future.value(const <Map<String, String>>[]),
+          ),
+          appPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: appLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showFontPicker(
+                  context: context,
+                  currentSelection: const FontSelection(family: 'Inter'),
+                  contextType: FontContext.app,
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final roboto = find.text('Roboto').first;
+    expect(
+      tester.getSemantics(roboto),
+      isSemantics(isButton: true, hasSelectedState: true, isSelected: false),
+    );
+    Focus.of(tester.element(roboto)).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(
+      tester.getSemantics(find.text('Roboto').first),
+      isSemantics(hasSelectedState: true, isSelected: true),
+    );
+
+    final popular = find.text('Popular');
+    expect(
+      tester.getSemantics(popular),
+      isSemantics(isButton: true, hasExpandedState: true, isExpanded: true),
+    );
+    Focus.of(tester.element(popular)).requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(
+      tester.getSemantics(popular),
+      isSemantics(hasExpandedState: true, isExpanded: false),
+    );
+    handle.dispose();
   });
 
   testWidgets('close button dismisses dialog', (tester) async {

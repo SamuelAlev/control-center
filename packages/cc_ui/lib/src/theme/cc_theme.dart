@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/theme/cc_fonts.dart';
+import 'package:cc_ui/src/theme/cc_strings.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
 
@@ -30,6 +31,7 @@ class CcThemeData {
     this.reducedMotion = false,
     this.fontFamily,
     this.monoFontFamily,
+    this.strings = const CcStrings.english(),
   });
 
   /// Light defaults.
@@ -37,12 +39,14 @@ class CcThemeData {
     String? fontFamily,
     String? monoFontFamily,
     bool reducedMotion = false,
+    CcStrings strings = const CcStrings.english(),
   }) => CcThemeData(
     tokens: DesignSystemTokens.light(),
     brightness: CcBrightness.light,
     reducedMotion: reducedMotion,
     fontFamily: fontFamily,
     monoFontFamily: monoFontFamily,
+    strings: strings,
   );
 
   /// Dark defaults.
@@ -50,12 +54,14 @@ class CcThemeData {
     String? fontFamily,
     String? monoFontFamily,
     bool reducedMotion = false,
+    CcStrings strings = const CcStrings.english(),
   }) => CcThemeData(
     tokens: DesignSystemTokens.dark(),
     brightness: CcBrightness.dark,
     reducedMotion: reducedMotion,
     fontFamily: fontFamily,
     monoFontFamily: monoFontFamily,
+    strings: strings,
   );
 
   /// The active semantic color tokens.
@@ -76,6 +82,10 @@ class CcThemeData {
   /// The resolved monospace font family (e.g. `Fira Code`), or null.
   final String? monoFontFamily;
 
+  /// The words cc_ui's own controls carry (accessible names, a few painted
+  /// labels). English unless the host passes its translations.
+  final CcStrings strings;
+
   /// Whether this is the dark appearance.
   bool get isDark => brightness == CcBrightness.dark;
 
@@ -86,12 +96,14 @@ class CcThemeData {
     bool? reducedMotion,
     String? fontFamily,
     String? monoFontFamily,
+    CcStrings? strings,
   }) => CcThemeData(
     tokens: tokens ?? this.tokens,
     brightness: brightness ?? this.brightness,
     reducedMotion: reducedMotion ?? this.reducedMotion,
     fontFamily: fontFamily ?? this.fontFamily,
     monoFontFamily: monoFontFamily ?? this.monoFontFamily,
+    strings: strings ?? this.strings,
   );
 
   @override
@@ -102,7 +114,8 @@ class CcThemeData {
           other.brightness == brightness &&
           other.reducedMotion == reducedMotion &&
           other.fontFamily == fontFamily &&
-          other.monoFontFamily == monoFontFamily;
+          other.monoFontFamily == monoFontFamily &&
+          identical(other.strings, strings);
 
   @override
   int get hashCode => Object.hash(
@@ -111,6 +124,7 @@ class CcThemeData {
     reducedMotion,
     fontFamily,
     monoFontFamily,
+    identityHashCode(strings),
   );
 }
 
@@ -189,4 +203,9 @@ extension DesignSystemTokensBuildContext on BuildContext {
 
   /// The active [CcThemeData], or null when there is no [CcTheme] ancestor.
   CcThemeData? get ccTheme => CcTheme.maybeOf(this);
+
+  /// The words cc_ui's own controls carry, English when there is no
+  /// [CcTheme] ancestor.
+  CcStrings get ccStrings =>
+      CcTheme.maybeOf(this)?.strings ?? const CcStrings.english();
 }

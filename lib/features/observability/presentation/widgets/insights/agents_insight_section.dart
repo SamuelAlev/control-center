@@ -138,7 +138,9 @@ class _AgentInsightTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final numStyle = CcTypography.monoNum.copyWith(color: t.textPrimary);
+    final numStyle = CcFonts.numeric(
+      textStyle: CcTypography.numeric.copyWith(color: t.textPrimary),
+    );
 
     Widget numCell(String text, double width) => SizedBox(
       width: width,

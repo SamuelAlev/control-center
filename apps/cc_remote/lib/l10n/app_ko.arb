@@ -95,7 +95,6 @@
   "eventNotFound": "이벤트를 찾을 수 없음",
   "eventNotFoundDescription": "일정 범위를 벗어났거나 원본에서 삭제되었을 수 있습니다.",
   "joinMeeting": "회의 참가",
-  "join": "참가",
   "attendeesCount": "참석자 ({count})",
   "details": "세부정보",
   "allDay": "종일",

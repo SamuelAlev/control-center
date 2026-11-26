@@ -474,9 +474,9 @@
   "calendarDisconnect": "قطع اتصال",
   "calendarReconnect": "اتصال مجدد",
   "calendarEmptyNoEvents": "رویدادی در این بازه نیست",
-  "calendarStartRecording": "شروع ضبط",
-  "calendarStartRecordingAndLink": "شروع ضبط و پیوند",
   "calendarJoinMeet": "پیوستن به جلسه",
+  "calendarJoinAndRecord": "پیوستن و ضبط",
+  "calendarRecordFailed": "شروع ضبط ممکن نشد",
   "calendarFromCalendar": "از تقویم",
   "calendarLinkedMeeting": "جلسهٔ پیوندشده",
   "calendarToday": "امروز",
@@ -899,7 +899,6 @@
   "actions": "کنش‌ها",
   "activate": "فعال‌سازی",
   "activity": "فعالیت",
-  "activityLabel": "فعالیت",
   "activitySearchHint": "جستجوی فعالیت",
   "activityNoMatches": "هیچ فعالیتی با فیلترهای شما جور نیست",
   "activityPageRange": "{start}–{end} از {total}",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "قالب",
   "prTemplateDefault": "پیش‌فرض",
   "addReviewers": "افزودن بازبین",
-  "addAssignees": "افزودن تخصیص",
+
+  "reRequestReview": "درخواست مجدد بازبینی",
+  "reRequestReviewFor": "درخواست مجدد بازبینی از {label}",  "addAssignees": "افزودن تخصیص",
   "addLabels": "افزودن برچسب‌ها",
   "searchLabels": "جستجوی برچسب‌ها…",
   "noMatchingLabels": "برچسب منطبقی نیست",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "یادداشت سریع بنویسید — عامل پس از جلسه گسترششان می‌دهد.",
   "meetingSpeakerMe": "شما",
   "meetingStatusRecording": "در حال ضبط",
+  "meetingStatusPaused": "مکث‌شده",
   "meetingStatusProcessing": "در حال پردازش",
   "meetingStatusDone": "انجام‌شده",
   "meetingStatusFailed": "ناموفق",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{بدون جلسه} =1{1 جلسه} other{{count} جلسه}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "اقدامات باز",
-  "meetingsLedgerDecisions": "تصمیم‌ها",
   "meetingsLiveOpen": "باز کردن ضبط",
   "meetingTemplateShort": "قالب",
-  "meetingsStatThisWeek": "این هفته",
-  "meetingsStatRecorded": "ضبط‌شده",
   "meetingsFilterAll": "همه",
   "meetingsFilterDone": "انجام‌شده",
   "meetingsFilterProcessing": "در حال پردازش",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "غنی‌شده",
   "meetingsTranscribing": "در حال رونویسی و خلاصه‌سازی…",
   "meetingsOpenAction": "باز کردن",
   "meetingsStopProcessing": "توقف",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "به نظر می‌رسد جلسه‌ای در جریان است. ضبط شود؟",
-  "meetingDetectedRecord": "ضبط",
   "meetingDetectedDismiss": "نادیده گرفتن",
   "meetingAutoStopTitle": "این جلسه تمام به نظر می‌رسد. ضبط متوقف شود؟",
   "meetingAutoStopStop": "توقف",
@@ -4883,7 +4871,7 @@
   "ideNewTab": "باز کردن ویرایشگر",
   "ideNewTabMenu": "زبانهٔ جدید",
   "ideReviewCode": "بازبینی کد",
-  "ideReviewCodeInRepo": "بازبینی کد (\u2068{repo}\u2069)",
+  "ideReviewCodeInRepo": "بازبینی کد (⁨{repo}⁩)",
   "ideRevertConfirmTitle": "بازگردانی تغییرات",
   "ideRevertUntracked": "فایل‌های ردیابی‌نشده قابل بازگردانی نیستند",
   "ideRevertFailed": "بازگردانی فایل‌ها ممکن نشد. worktree گفتگو ممکن است در دسترس نباشد.",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "هرگز متصل نشده",
+  "deviceAwaitingApproval": "در انتظار تأیید",
   "profileSectionLabel": "نمایه",
   "profileSectionDescription": "چگونه در این فضا برای تیم و نویسندگی commit گیت دیده می‌شوید. فیلدهای خالی نام و ایمیل حساب را به ارث می‌برند.",
   "displayNameLabel": "نام نمایشی",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "در حال اجرا",
   "evalsStatusPassed": "موفق",
   "evalsStatusFailed": "ناموفق",
-  "bannerMeetingJoin": "پیوستن",
-  "bannerMeetingRecordAndLink": "ضبط و پیوند",
   "bannerCalendarReconnect": "اتصال مجدد",
   "bannerView": "نمایش",
   "soundscapeTitle": "منظرهای صوتی",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "ارسال دیدگاه ممکن نشد: ⁨{error}⁩",
   "commentOnLine": "خط {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "همیشه کپی از محیط‌ها مجاز باشد",
   "rigClipboardAlwaysCopyDescription": "محتوای بریده‌دان را از هر محیطی بدون پرسش روی این دستگاه قرار دهد.",
   "imageDiffBefore": "قبل",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "بعد",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "دو ستونه",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "کشیدن",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "تفاوت",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}٪ تغییر کرده",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "تصاویر",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "منبع",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "حذف‌شده",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} به‌عنوان دیده‌نشده علامت خورد",
   "prLineChangesSemantics": "خطوط افزوده‌شده: {additions}، خطوط حذف‌شده: {deletions}",
   "closeTabNamed": "بستن {tab}",
-  "threadCommentCount": "{count, plural, =1{1 نظر} other{{count} نظر}}",
   "notificationAgentAwaitingInput": "عامل به توجه شما نیاز دارد",
   "notifyAgentAwaitingInput": "وقتی عاملی به تأیید، پاسخ یا اعتبارنامهٔ معتبر نیاز دارد، یا خط‌مشی عملی را مسدود می‌کند",
   "notificationAgentNeedsApproval": "{agent} به تأیید شما نیاز دارد",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "یک مدیر تصمیم می‌گیرد",
   "improvementNotFound": "این پیشنهاد وجود ندارد، یا در فضایی است که شما نمی‌توانید بازش کنید.",
   "dispatchSettingsTitle": "زمان‌بندی‌ها",
-  "dispatchSettingsSubtitle": "محدودیت‌های زمان‌بندی‌ها و پایش‌ها، و آنچه برای درخواست‌هایی که کسی به آن‌ها پاسخ نمی‌دهد اتفاق می‌افتد.",
   "dispatchLimitsLabel": "محدودیت‌های زمان‌بندی",
   "dispatchLimitsSubtitle": "سقف تعداد زمان‌بندی‌ها و پایش‌هایی که عامل‌ها می‌توانند داشته باشند، و پیش‌فرض‌هایشان.",
   "dispatchLimitRange": "1 تا {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "در {zone}، منطقه زمانی بالا.",
   "dispatchDigestHourRange": "0 تا 23",
   "goalRecordCrumb": "هدف",
-  "scheduleRecordCrumb": "زمان‌بندی",
   "improvementRecordCrumb": "پیشنهاد",
   "goalNodeNeedsAgent": "عاملی را که هدف را پیگیری می‌کند انتخاب کنید.",
   "goalNodeNeedsObjective": "هدف را بنویسید.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "این کدی نیست که مرورگرتان نشان داد. {count, plural, other{{count} تلاش باقی‌مانده.}}",
   "mcpServerSignInEnded": "زمان تمام شد، ورود رد شد، یا کدهای اشتباه زیادی وارد کردید. برای دریافت صفحه ورود جدید، دوباره شروع کنید.",
   "mcpServerSignInStartAgain": "شروع دوباره",
-  "mcpServerSignedIn": "به {name} وارد شدید."
+  "mcpServerSignedIn": "به {name} وارد شدید.",
+  "ccLoading": "در حال بارگذاری",
+  "ccProgress": "پیشرفت",
+  "ccBreadcrumb": "مسیر راهبری",
+  "ccDialog": "کادر گفتگو",
+  "ccResize": "تغییر اندازه",
+  "ccUnverifiedLabel": "{label} (تأیید‌نشده)",
+  "prRowSelect": "انتخاب {title}",
+  "prTableSelectAll": "انتخاب همه pull requestها",
+  "planVersionRewind": "بازگشت به نسخه {version}"
 }

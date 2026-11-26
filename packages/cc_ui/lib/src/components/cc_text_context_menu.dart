@@ -194,7 +194,10 @@ class _CcTextMenuRow extends StatelessWidget {
             horizontal: AppSpacing.md,
             vertical: AppSpacing.xs,
           ),
-          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          // The row carries the label already; read it once.
+          child: ExcludeSemantics(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
         );
       },
     );

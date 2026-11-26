@@ -105,7 +105,12 @@ class AgentRunRow extends ConsumerWidget {
                   children: [
                     CcBadge(
                       variant: _variant,
-                      label: log.status.name.toUpperCase(),
+                      label: switch (log.status) {
+                        RunStatus.pending => l10n.pipelineStatusPending,
+                        RunStatus.running => l10n.running,
+                        RunStatus.completed => l10n.runStatusCompleted,
+                        RunStatus.error => l10n.pipelineStepError,
+                      },
                     ),
                     const Spacer(),
                     Text(

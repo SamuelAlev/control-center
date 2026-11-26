@@ -112,9 +112,20 @@ class _BrowserPaneState extends State<BrowserPane> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() => _ready = true);
+        // A blank tab opens to type an address. Asked for outright: the
+        // control that opened the tab keeps focus, and an autofocus would
+        // yield to it. Someone already typing in another field keeps it.
+        if (initial == 'about:blank' && !_typingElsewhere()) {
+          _addressFocus.requestFocus();
+        }
       }
     });
   }
+
+  static bool _typingElsewhere() =>
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<EditableText>() !=
+      null;
 
   @override
   void dispose() {
@@ -236,7 +247,6 @@ class _BrowserPaneState extends State<BrowserPane> {
               hintText: l10n.ideBrowserAddressHint,
               prefix: Icon(AppIcons.globe, size: 14, color: t.textTertiary),
               onSubmitted: _submitAddress,
-              autofocus: _initialUrl == 'about:blank',
             ),
           ),
           const SizedBox(width: 4),

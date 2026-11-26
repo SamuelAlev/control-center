@@ -18,6 +18,7 @@ import 'package:control_center/features/pr_review/presentation/utils/server_revi
 import 'package:control_center/features/pr_review/presentation/widgets/comment_action_model.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_keyboard_handler.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_search_controller.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/composer_focus_tracker.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/composer_reveal.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_regex_tester_popover.dart';
@@ -273,6 +274,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// Bumped on each open so the measurer reports again even when the new
   /// composer happens to be the same height as the one it replaced.
   int _composerOpenSerial = 0;
+
+  /// The composer request whose composer has already taken focus. The slot is
+  /// built again when it scrolls back into view, and that build must not pull
+  /// focus back from wherever the person moved on to.
+  ComposerRequest? _composerFocusedFor;
+
+  /// Lets the composer slot's next element take over the focus the previous
+  /// one held when the diff swaps them (see [ComposerFocusTracker]).
+  final ValueNotifier<bool> _composerFocusHandoff = ValueNotifier<bool>(false);
 
   /// Thread whose conversation is currently focused (its highlight is drawn in
   /// the active colour and its popover is shown).
@@ -1446,6 +1456,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       ..removeStatusListener(_onComposerStatus);
     _composerCurve.dispose();
     _composerReveal.dispose();
+    _composerFocusHandoff.dispose();
     _threadHighlightFade?.cancel();
     _gotoLandingFade?.cancel();
     HardwareKeyboard.instance.removeHandler(_keyboard.handleGlobalKey);
@@ -3921,6 +3932,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
           if (req == null || ctl == null || req.fileIndex != slot.fileIndex) {
             return const SizedBox.shrink();
           }
+          // Until focus has actually landed inside: the diff builds this
+          // slot's element again while it opens, and the first mount may be
+          // gone before its focus request runs.
+          final takeFocus = !identical(_composerFocusedFor, req);
           // No ambient Material here. The height reporter stays live because
           // adding or removing suggestion blocks changes the composer after
           // its first layout.
@@ -3930,59 +3945,66 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
             child: ComposerReveal(
               animation: _composerCurve,
               reducedMotion: _composerReduced,
-              child: HeightReporter(
-                key: ValueKey(_composerOpenSerial),
-                onMeasured: _onComposerContentMeasured,
-                child: req.kind == PrInlineThreadKind.suggestion
-                    ? SuggestionComposer(
-                        originalCode: req.originalCode,
-                        filePath: _document.files[req.fileIndex].filename,
-                        initialComment: req.initialComment,
-                        baseStyle: _baseStyle(
-                          codeFont,
-                          ligatures: codeLigatures,
-                        ),
-                        reviewInProgress: reviewInProgress,
-                        onSubmit: (suggested, comment) => _submitSuggestion(
-                          req,
-                          suggested,
-                          comment,
-                          batched: false,
-                        ),
-                        onSubmitBatched: canBatch
-                            ? (suggested, comment) => _submitSuggestion(
+              child: ComposerFocusTracker(
+                handoff: _composerFocusHandoff,
+                onFocused: () => _composerFocusedFor = req,
+                child: HeightReporter(
+                  key: ValueKey(_composerOpenSerial),
+                  onMeasured: _onComposerContentMeasured,
+                  child: req.kind == PrInlineThreadKind.suggestion
+                      ? SuggestionComposer(
+                          originalCode: req.originalCode,
+                          filePath: _document.files[req.fileIndex].filename,
+                          initialComment: req.initialComment,
+                          baseStyle: _baseStyle(
+                            codeFont,
+                            ligatures: codeLigatures,
+                          ),
+                          reviewInProgress: reviewInProgress,
+                          autofocus: takeFocus,
+                          onSubmit: (suggested, comment) => _submitSuggestion(
+                            req,
+                            suggested,
+                            comment,
+                            batched: false,
+                          ),
+                          onSubmitBatched: canBatch
+                              ? (suggested, comment) => _submitSuggestion(
+                                  req,
+                                  suggested,
+                                  comment,
+                                  batched: true,
+                                )
+                              : null,
+                          onSendToAgent: (suggested, comment) =>
+                              _sendComposerToAgent(
                                 req,
-                                suggested,
-                                comment,
-                                batched: true,
-                              )
-                            : null,
-                        onSendToAgent: (suggested, comment) =>
-                            _sendComposerToAgent(
-                              req,
-                              buildSuggestionBody(comment, suggested),
-                            ),
-                        onCancel: _cancelComposer,
-                      )
-                    : PrCommentComposer(
-                        prRef: widget.inlineCommentsController?.pr,
-                        draftDestination: _commentDestination(req),
-                        reviewInProgress: reviewInProgress,
-                        // A file comment has no lines to suggest a change to,
-                        // and the forge's review takes line comments only.
-                        onSuggest: req.isFileLevel
-                            ? null
-                            : (comment) =>
-                                  _switchComposerToSuggestion(req, comment),
-                        onSubmit: (body) =>
-                            _submitComment(req, body, batched: false),
-                        onSubmitBatched: canBatch && !req.isFileLevel
-                            ? (body) => _submitComment(req, body, batched: true)
-                            : null,
-                        onSendToAgent: (body) =>
-                            _sendComposerToAgent(req, body),
-                        onCancel: _cancelComposer,
-                      ),
+                                buildSuggestionBody(comment, suggested),
+                              ),
+                          onCancel: _cancelComposer,
+                        )
+                      : PrCommentComposer(
+                          prRef: widget.inlineCommentsController?.pr,
+                          draftDestination: _commentDestination(req),
+                          reviewInProgress: reviewInProgress,
+                          autofocus: takeFocus,
+                          // A file comment has no lines to suggest a change to,
+                          // and the forge's review takes line comments only.
+                          onSuggest: req.isFileLevel
+                              ? null
+                              : (comment) =>
+                                    _switchComposerToSuggestion(req, comment),
+                          onSubmit: (body) =>
+                              _submitComment(req, body, batched: false),
+                          onSubmitBatched: canBatch && !req.isFileLevel
+                              ? (body) =>
+                                    _submitComment(req, body, batched: true)
+                              : null,
+                          onSendToAgent: (body) =>
+                              _sendComposerToAgent(req, body),
+                          onCancel: _cancelComposer,
+                        ),
+                ),
               ),
             ),
           );

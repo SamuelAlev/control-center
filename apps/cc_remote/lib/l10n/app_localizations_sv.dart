@@ -314,9 +314,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get joinMeeting => 'Anslut till mötet';
 
   @override
-  String get join => 'Anslut';
-
-  @override
   String attendeesCount(int count) {
     return 'Deltagare ($count)';
   }

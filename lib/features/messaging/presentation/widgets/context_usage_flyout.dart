@@ -181,7 +181,7 @@ class ContextUsageFlyout extends ConsumerWidget {
                     '${formatContextTokenCount(breakdown.totalTokens)} / '
                     '${formatContextTokenCount(breakdown.windowTokens)} '
                     '${l10n.contextUsageTokens}',
-                    style: CcFonts.code(
+                    style: CcFonts.numeric(
                       textStyle: CcTypography.caption.copyWith(
                         color: tokens.textTertiary,
                       ),
@@ -293,7 +293,7 @@ class _SegmentRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(
             formatContextTokenCount(tokens),
-            style: CcFonts.code(
+            style: CcFonts.numeric(
               textStyle: CcTypography.caption.copyWith(color: t.textSecondary),
             ),
           ),

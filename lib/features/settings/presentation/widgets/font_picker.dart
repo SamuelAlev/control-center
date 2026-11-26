@@ -257,7 +257,8 @@ class _FontPickerDialogState extends ConsumerState<_FontPickerDialog> {
                   family: family,
                   source: FontSource.google,
                   isSelected:
-                      _previewSelection.family == family &&
+                      AppFonts.displayName(_previewSelection.family) ==
+                          family &&
                       _previewSelection.source == FontSource.google,
                   onTap: () => _setPreview(
                     FontSelection(family: family, source: FontSource.google),
@@ -290,7 +291,8 @@ class _FontPickerDialogState extends ConsumerState<_FontPickerDialog> {
                   family: family,
                   source: FontSource.google,
                   isSelected:
-                      _previewSelection.family == family &&
+                      AppFonts.displayName(_previewSelection.family) ==
+                          family &&
                       _previewSelection.source == FontSource.google,
                   onTap: () => _setPreview(
                     FontSelection(family: family, source: FontSource.google),
@@ -376,9 +378,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      onTap: onToggle,
-      child: Padding(
+    return CcTappable(
+      onPressed: onToggle,
+      semanticExpanded: expanded,
+      builder: (context, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
           children: [
@@ -470,13 +473,19 @@ class _FontRowState extends State<_FontRow> {
         ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
         : null;
 
+    final hover = context.designSystem?.hover;
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        onTap: onTap,
+      child: CcTappable(
+        onPressed: onTap,
         borderRadius: BorderRadius.circular(6),
-        child: Padding(
+        semanticSelected: isSelected,
+        builder: (context, states) => Container(
+          decoration: BoxDecoration(
+            color: states.contains(WidgetState.hovered) ? hover : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           child: Row(
             children: [

@@ -474,9 +474,9 @@
   "calendarDisconnect": "Putuskan",
   "calendarReconnect": "Hubungkan ulang",
   "calendarEmptyNoEvents": "Tidak ada acara di rentang ini",
-  "calendarStartRecording": "Mulai rekaman",
-  "calendarStartRecordingAndLink": "Mulai rekaman & tautkan",
   "calendarJoinMeet": "Gabung rapat",
+  "calendarJoinAndRecord": "Gabung dan rekam",
+  "calendarRecordFailed": "Tidak dapat memulai rekaman",
   "calendarFromCalendar": "Dari kalender",
   "calendarLinkedMeeting": "Rapat tertaut",
   "calendarToday": "Hari ini",
@@ -899,7 +899,6 @@
   "actions": "Tindakan",
   "activate": "Aktifkan",
   "activity": "Aktivitas",
-  "activityLabel": "AKTIVITAS",
   "activitySearchHint": "Cari aktivitas",
   "activityNoMatches": "Tidak ada aktivitas yang cocok dengan filter",
   "activityPageRange": "{start}–{end} dari {total}",
@@ -1639,7 +1638,7 @@
   "blocking": "Memblokir",
   "bookmarkLabel": "Markah",
   "briefDescription": "Deskripsi singkat",
-  "bugLabel": "BUG",
+  "bugLabel": "Bug",
   "bundledDefaultsNeverUpdated": "Default bawaan — tidak pernah diperbarui",
   "cancel": "Batal",
   "cancelEdit": "Batalkan pengeditan",
@@ -2617,7 +2616,7 @@
   "react": "React",
   "readerPreferences": "Preferensi pembaca",
   "reasoningEffort": "Upaya penalaran",
-  "recommendLabel": "REKOMENDASI",
+  "recommendLabel": "Rekomendasi",
   "recordingFromDevice": "Merekam dari {device}.",
   "@recordingFromDevice": {
     "description": "Recording from a specific device",
@@ -3010,7 +3009,7 @@
   "success": "Berhasil",
   "successLabel": "Berhasil",
   "suggestion": "Saran",
-  "suggestLabel": "USULKAN",
+  "suggestLabel": "Usulkan",
   "superseded": "Digantikan",
   "synced": "Disinkronkan",
   "systemDefault": "Default sistem",
@@ -3025,7 +3024,7 @@
   "themeLight": "Terang",
   "themeSystem": "Sistem",
   "thisCannotBeUndone": "Ini tidak dapat dibatalkan.",
-  "ticketLabel": "TIKET",
+  "ticketLabel": "Tiket",
   "titleLabel": "Judul",
   "todayLabel": "Hari ini",
   "toggleTheme": "Alihkan tema",
@@ -4253,7 +4252,9 @@
   "prTemplateLabel": "Template",
   "prTemplateDefault": "Default",
   "addReviewers": "Tambah peninjau",
-  "addAssignees": "Tambah penerima tugas",
+
+  "reRequestReview": "Minta peninjauan ulang",
+  "reRequestReviewFor": "Minta peninjauan ulang dari {label}",  "addAssignees": "Tambah penerima tugas",
   "addLabels": "Tambah label",
   "searchLabels": "Cari label…",
   "noMatchingLabels": "Tidak ada label yang cocok",
@@ -4342,6 +4343,7 @@
   "meetingNotesHint": "Tulis catatan singkat — agen mengembangkannya setelah rapat.",
   "meetingSpeakerMe": "Anda",
   "meetingStatusRecording": "Merekam",
+  "meetingStatusPaused": "Dijeda",
   "meetingStatusProcessing": "Memproses",
   "meetingStatusDone": "Selesai",
   "meetingStatusFailed": "Gagal",
@@ -4355,20 +4357,8 @@
       }
     }
   },
-  "meetingsCountLabel": "{count, plural, =0{Tidak ada rapat} =1{1 rapat} other{{count} rapat}}",
-  "@meetingsCountLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "meetingsLedgerOpenActions": "Tindakan terbuka",
-  "meetingsLedgerDecisions": "Keputusan",
   "meetingsLiveOpen": "Buka rekaman",
   "meetingTemplateShort": "Templat",
-  "meetingsStatThisWeek": "Minggu ini",
-  "meetingsStatRecorded": "Direkam",
   "meetingsFilterAll": "Semua",
   "meetingsFilterDone": "Selesai",
   "meetingsFilterProcessing": "Memproses",
@@ -4397,7 +4387,6 @@
       }
     }
   },
-  "meetingsEnhancedPill": "ditingkatkan",
   "meetingsTranscribing": "mentranskripsi & merangkum…",
   "meetingsOpenAction": "Buka",
   "meetingsStopProcessing": "Berhenti",
@@ -4488,7 +4477,6 @@
     }
   },
   "meetingDetectedSubtitleGeneric": "Sepertinya ada rapat yang sedang berlangsung. Rekam?",
-  "meetingDetectedRecord": "Rekam",
   "meetingDetectedDismiss": "Abaikan",
   "meetingAutoStopTitle": "Rapat ini sepertinya sudah selesai. Hentikan rekaman?",
   "meetingAutoStopStop": "Berhenti",
@@ -5409,6 +5397,7 @@
     }
   },
   "deviceNeverSeen": "Belum pernah terhubung",
+  "deviceAwaitingApproval": "Menunggu persetujuan",
   "profileSectionLabel": "Profil",
   "profileSectionDescription": "Bagaimana Anda tampil bagi tim dan kepenulisan commit git di ruang kerja ini. Bidang kosong mewarisi nama dan email akun.",
   "displayNameLabel": "Nama tampilan",
@@ -5985,8 +5974,6 @@
   "evalsStatusRunning": "Berjalan",
   "evalsStatusPassed": "Lulus",
   "evalsStatusFailed": "Gagal",
-  "bannerMeetingJoin": "Gabung",
-  "bannerMeetingRecordAndLink": "Rekam & tautkan",
   "bannerCalendarReconnect": "Hubungkan ulang",
   "bannerView": "Lihat",
   "soundscapeTitle": "Soundscape",
@@ -7884,6 +7871,7 @@
       }
     }
   },
+  "failedToPostComment": "Tidak dapat mengirim komentar: {error}",
   "commentOnLine": "Baris {line}",
   "@commentOnLine": {
     "description": "Line label on a single-line inline review conversation in the PR timeline",
@@ -8551,27 +8539,27 @@
   "rigClipboardAlwaysCopyTitle": "Selalu izinkan salin dari lingkungan",
   "rigClipboardAlwaysCopyDescription": "Letakkan konten papan klip dari lingkungan mana pun di perangkat ini tanpa bertanya.",
   "imageDiffBefore": "Sebelum",
-  "@imageDiffBefore":   {
+  "@imageDiffBefore": {
     "description": "Label for the base (before) side of a PR image diff"
   },
   "imageDiffAfter": "Sesudah",
-  "@imageDiffAfter":   {
+  "@imageDiffAfter": {
     "description": "Label for the head (after) side of a PR image diff"
   },
   "imageDiffModeTwoUp": "Berdampingan",
-  "@imageDiffModeTwoUp":   {
+  "@imageDiffModeTwoUp": {
     "description": "Side-by-side comparison mode for a PR image diff"
   },
   "imageDiffModeSwipe": "Geser",
-  "@imageDiffModeSwipe":   {
+  "@imageDiffModeSwipe": {
     "description": "Swipe-divider comparison mode for a PR image diff"
   },
   "imageDiffModeDifference": "Perbedaan",
-  "@imageDiffModeDifference":   {
+  "@imageDiffModeDifference": {
     "description": "Pixel overlay comparison mode for a PR image diff"
   },
   "imageDiffChangedPercent": "{percent}% berubah",
-  "@imageDiffChangedPercent":   {
+  "@imageDiffChangedPercent": {
     "description": "Caption showing how much of a PR image pair differs",
     "placeholders": {
       "percent": {
@@ -8580,11 +8568,11 @@
     }
   },
   "imageDiffPictures": "Gambar",
-  "@imageDiffPictures":   {
+  "@imageDiffPictures": {
     "description": "Header toggle to show SVG as pictures instead of XML hunks"
   },
   "imageDiffSource": "Sumber",
-  "@imageDiffSource":   {
+  "@imageDiffSource": {
     "description": "Header toggle to show an SVG file's XML source diff"
   },
   "imageDiffDeleted": "Dihapus",
@@ -8678,7 +8666,6 @@
   "diffFileMarkedNotViewedAnnouncement": "{path} ditandai belum dilihat",
   "prLineChangesSemantics": "Baris ditambahkan: {additions}, baris dihapus: {deletions}",
   "closeTabNamed": "Tutup {tab}",
-  "threadCommentCount": "{count, plural, other{{count} komentar}}",
   "notificationAgentAwaitingInput": "Agen memerlukan perhatian",
   "notifyAgentAwaitingInput": "Saat agen memerlukan persetujuan, jawaban, atau kredensial yang valid, atau kebijakan memblokir tindakan",
   "notificationAgentNeedsApproval": "{agent} memerlukan persetujuan Anda",
@@ -10368,7 +10355,6 @@
   "improvementRowNeedsAdmin": "Admin yang memutuskan",
   "improvementNotFound": "Usulan ini tidak ada, atau ada di space yang tidak dapat Anda buka.",
   "dispatchSettingsTitle": "Jadwal",
-  "dispatchSettingsSubtitle": "Batas untuk jadwal dan pantauan, serta apa yang terjadi pada permintaan yang tidak dijawab siapa pun.",
   "dispatchLimitsLabel": "Batas jadwal",
   "dispatchLimitsSubtitle": "Batas jumlah jadwal dan pantauan yang boleh dimiliki agen, beserta nilai defaultnya.",
   "dispatchLimitRange": "1 sampai {max}",
@@ -10391,7 +10377,6 @@
   "dispatchDigestHourHelp": "Dalam {zone}, zona waktu di atas.",
   "dispatchDigestHourRange": "0 sampai 23",
   "goalRecordCrumb": "Tujuan",
-  "scheduleRecordCrumb": "Jadwal",
   "improvementRecordCrumb": "Usulan",
   "goalNodeNeedsAgent": "Pilih agen yang mengerjakan tujuan.",
   "goalNodeNeedsObjective": "Tulis sasarannya.",
@@ -10512,5 +10497,14 @@
   "mcpServerSignInWrongCode": "Itu bukan kode yang ditampilkan browser Anda. {count, plural, other{Sisa {count} percobaan.}}",
   "mcpServerSignInEnded": "Waktunya habis, proses ditolak, atau terlalu banyak kode yang salah. Mulai lagi untuk mendapatkan halaman masuk baru.",
   "mcpServerSignInStartAgain": "Mulai lagi",
-  "mcpServerSignedIn": "Masuk ke {name}."
+  "mcpServerSignedIn": "Masuk ke {name}.",
+  "ccLoading": "Memuat",
+  "ccProgress": "Progres",
+  "ccBreadcrumb": "Jejak navigasi",
+  "ccDialog": "Dialog",
+  "ccResize": "Ubah ukuran",
+  "ccUnverifiedLabel": "{label} (belum diverifikasi)",
+  "prRowSelect": "Pilih {title}",
+  "prTableSelectAll": "Pilih semua pull request",
+  "planVersionRewind": "Kembalikan ke versi {version}"
 }

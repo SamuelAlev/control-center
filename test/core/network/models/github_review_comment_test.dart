@@ -46,7 +46,7 @@ void main() {
       expect(comment.anchorLine, 12);
     });
 
-    test('anchorLine falls back to originalLine', () {
+    test('anchorLine returns null when line is null even with originalLine', () {
       final json = <String, dynamic>{
         'id': 1,
         'body': 'test',
@@ -56,7 +56,7 @@ void main() {
         'original_line': 45,
       };
       final comment = GitHubReviewComment.fromJson(json);
-      expect(comment.anchorLine, 45);
+      expect(comment.anchorLine, isNull);
     });
 
     test('anchorLine returns null when both are null', () {
@@ -158,7 +158,7 @@ void main() {
       expect(restored.inReplyToId, comment.inReplyToId);
     });
 
-    test('anchorLine prefers originalLine when line is null', () {
+    test('anchorLine is null when line is null even with originalLine and startLine', () {
       final json = <String, dynamic>{
         'id': 1,
         'body': 't',
@@ -169,7 +169,7 @@ void main() {
         'start_line': 8,
       };
       final comment = GitHubReviewComment.fromJson(json);
-      expect(comment.anchorLine, 10);
+      expect(comment.anchorLine, isNull);
       expect(comment.startLine, 8);
     });
 
