@@ -75,6 +75,7 @@ void main() {
       'CcSidebarScope', // inherited state for the sidebar's children
       'CcResizableController', // a controller, not a widget
       'CcScrollBehavior', // ambient scroll configuration
+      'CcHitTarget', // widens a child's pointer area; paints nothing itself
     };
 
     final missing = exported.difference(catalogued).difference(notShowable)

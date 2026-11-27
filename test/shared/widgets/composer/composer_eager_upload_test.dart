@@ -267,6 +267,9 @@ void main() {
     expect(newUploads, 1);
     expect(controller.text, draft);
     reconnected.complete(_uploaded('file-reconnected'));
+    // Nothing is animating, so the first pump only delivers the completion;
+    // the frame it schedules is drawn by the second.
+    await tester.pump();
     await tester.pump();
     expect(tester.widget<CcButton>(_send).onPressed, isNotNull);
   });

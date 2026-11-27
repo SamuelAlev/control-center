@@ -37,6 +37,7 @@ every stories file targets [Showcase] and names its navigation entry with a
     $Playground..$generatedName = 'Playground',
     $Loading..$generatedName = 'Loading',
     $Sizes..$generatedName = 'Sizes',
+    $Split..$generatedName = 'Split',
     $Variants..$generatedName = 'Variants',
   ],
 );

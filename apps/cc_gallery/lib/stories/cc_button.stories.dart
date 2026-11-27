@@ -47,6 +47,8 @@ final $Loading = _Story(args: _Args.fixed(preview: ccButtonLoadingStory));
 
 final $Sizes = _Story(args: _Args.fixed(preview: ccButtonSizesStory));
 
+final $Split = _Story(args: _Args.fixed(preview: ccButtonSplitStory));
+
 final $Variants = _Story(args: _Args.fixed(preview: ccButtonVariantsStory));
 
 /// The controls of the interactive story, as constructor parameters
@@ -152,6 +154,53 @@ Widget ccButtonLoadingStory(BuildContext context) {
           loading: true,
           onPressed: _noop,
           child: Text('Saving'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// [CcSplitButton]: the usual action with its variations behind a caret. Both
+/// halves share the variant, and a disabled or busy action takes the caret
+/// with it.
+Widget ccButtonSplitStory(BuildContext context) {
+  const items = [
+    CcMenuItem(label: 'Approve for this session', onSelected: _noop),
+    CcMenuItem(label: 'Approve for an hour', onSelected: _noop),
+    CcMenuItem(label: 'Always approve', onSelected: _noop),
+  ];
+  return const Center(
+    child: Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        CcSplitButton(
+          onPressed: _noop,
+          items: items,
+          menuSemanticLabel: 'More approval options',
+          child: Text('Approve'),
+        ),
+        CcSplitButton(
+          variant: CcButtonVariant.secondary,
+          size: CcButtonSize.sm,
+          onPressed: _noop,
+          items: items,
+          menuSemanticLabel: 'More approval options',
+          child: Text('Approve'),
+        ),
+        CcSplitButton(
+          loading: true,
+          onPressed: _noop,
+          items: items,
+          menuSemanticLabel: 'More approval options',
+          child: Text('Approving'),
+        ),
+        CcSplitButton(
+          onPressed: null,
+          items: items,
+          menuSemanticLabel: 'More approval options',
+          child: Text('Disabled'),
         ),
       ],
     ),

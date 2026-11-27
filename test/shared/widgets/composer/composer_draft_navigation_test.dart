@@ -257,6 +257,9 @@ void main() {
     );
     await tester.pump();
     transfers.last.complete(_uploaded('retried-after-return'));
+    // Nothing is animating, so the first pump only delivers the completion;
+    // the frame it schedules is drawn by the second.
+    await tester.pump();
     await tester.pump();
     await tester.tap(_send);
     await tester.pump();

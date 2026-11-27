@@ -323,15 +323,24 @@ void main() {
     );
 
     // At rest the row reads clean — the × is a hover affordance, unlike the
-    // rig rows' standing power glyph.
-    expect(find.byIcon(AppIcons.x), findsNothing);
+    // rig rows' standing power glyph. It stays mounted (Tab has to reach it)
+    // and is only painted on hover or focus.
+    double closeOpacity() => tester
+        .widget<Opacity>(
+          find.ancestor(
+            of: find.byIcon(AppIcons.x),
+            matching: find.byType(Opacity),
+          ),
+        )
+        .opacity;
+    expect(closeOpacity(), 0);
 
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await gesture.addPointer();
     addTearDown(gesture.removePointer);
     await gesture.moveTo(tester.getCenter(find.text('Web browser')));
     await tester.pumpAndSettle();
-    expect(find.byIcon(AppIcons.x), findsOneWidget);
+    expect(closeOpacity(), 1);
 
     await tester.tap(find.byIcon(AppIcons.x));
     await tester.pumpAndSettle();
